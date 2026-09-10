@@ -557,6 +557,7 @@ var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"
 /* ---------------- utilidades ---------------- */
 var KEY='despesas.v1';
 var SCHEMA=1;
+var BUILD='2026-09-10.4';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1695,13 +1696,18 @@ function telaCfg(){
     (bytes/1024).toFixed(1).replace('.',',')+' KB de ~5 MB</div></div></div>'));
   g4.appendChild(el('<div class="grow"><div><div class="r1">Último backup</div>'+
     '<div class="r2">'+(DB.prefs.ultBackup?(diaLabel(DB.prefs.ultBackup)+' · há '+diasEntre(DB.prefs.ultBackup,hoje())+' dias'):'nunca')+'</div></div></div>'));
+  if(location.protocol==='https:'){
+    var ru=el('<button class="grow tap"><div><div class="r1">Buscar atualização</div>'+
+      '<div class="r2">Build atual: '+BUILD+'</div></div>'+ICO.chev+'</button>');
+    ru.onclick=buscarAtualizacao;g4.appendChild(ru);
+  }
   var rd=el('<button class="grow tap danger"><div><div class="r1">Apagar todos os dados</div>'+
     '<div class="r2">Confirmação dupla. Não tem volta.</div></div></button>');
   rd.onclick=apagarTudo;g4.appendChild(rd);
   b.appendChild(g4);
 
-  b.appendChild(el('<div class="hint">Versão do formato: '+SCHEMA+'. Rodando em '+
-    (location.protocol==='https:'?'HTTPS (armazenamento estável)':'arquivo local — exporte um backup antes de trocar o arquivo do app')+'.</div>'));
+  b.appendChild(el('<div class="hint">Build <b>'+BUILD+'</b> · formato '+SCHEMA+' · '+
+    (location.protocol==='https:'?'hospedado':'arquivo local')+'</div>'));
   return s;
 }
 
@@ -1940,6 +1946,24 @@ function folhaEditarSub(c,s){
     }
   });
 }
+/* força o service worker a reinstalar e limpa o cache do app — os dados
+   ficam no localStorage e não são tocados */
+function buscarAtualizacao(){
+  confirmar2('Buscar atualização?','O app vai limpar o cache e recarregar a partir do servidor. Seus lançamentos não são afetados.','Atualizar',false,function(){
+    var fim=function(){location.reload(true);};
+    var tarefas=[];
+    try{
+      if(window.caches&&caches.keys)tarefas.push(caches.keys().then(function(ks){
+        return Promise.all(ks.map(function(k){return caches.delete(k);}));}));
+      if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)
+        tarefas.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+          return Promise.all(rs.map(function(r){return r.unregister();}));}));
+    }catch(e){}
+    if(!tarefas.length)return fim();
+    Promise.all(tarefas).then(fim,fim);
+    setTimeout(fim,2500);
+  });
+}
 function apagarTudo(){
   confirmar2('Apagar todos os dados?','Isso remove os '+DB.exp.length+' lançamentos, as categorias e as preferências deste aparelho.','Continuar',true,function(){
     confirmar2('Tem certeza mesmo?','Última confirmação. Não há como desfazer. Se ainda não exportou um backup, cancele agora.','Apagar tudo',true,function(){
@@ -2125,7 +2149,9 @@ try{
 }catch(e){}
 if(location.protocol==='https:'&&'serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      try{reg.update();}catch(e){}
+    }).catch(function(){});
   });
 }
 window.addEventListener('resize',function(){
