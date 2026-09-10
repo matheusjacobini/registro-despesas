@@ -1,0 +1,15 @@
+{
+  "name": "Despesas",
+  "short_name": "Despesas",
+  "description": "Registro e controle de despesas pessoais",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icon180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
