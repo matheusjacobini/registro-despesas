@@ -81,6 +81,7 @@
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{
   margin:0;background:var(--bg);color:var(--ink);
@@ -300,9 +301,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .dayhd .t{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .swipe{position:relative;overflow:hidden}
 .swipe .del{
-  position:absolute;inset:0 0 0 auto;width:88px;background:var(--danger);color:#fff;
-  display:grid;place-items:center;font-size:15px;font-weight:600;
+  position:absolute;inset:0;background:var(--danger);color:#fff;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding:0 26px;font-size:15px;font-weight:600;white-space:nowrap;
 }
+.swipe.armado .del{justify-content:flex-start}
 .erow{
   position:relative;background:var(--card);
   display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:11px;align-items:center;
@@ -399,7 +402,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .sheet-h .sa{color:var(--tint);font-size:16px}
 .sheet-h .sa.right{text-align:right}
 .sheet-h .sa.strong{font-weight:600}
-.sheet-b{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 24px;display:flex;flex-direction:column}
+.sheet-h{flex:none}
+.sheet-b{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 24px;display:flex;flex-direction:column}
+/* sem isto o flex encolhe a lista até caber e nada rola — os itens ficam achatados */
+.sheet-b>*{flex:0 0 auto}
 .opt{
   display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;
   background:var(--card);padding:11px 14px;width:100%;position:relative;
@@ -443,11 +449,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .reorder{position:relative}
 .rrow{
   display:grid;grid-template-columns:auto 34px minmax(0,1fr) auto;gap:11px;align-items:center;
-  background:var(--card);padding:11px 14px;position:relative;touch-action:none;
+  background:var(--card);padding:11px 14px;position:relative;touch-action:pan-y;
 }
 .rrow+.rrow::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
 .rrow.drag{z-index:3;box-shadow:0 8px 24px rgba(0,0,0,.22);border-radius:10px;opacity:.97}
-.rrow .hnd{color:var(--faint);padding:4px;margin:-4px;cursor:grab}
+.rrow .hnd{color:var(--faint);padding:8px;margin:-8px;cursor:grab;touch-action:none}
 .rrow .hnd svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
 .rrow .ic{
   width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
@@ -611,7 +617,7 @@ var TABS=[
   ['cfg','Ajustes','<circle cx="12" cy="12" r="3"/><path d="M12 3v1.6m0 14.8V21M4.2 4.2l1.1 1.1m13.4 13.4l1.1 1.1M3 12h1.6m14.8 0H21M4.2 19.8l1.1-1.1M18.7 5.3l1.1-1.1"/>']
 ];
 var PAGTOS=[['Crédito','💳'],['Débito','🏧'],['Pix','⚡'],['Dinheiro','💵']];
-var DENS={'2x3':{c:2,r:3,lab:'Botões grandes'},'2x4':{c:2,r:4,lab:'Equilibrado'},'2x5':{c:2,r:5,lab:'Compacto'}};
+var DENS={'2x3':{c:2,r:3,lab:'Amplo'},'2x4':{c:2,r:4,lab:'Equilibrado'},'2x5':{c:2,r:5,lab:'Compacto'}};
 
 /* ---------------- armazenamento ---------------- */
 var DB=null;
@@ -693,7 +699,7 @@ function densAuto(){
   var m=document.getElementById('main');
   var h=(m&&m.clientHeight)||window.innerHeight-170;
   /* alvo: cartão em torno de 180 px de altura. Num iPhone padrão isso dá
-     Equilibrado; num SE, Botões grandes; num Pro Max, Compacto. */
+     Equilibrado; num SE, Amplo; num Pro Max, Compacto. */
   var r=Math.round(h/180);
   r=Math.max(3,Math.min(5,r));
   return '2x'+r;
@@ -1128,19 +1134,28 @@ function linhas(itens,comData){
       '<span class="vl tnum">'+brl(e.v)+'</span></button>');
     box.querySelector('.del').onclick=function(){excluirLancamento(e);};
     box.appendChild(r);
-    arrastarParaExcluir(r,function(){acoesLancamento(e);});
+    arrastarParaExcluir(box,r,function(){acoesLancamento(e);},function(){excluirLancamento(e);});
     w.appendChild(box);
   });
   return w;
 }
-/* deslizar para a esquerda revela Excluir; só engata em gesto horizontal,
-   para não brigar com a rolagem vertical da lista */
-function arrastarParaExcluir(row,aoTocar){
-  var x0=0,y0=0,dx=0,ativo=false,eixo=null,aberto=false,moveu=false;
+/* Deslizar para a esquerda: até o meio do caminho revela o botão Excluir;
+   passando do limiar, soltar exclui direto — como nas listas do iOS.
+   Só engata em gesto horizontal, para não brigar com a rolagem vertical. */
+function arrastarParaExcluir(box,row,aoTocar,aoExcluir){
+  var ABRE=-88, ARMA=-165, MAX=-250;
+  var x0=0,y0=0,dx=0,ativo=false,eixo=null,aberto=false,moveu=false,armado=false;
+  var rot=box.querySelector('.del');
   function pos(v){row.style.transform='translateX('+v+'px)';}
+  function armar(on){
+    if(on===armado)return;
+    armado=on;
+    box.classList.toggle('armado',on);
+    rot.textContent=on?'Soltar para excluir':'Excluir';
+  }
   row.addEventListener('pointerdown',function(ev){
     if(ev.pointerType==='mouse'&&ev.button!==0)return;
-    x0=ev.clientX;y0=ev.clientY;ativo=true;eixo=null;moveu=false;dx=aberto?-88:0;
+    x0=ev.clientX;y0=ev.clientY;ativo=true;eixo=null;moveu=false;dx=aberto?ABRE:0;
   });
   row.addEventListener('pointermove',function(ev){
     if(!ativo)return;
@@ -1148,24 +1163,29 @@ function arrastarParaExcluir(row,aoTocar){
     if(!eixo){
       if(Math.abs(ax)<7&&Math.abs(ay)<7)return;
       eixo=Math.abs(ax)>Math.abs(ay)?'x':'y';
-      if(eixo==='x'){try{row.setPointerCapture(ev.pointerId);}catch(e){}}
+      if(eixo==='x'){try{row.setPointerCapture(ev.pointerId);}catch(err){}}
     }
     if(eixo!=='x')return;
     moveu=true;
-    dx=Math.max(-88,Math.min(0,ax+(aberto?-88:0)));
+    dx=Math.max(MAX,Math.min(0,ax+(aberto?ABRE:0)));
     row.style.transition='none';pos(dx);
+    armar(dx<=ARMA);
   });
   function fim(){
     if(!ativo)return;ativo=false;
     row.style.transition='';
-    if(eixo==='x'){aberto=dx<-44;pos(aberto?-88:0);}
+    if(eixo==='x'){
+      if(dx<=ARMA){ pos(-row.offsetWidth); armar(false); aoExcluir(); eixo=null; return; }
+      aberto=dx<-44;pos(aberto?ABRE:0);
+    }
+    armar(false);
     eixo=null;
   }
   row.addEventListener('pointerup',fim);
   row.addEventListener('pointercancel',fim);
   row.addEventListener('click',function(ev){
     if(moveu){ev.preventDefault();return;}
-    if(aberto){aberto=false;pos(0);return;}   /* primeiro toque fecha o deslize */
+    if(aberto){aberto=false;pos(0);return;}
     aoTocar();
   });
 }
@@ -1689,7 +1709,7 @@ function folhaDensidade(){
   folha('Densidade da grade',function(b){
     var w=el('<div class="optwrap"></div>');
     var opts=[['auto','Automático','pela altura desta tela, hoje daria '+(DENS[densAuto()].c+' × '+DENS[densAuto()].r)]]
-      .concat(Object.keys(DENS).map(function(k){return [k,DENS[k].lab,k.replace('x',' × ')+' — '+(DENS[k].c*DENS[k].r)+' vagas'];}));
+      .concat(Object.keys(DENS).map(function(k){return [k,DENS[k].lab,k.replace('x',' × ')+' — '+(DENS[k].c*DENS[k].r)+' cards'];}));
     opts.forEach(function(o){
       var x=el('<button class="opt" data-k="'+o[0]+'"><span class="ic">'+(o[0]==='auto'?'✨':'▦')+'</span>'+
         '<span class="nm">'+o[1]+'<small>'+o[2]+'</small></span>'+
