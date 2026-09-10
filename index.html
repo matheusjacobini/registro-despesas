@@ -426,7 +426,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .optwrap{border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
 .dayopts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .dayopt{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 14px}
-.dayopt.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dayopt.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden}
+/* o campo de data cobre o card inteiro e fica invisível: tocar em qualquer
+   ponto abre o calendário, não só em cima do valor */
+.dayopt.wide input[type="date"]{
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;
+  -webkit-appearance:none;appearance:none;font-size:16px;
+}
+.dayopt.wide .cal{font-size:22px;line-height:1}
+/* mesma ideia no formulário de edição: o campo inteiro é a área de toque */
+.field.data{position:relative}
+.field.data input[type="date"]{position:relative;z-index:1;width:100%}
 .dayopt .n{font-size:18px;font-weight:600;letter-spacing:-.02em}
 .dayopt .s{font-size:12.5px;color:var(--muted);margin-top:2px}
 .dayopt[aria-pressed="true"]{outline:2px solid var(--tint);outline-offset:-2px}
@@ -559,7 +569,7 @@ var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"
 /* ---------------- utilidades ---------------- */
 var KEY='despesas.v1';
 var SCHEMA=1;
-var BUILD='2026-09-10.6';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-10.7';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -588,6 +598,9 @@ function diaLabel(s){
   if(s===ontem())return 'ontem · '+(+s.slice(8))+' '+MESC[+s.slice(5,7)-1];
   var d=parseYmd(s);
   return DOW[d.getDay()]+' · '+(+s.slice(8))+' '+MESC[+s.slice(5,7)-1];
+}
+function porExtenso(s){
+  return (+s.slice(8))+' de '+MES[+s.slice(5,7)-1]+' de '+s.slice(0,4);
 }
 function diasEntre(a,b){return Math.round((parseYmd(b)-parseYmd(a))/86400000);}
 function diasNoMes(mk){var p=mk.split('-');return new Date(+p[0],+p[1],0).getDate();}
@@ -1413,8 +1426,12 @@ function folhaData(){
       o.onclick=function(){S.data=d[1];fecharFolhas();render();};
       g.appendChild(o);
     });
-    var w=el('<div class="dayopt wide"><span><div class="n">Escolher data</div><div class="s">calendário do sistema</div></span></div>');
-    var inp=el('<input type="date" style="font-size:16px;color:var(--tint)" max="'+hoje()+'">');
+    var outra=(atual!==hoje()&&atual!==ontem());
+    var w=el('<label class="dayopt wide" aria-pressed="'+outra+'"><span>'+
+      '<div class="n">Escolher data</div>'+
+      '<div class="s">'+(outra?esc(porExtenso(atual)):'abre o calendário do sistema')+'</div></span>'+
+      '<span class="cal">📅</span></label>');
+    var inp=el('<input type="date" max="'+hoje()+'">');
     inp.value=atual;
     inp.onchange=function(){if(inp.value){S.data=inp.value;fecharFolhas();render();}};
     w.appendChild(inp);
@@ -1578,7 +1595,7 @@ function editarLancamento(e){
     b.appendChild(fv);
     var fc=el('<button class="field row"><span><span class="k">Categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
     var fs=el('<button class="field row"><span><span class="k">Sub-categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
-    var fd=el('<div class="field"><div class="k">Data</div><input type="date" max="'+hoje()+'" value="'+e.d+'"></div>');
+    var fd=el('<label class="field data"><div class="k">Data</div><input type="date" max="'+hoje()+'" value="'+e.d+'"></label>');
     var fp=el('<div class="field"><div class="k">Pagamento</div><select><option value="">—</option></select></div>');
     var ft=el('<div class="field"><div class="k">Descrição</div><input type="text" maxlength="80" value="'+esc(e.desc||'')+'"></div>');
     PAGTOS.forEach(function(p){
