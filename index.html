@@ -114,7 +114,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 
 /* cabeçalho */
 #hdr{
-  padding:calc(env(safe-area-inset-top,0px) + 8px) 8px 8px;
+  /* O iOS desenha uma faixa de vidro logo abaixo da barra de status em apps da
+     tela de início: o que ficar ali embaixo sai esfumaçado. Descemos o conteúdo
+     do cabeçalho para fora dela, tirando do espaço de baixo para o custo em
+     altura útil ficar em 4px em vez de 12px. */
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 8px 4px;
   display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:4px;
 }
 .hbtn{
@@ -558,6 +562,44 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .sp{height:10px}
 .center{text-align:center}
 .hide{display:none!important}
+
+/* ---------- v11: entradas e saídas ---------- */
+/* Bloco de saldo do Resumo. Só existe quando houve entrada no mês — sem entrada,
+   aquela tela fica exatamente como era antes. */
+.saldo{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 15px 13px;margin-bottom:9px}
+.saldo .lin{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0}
+.saldo .lin+.lin{border-top:.5px solid var(--line)}
+.saldo .lin.tot{border-top:1px solid var(--line2);margin-top:3px;padding-top:9px}
+.saldo .lb{font-size:13.5px;color:var(--muted);min-width:0}
+.saldo .lin.tot .lb{font-size:15px;color:var(--ink);font-weight:600}
+.saldo .vv{font-size:17px;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
+.saldo .lin.tot .vv{font-size:23px;letter-spacing:-.03em}
+/* verde = dinheiro que entrou ou voltou; vermelho = saldo negativo */
+.vin{color:var(--ok)}
+.vneg{color:var(--ok)}
+.saldo .vneg{color:var(--danger)}
+.erow .vl.vin,.erow .vl.vneg{color:var(--ok)}
+.erow .t2 b{color:var(--ok);font-weight:600}
+.msk .mr.vin{color:var(--ok)}
+.msk .mr.vneg{color:var(--danger)}
+/* O ± na fileira dos atalhos: separado dos somadores por um respiro, porque
+   os três primeiros somam dinheiro e este inverte o sentido. */
+.quick{grid-template-columns:1fr 1fr 1fr 14px 1fr}
+.quick .gap{height:1px}
+.quick .sig{font-size:17px;font-weight:700;letter-spacing:.02em}
+.quick .sig[aria-pressed="true"]{background:color-mix(in srgb,var(--danger) 15%,var(--card));
+  color:var(--danger);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--danger) 45%,transparent)}
+/* Os três avisos do estorno: número vermelho com sinal, ± aceso, botão trocado. */
+.amount .n.neg .cur,.amount .n.neg .fig{color:var(--danger)}
+.amount .n.rec .cur,.amount .n.rec .fig{color:var(--ok)}
+.key.go.dan{background:var(--danger)}
+.chip:disabled{opacity:.38}
+.field.off{opacity:.55}
+.field.off select{pointer-events:none}
+/* seletor de lado na lista — só aparece quando existe lançamento de entrada */
+.seg{display:flex;background:var(--fill2);border-radius:9px;padding:2px;gap:2px;margin:0 4px 8px}
+.seg button{flex:1;font-size:13.5px;font-weight:600;padding:6px 0;border-radius:7px;color:var(--ink2)}
+.seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.10);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -616,8 +658,10 @@ window.__diag={inicial:true,fim:false,erro:null};
 </script>
 
 <script>
-/* Taxonomia semeada na primeira execução (categorias_v2.csv) */
-var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"id":"ali-1","n":"Almoço no trabalho","e":"🍱"},{"id":"ali-2","n":"Bares e happy hour","e":"🍻"},{"id":"ali-3","n":"Bebidas","e":"🥤"},{"id":"ali-4","n":"Delivery","e":"🛵"},{"id":"ali-5","n":"Guloseimas","e":"🍬"},{"id":"ali-6","n":"Padaria e cafés","e":"☕"},{"id":"ali-7","n":"Restaurantes","e":"🍴"},{"id":"ali-8","n":"Supermercado","e":"🛒"},{"id":"ali-9","n":"Outros","e":"🍽️"}]},{"id":"com","n":"Compras","e":"🛍️","c":"#DB2777","subs":[{"id":"com-1","n":"Artigos esportivos","e":"⚽"},{"id":"com-2","n":"Cuidados pessoais","e":"🧴"},{"id":"com-3","n":"Eletrônicos","e":"💻"},{"id":"com-4","n":"Livros","e":"📚"},{"id":"com-5","n":"Presentes","e":"🎁"},{"id":"com-6","n":"Roupas e calçados","e":"👕"},{"id":"com-7","n":"Outros","e":"🛍️"}]},{"id":"mor","n":"Moradia","e":"🏠","c":"#2563EB","subs":[{"id":"mor-1","n":"Água","e":"💧"},{"id":"mor-2","n":"Aluguel","e":"🔑"},{"id":"mor-3","n":"Condomínio","e":"🏢"},{"id":"mor-4","n":"Eletrodomésticos","e":"🔌"},{"id":"mor-5","n":"Energia elétrica","e":"⚡"},{"id":"mor-6","n":"Financiamento imobiliário","e":"🏦"},{"id":"mor-7","n":"Gás","e":"🔥"},{"id":"mor-8","n":"Internet","e":"📶"},{"id":"mor-9","n":"IPTU e taxas","e":"📄"},{"id":"mor-10","n":"Limpeza","e":"🧹"},{"id":"mor-11","n":"Manutenção","e":"🔨"},{"id":"mor-12","n":"Seguro","e":"🛡️"},{"id":"mor-13","n":"Telefone e celular","e":"📱"},{"id":"mor-14","n":"Utilidades, decoração e móveis","e":"🛋️"},{"id":"mor-15","n":"Outros","e":"🏠"}]},{"id":"sau","n":"Saúde","e":"🩺","c":"#0D9488","subs":[{"id":"sau-1","n":"Academia","e":"🏋️"},{"id":"sau-2","n":"Bem-estar e qualidade de vida","e":"🧘"},{"id":"sau-3","n":"Dentista","e":"🦷"},{"id":"sau-4","n":"Exames","e":"🔬"},{"id":"sau-5","n":"Farmácia","e":"💊"},{"id":"sau-6","n":"Médico","e":"👨‍⚕️"},{"id":"sau-7","n":"Plano de saúde","e":"📋"},{"id":"sau-8","n":"Suplementos","e":"💪"},{"id":"sau-9","n":"Terapia","e":"🧠"},{"id":"sau-10","n":"Outros","e":"🩺"}]},{"id":"tra","n":"Transporte","e":"🚗","c":"#65A30D","subs":[{"id":"tra-1","n":"Combustível","e":"⛽"},{"id":"tra-2","n":"Estacionamento","e":"🅿️"},{"id":"tra-3","n":"Financiamento","e":"🏦"},{"id":"tra-4","n":"IPVA e licenciamento","e":"📄"},{"id":"tra-5","n":"Manutenção e peças","e":"🔧"},{"id":"tra-6","n":"Multas de trânsito","e":"🚨"},{"id":"tra-7","n":"Pedágio","e":"🛣️"},{"id":"tra-8","n":"Seguro","e":"🛡️"},{"id":"tra-9","n":"Uber, táxi ou transporte público","e":"🚕"},{"id":"tra-10","n":"Outros","e":"🚗"}]},{"id":"ent","n":"Entretenimento e lazer","e":"🎬","c":"#9333EA","subs":[{"id":"ent-1","n":"Cinema e teatro","e":"🎭"},{"id":"ent-2","n":"Shows","e":"🎤"},{"id":"ent-3","n":"Jogos","e":"🎮"},{"id":"ent-4","n":"Passeios e eventos","e":"🎡"},{"id":"ent-5","n":"Outros","e":"🎬"}]},{"id":"ass","n":"Assinaturas","e":"🔁","c":"#C026D3","subs":[{"id":"ass-1","n":"Streaming","e":"📺"},{"id":"ass-2","n":"Jornais e revistas","e":"📰"},{"id":"ass-3","n":"Software e nuvem","e":"☁️"},{"id":"ass-4","n":"Outros","e":"🔁"}]},{"id":"fer","n":"Férias e viagens","e":"✈️","c":"#0891B2","subs":[{"id":"fer-1","n":"Alimentação em viagem","e":"🍽️"},{"id":"fer-2","n":"Compras em viagem","e":"🛍️"},{"id":"fer-3","n":"Entretenimento em viagem","e":"🎟️"},{"id":"fer-4","n":"Hospedagem e hotel","e":"🏨"},{"id":"fer-5","n":"Passagens e transportes","e":"🚆"},{"id":"fer-6","n":"Outros","e":"✈️"}]},{"id":"pet","n":"Pet","e":"🐾","c":"#CA8A04","subs":[{"id":"pet-1","n":"Alimentação e consumo","e":"🦴"},{"id":"pet-2","n":"Banho e tosa","e":"✂️"},{"id":"pet-3","n":"Mimos","e":"🧸"},{"id":"pet-4","n":"Veterinário e medicamentos","e":"🏥"},{"id":"pet-5","n":"Outros","e":"🐾"}]},{"id":"edu","n":"Educação","e":"🎓","c":"#4338CA","subs":[]},{"id":"tax","n":"Taxas","e":"💳","c":"#DC2626","subs":[{"id":"tax-1","n":"Anuidade de cartão","e":"💳"},{"id":"tax-2","n":"Juros e multas","e":"⚠️"},{"id":"tax-3","n":"Tarifas bancárias","e":"🏦"},{"id":"tax-4","n":"Outros","e":"💳"}]},{"id":"out","n":"Outros","e":"❓","c":"#78716C","subs":[{"id":"out-1","n":"Doações","e":"🤲"},{"id":"out-2","n":"Família","e":"👨‍👩‍👧"},{"id":"out-3","n":"Não classificado","e":"🏷️"}]}];
+/* Taxonomia semeada na primeira execução (categorias_v2.csv).
+   As três últimas são de ENTRADA (tipo:"e"); as demais, de saída.
+   Categoria sem `tipo` é saída — é o que mantém toda base antiga válida. */
+var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"id":"ali-1","n":"Almoço no trabalho","e":"🍱"},{"id":"ali-2","n":"Bares e happy hour","e":"🍻"},{"id":"ali-3","n":"Bebidas","e":"🥤"},{"id":"ali-4","n":"Delivery","e":"🛵"},{"id":"ali-5","n":"Guloseimas","e":"🍬"},{"id":"ali-6","n":"Padaria e cafés","e":"☕"},{"id":"ali-7","n":"Restaurantes","e":"🍴"},{"id":"ali-8","n":"Supermercado","e":"🛒"},{"id":"ali-9","n":"Outros","e":"🍽️"}]},{"id":"com","n":"Compras","e":"🛍️","c":"#DB2777","subs":[{"id":"com-1","n":"Artigos esportivos","e":"⚽"},{"id":"com-2","n":"Cuidados pessoais","e":"🧴"},{"id":"com-3","n":"Eletrônicos","e":"💻"},{"id":"com-4","n":"Livros","e":"📚"},{"id":"com-5","n":"Presentes","e":"🎁"},{"id":"com-6","n":"Roupas e calçados","e":"👕"},{"id":"com-7","n":"Outros","e":"🛍️"}]},{"id":"mor","n":"Moradia","e":"🏠","c":"#2563EB","subs":[{"id":"mor-1","n":"Água","e":"💧"},{"id":"mor-2","n":"Aluguel","e":"🔑"},{"id":"mor-3","n":"Condomínio","e":"🏢"},{"id":"mor-4","n":"Eletrodomésticos","e":"🔌"},{"id":"mor-5","n":"Energia elétrica","e":"⚡"},{"id":"mor-6","n":"Financiamento imobiliário","e":"🏦"},{"id":"mor-7","n":"Gás","e":"🔥"},{"id":"mor-8","n":"Internet","e":"📶"},{"id":"mor-9","n":"IPTU e taxas","e":"📄"},{"id":"mor-10","n":"Limpeza","e":"🧹"},{"id":"mor-11","n":"Manutenção","e":"🔨"},{"id":"mor-12","n":"Seguro","e":"🛡️"},{"id":"mor-13","n":"Telefone e celular","e":"📱"},{"id":"mor-14","n":"Utilidades, decoração e móveis","e":"🛋️"},{"id":"mor-15","n":"Outros","e":"🏠"}]},{"id":"sau","n":"Saúde","e":"🩺","c":"#0D9488","subs":[{"id":"sau-1","n":"Academia","e":"🏋️"},{"id":"sau-2","n":"Bem-estar e qualidade de vida","e":"🧘"},{"id":"sau-3","n":"Dentista","e":"🦷"},{"id":"sau-4","n":"Exames","e":"🔬"},{"id":"sau-5","n":"Farmácia","e":"💊"},{"id":"sau-6","n":"Médico","e":"👨‍⚕️"},{"id":"sau-7","n":"Plano de saúde","e":"📋"},{"id":"sau-8","n":"Suplementos","e":"💪"},{"id":"sau-9","n":"Terapia","e":"🧠"},{"id":"sau-10","n":"Outros","e":"🩺"}]},{"id":"tra","n":"Transporte","e":"🚗","c":"#65A30D","subs":[{"id":"tra-1","n":"Combustível","e":"⛽"},{"id":"tra-2","n":"Estacionamento","e":"🅿️"},{"id":"tra-3","n":"Financiamento","e":"🏦"},{"id":"tra-4","n":"IPVA e licenciamento","e":"📄"},{"id":"tra-5","n":"Manutenção e peças","e":"🔧"},{"id":"tra-6","n":"Multas de trânsito","e":"🚨"},{"id":"tra-7","n":"Pedágio","e":"🛣️"},{"id":"tra-8","n":"Seguro","e":"🛡️"},{"id":"tra-9","n":"Uber, táxi ou transporte público","e":"🚕"},{"id":"tra-10","n":"Outros","e":"🚗"}]},{"id":"ent","n":"Entretenimento e lazer","e":"🎬","c":"#9333EA","subs":[{"id":"ent-1","n":"Cinema e teatro","e":"🎭"},{"id":"ent-2","n":"Shows","e":"🎤"},{"id":"ent-3","n":"Jogos","e":"🎮"},{"id":"ent-4","n":"Passeios e eventos","e":"🎡"},{"id":"ent-5","n":"Outros","e":"🎬"}]},{"id":"ass","n":"Assinaturas","e":"🔁","c":"#C026D3","subs":[{"id":"ass-1","n":"Streaming","e":"📺"},{"id":"ass-2","n":"Jornais e revistas","e":"📰"},{"id":"ass-3","n":"Software e nuvem","e":"☁️"},{"id":"ass-4","n":"Outros","e":"🔁"}]},{"id":"fer","n":"Férias e viagens","e":"✈️","c":"#0891B2","subs":[{"id":"fer-1","n":"Alimentação em viagem","e":"🍽️"},{"id":"fer-2","n":"Compras em viagem","e":"🛍️"},{"id":"fer-3","n":"Entretenimento em viagem","e":"🎟️"},{"id":"fer-4","n":"Hospedagem e hotel","e":"🏨"},{"id":"fer-5","n":"Passagens e transportes","e":"🚆"},{"id":"fer-6","n":"Outros","e":"✈️"}]},{"id":"pet","n":"Pet","e":"🐾","c":"#CA8A04","subs":[{"id":"pet-1","n":"Alimentação e consumo","e":"🦴"},{"id":"pet-2","n":"Banho e tosa","e":"✂️"},{"id":"pet-3","n":"Mimos","e":"🧸"},{"id":"pet-4","n":"Veterinário e medicamentos","e":"🏥"},{"id":"pet-5","n":"Outros","e":"🐾"}]},{"id":"edu","n":"Educação","e":"🎓","c":"#4338CA","subs":[]},{"id":"tax","n":"Taxas","e":"💳","c":"#DC2626","subs":[{"id":"tax-1","n":"Anuidade de cartão","e":"💳"},{"id":"tax-2","n":"Juros e multas","e":"⚠️"},{"id":"tax-3","n":"Tarifas bancárias","e":"🏦"},{"id":"tax-4","n":"Outros","e":"💳"}]},{"id":"out","n":"Outros","e":"❓","c":"#78716C","subs":[{"id":"out-1","n":"Doações","e":"🤲"},{"id":"out-2","n":"Família","e":"👨‍👩‍👧"},{"id":"out-3","n":"Não classificado","e":"🏷️"}]},{"id":"sal","n":"Salários e benefícios","e":"💼","c":"#0B7A34","tipo":"e","subs":[{"id":"sal-1","n":"Salário","e":"💵"},{"id":"sal-2","n":"13º e férias","e":"🎄"},{"id":"sal-3","n":"PLR e bônus","e":"🏆"},{"id":"sal-4","n":"Crédito alimentação","e":"🍽️"},{"id":"sal-5","n":"Crédito saúde","e":"🩺"},{"id":"sal-6","n":"Trabalho autônomo","e":"🧑‍💻"},{"id":"sal-7","n":"Outros rendimentos","e":"➕"}]},{"id":"ven","n":"Vendas","e":"🏷️","c":"#0E7490","tipo":"e","subs":[{"id":"ven-1","n":"Item usado","e":"📦"},{"id":"ven-2","n":"Outros","e":"🏷️"}]},{"id":"oen","n":"Outras entradas","e":"💰","c":"#4D7C0F","tipo":"e","subs":[{"id":"oen-1","n":"Restituição de imposto","e":"🧾"},{"id":"oen-2","n":"Outros","e":"💰"}]}];
 
 /* ============================================================
    Despesas — app pessoal de registro e controle
@@ -628,10 +672,10 @@ var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"
 
 /* ---------------- utilidades ---------------- */
 var KEY='despesas.v1';
-var SCHEMA=3;
+var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-16.7';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-17.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -732,6 +776,9 @@ function comprometido(mk){
   var por={},tot=0,n=0,compras={},ult=null;
   ocorrencias().forEach(function(o){
     if(o.pn<2)return;
+    /* Este bloco é dívida assumida. Uma venda parcelada a receber é o oposto
+       disso, então entrada nunca entra aqui — nem parcelada. */
+    if(eEntrada(o.cat))return;
     var m=mkey(o.d);
     if(m<=mk)return;
     por[m]=(por[m]||0)+o.v;tot+=o.v;n++;compras[o.oid]=1;
@@ -865,7 +912,7 @@ function novoDB(){
   return {
     v:SCHEMA,
     cats:SEED.map(function(c){
-      return {id:c.id,n:c.n,e:c.e,c:c.c,arq:false,
+      return {id:c.id,n:c.n,e:c.e,c:c.c,arq:false,tipo:c.tipo||null,
         subs:c.subs.map(function(s){return {id:s.id,n:s.n,e:s.e,arq:false};})};
     }),
     ordem:SEED.map(function(c){return c.id;}),
@@ -898,6 +945,9 @@ function migrar(d){
   d.cats=d.cats||[];d.exp=d.exp||[];d.prefs=d.prefs||{};
   /* formato 2 -> 3: só cria a coleção de moldes. Nenhum lançamento é tocado. */
   d.rec=d.rec||[];
+  /* formato 3 -> 4: entradas. Nada a converter — categoria sem `tipo` é saída,
+     que é exatamente o que toda categoria gravada até aqui significa. Nenhum
+     lançamento é lido, nenhum valor é reescrito. */
   d.ordem=d.ordem||d.cats.map(function(c){return c.id;});
   /* garante que a ordem cobre todas as categorias e só elas */
   var ids=d.cats.map(function(c){return c.id;});
@@ -929,6 +979,24 @@ function salvar(){
 /* ---------------- acessores ---------------- */
 function cat(id){for(var i=0;i<DB.cats.length;i++)if(DB.cats[i].id===id)return DB.cats[i];return null;}
 function sub(c,id){if(!c)return null;for(var i=0;i<c.subs.length;i++)if(c.subs[i].id===id)return c.subs[i];return null;}
+
+/* ---------------- lado: entrada ou saída ----------------
+   O lado mora na CATEGORIA, nunca no lançamento. Categoria sem `tipo` é saída,
+   e é isso que faz base antiga continuar valendo sem migrar um byte.
+   Cada lado soma o seu; a subtração acontece uma vez só, no fim. Nenhum lugar
+   do código inverte sinal. */
+function eEntrada(id){var c=cat(id);return !!(c&&c.tipo==='e');}
+function saidasDe(l){return l.filter(function(o){return !eEntrada(o.cat);});}
+function entradasDe(l){return l.filter(function(o){return eEntrada(o.cat);});}
+function somaDe(l){return l.reduce(function(a,b){return a+b.v;},0);}
+function saldoDe(l){return somaDe(entradasDe(l))-somaDe(saidasDe(l));}
+function temEntrada(l){for(var i=0;i<l.length;i++)if(eEntrada(l[i].cat))return true;return false;}
+/* valor com sinal para exibição: "− 300,00", "+ 8.900,00".
+   O sinal vem do VALOR, nunca do lado — senão um mês em que os estornos superam
+   as compras imprime "− -250,00", que foi exatamente o defeito que o teste
+   do filtro de lado pegou. */
+function brlSin(v,mais){return (v<0?'− ':(mais?'+ ':''))+brl(Math.abs(v));}
+function brlSinRS(v){return (v<0?'− R$ ':'+ R$ ')+brl(Math.abs(v));}
 function catsOrdenadas(incluirArq){
   return DB.ordem.map(cat).filter(function(c){return c&&(incluirArq||!c.arq);});
 }
@@ -997,13 +1065,14 @@ function topSubs(c,n){
 var S={
   aba:'reg',passo:'cat',
   cat:null,sub:null,
-  intD:'',centD:'',modo:'reais',
+  intD:'',centD:'',modo:'reais',sinal:1,
   data:null,pay:null,desc:'',parc:1,
   mesLista:mkey(hoje()),mesSum:mkey(hoje()),
-  fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',ordena:'data',periodo:'mes'
+  fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',ordena:'data',periodo:'mes',
+  fLado:'tudo'
 };
 function limparRascunho(){
-  S.cat=null;S.sub=null;S.intD='';S.centD='';S.modo='reais';
+  S.cat=null;S.sub=null;S.intD='';S.centD='';S.modo='reais';S.sinal=1;
   S.data=null;S.pay=null;S.desc='';S.parc=1;S.passo='cat';
 }
 
@@ -1011,6 +1080,9 @@ function limparRascunho(){
 function totalCents(){
   return (parseInt(S.intD||'0',10)||0)*100+parseInt((S.centD+'00').slice(0,2),10);
 }
+/* totalCents() continua sendo a MAGNITUDE digitada — é o que o teclado, o
+   "Confirmar" desabilitado e a prévia de parcelas leem. O sinal entra só aqui. */
+function valorFinal(){return totalCents()*(S.sinal<0?-1:1);}
 function fmtIntD(){
   var n=(S.intD||'0').replace(/^0+(?=\d)/,'');
   return n.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
@@ -1064,7 +1136,9 @@ function cabecalho(){
     var passos=['cat','sub','val'],i=passos.indexOf(S.passo);
     /* no passo 1 o título "Nova despesa" é redundante com a aba Registrar logo
        abaixo — é onde o nome do app cabe sem tirar nada de ninguém */
-    hdr.t.textContent=(S.passo==='cat')?'Despesas':'Nova despesa';
+    /* Do passo 2 em diante o título segue o LADO da categoria escolhida: dizer
+       "Nova despesa" enquanto se registra o salário é simplesmente errado. */
+    hdr.t.textContent=(S.passo==='cat')?'Despesas':(eEntrada(S.cat)?'Nova entrada':'Nova saída');
     if(S.cat)hdr.s.textContent=nomeCat(S.cat)+(S.sub?' · '+nomeSub(S.cat,S.sub):'');
     hdr.d.innerHTML=[0,1,2].map(function(k){
       return '<span class="dot '+(k===i?'on':(k<i?'done':''))+'"></span>';}).join('');
@@ -1182,10 +1256,12 @@ function telaValor(){
   var s=el('<section class="screen"><div class="val"></div></section>');
   var w=s.firstElementChild;
 
-  var amt=el('<div class="amount"><div class="k">Valor da despesa</div>'+
+  var ent=eEntrada(S.cat);
+  var amt=el('<div class="amount"><div class="k">Valor da '+(ent?'entrada':'saída')+'</div>'+
     '<div class="n"><span class="cur">R$</span><span class="fig"><span class="int">0</span><span class="dec">,00</span></span></div></div>');
   w.appendChild(amt);
   var rFig=amt.querySelector('.fig'),rInt=amt.querySelector('.int'),rDec=amt.querySelector('.dec');
+  var rN=amt.querySelector('.n'),rCur=amt.querySelector('.cur');
   var rPar=el('<div class="parc" hidden></div>');
   amt.appendChild(rPar);
 
@@ -1194,10 +1270,11 @@ function telaValor(){
   var cd=el('<button class="chip"><span class="k">Data</span><span class="v">'+esc(dtxt)+'</span></button>');
   cd.onclick=folhaData;
   var pe=S.pay?(PAGTOS.filter(function(p){return p[0]===S.pay;})[0]||['',''])[1]+' ':'';
-  var cp=el('<button class="chip"><span class="k">Pagamento</span><span class="v'+(S.pay?'':' sem')+'">'+(S.pay?pe+esc(S.pay):'opcional')+'</span></button>');
+  var cp=el('<button class="chip"><span class="k">'+(ent?'Recebimento':'Pagamento')+'</span><span class="v'+(S.pay?'':' sem')+'">'+(S.pay?pe+esc(S.pay):'opcional')+'</span></button>');
   cp.onclick=folhaPagto;
   var cx=el('<button class="chip"><span class="k">Parcelas</span><span class="v'+(S.parc>1?'':' sem')+'">'+
     (S.parc>1?(S.parc+'×'):'à vista')+'</span></button>');
+  var cxv=cx.querySelector('.v');
   cx.onclick=folhaParcelas;
   chips.appendChild(cd);chips.appendChild(cp);chips.appendChild(cx);
   w.appendChild(chips);
@@ -1214,6 +1291,20 @@ function telaValor(){
     b.onclick=function(){kSoma(v);upd();};
     q.appendChild(b);
   });
+  /* O ± fica na mesma fileira dos somadores, mas separado por um respiro: os três
+     primeiros SOMAM dinheiro, o ± INVERTE o sentido. Encostados, pareceriam a
+     mesma coisa. */
+  q.appendChild(el('<span class="gap"></span>'));
+  var rSig=el('<button class="sig" aria-pressed="false" aria-label="Inverter o sinal">±</button>');
+  rSig.onclick=function(){
+    S.sinal=(S.sinal<0?1:-1);
+    /* valor negativo não combina com parcelamento: estornar parcela a parcela é
+       o item 12 do backlog, cancelado. */
+    if(S.sinal<0)S.parc=1;
+    cxv.textContent='à vista';cxv.className='v sem';
+    upd();
+  };
+  q.appendChild(rSig);
   ['1','2','3','4','5','6','7','8','9','v','0','b','ok'].forEach(function(d){
     var b;
     if(d==='ok'){b=el('<button class="key go">Confirmar</button>');b.onclick=confirmar;}
@@ -1227,14 +1318,25 @@ function telaValor(){
   var rGo=k.querySelector('.go'),rVir=k.querySelector('.comma');
   function upd(){
     var t=totalCents();
+    var neg=(S.sinal<0);
     rInt.textContent=fmtIntD();
     rDec.textContent=','+decD();
     rDec.classList.toggle('typed',decDigitado());
     rFig.classList.toggle('zero',t===0);
     rGo.disabled=(t===0);
     rVir.disabled=(S.modo==='cent');
+    /* Três avisos ao mesmo tempo para o estorno, em três lugares da tela: o
+       número, o próprio ± e o botão de confirmar. Um toque sem querer no ± tem
+       de ser impossível de não ver. */
+    rN.classList.toggle('neg',neg);
+    rN.classList.toggle('rec',ent&&!neg);
+    rCur.textContent=neg?'− R$':'R$';
+    rSig.setAttribute('aria-pressed',neg?'true':'false');
+    rGo.textContent=neg?'Confirmar estorno':'Confirmar';
+    rGo.classList.toggle('dan',neg);
+    cx.disabled=neg;
     /* o app sempre pede o TOTAL; esta linha mostra na hora o que isso vira por mês */
-    if(S.parc>1&&t>0){
+    if(S.parc>1&&t>0&&!neg){
       var base=S.data||hoje();
       var fim=addMesData(base,S.parc-1);
       rPar.innerHTML='Total da compra · <b>'+S.parc+'× de R$ '+brl(fatiar(t,S.parc)[0])+'</b> · '+
@@ -1248,16 +1350,16 @@ function telaValor(){
   return s;
 }
 function confirmar(){
-  var v=totalCents();
+  var v=valorFinal();
   if(!v)return;
   var c=cat(S.cat);
   var reg={id:uid('e'),d:S.data||hoje(),cat:S.cat,sub:S.sub||null,v:v,
            pay:S.pay||null,desc:S.desc||'',ts:Date.now()};
-  if(S.parc>1&&S.parc<=MAXPARC)reg.par=S.parc;
+  if(S.parc>1&&S.parc<=MAXPARC&&v>0)reg.par=S.parc;
   DB.exp.unshift(reg);
   if(!salvar()){DB.exp.shift();return;}
-  toast('Salvo em '+c.n,
-        (reg.par?(reg.par+'× de R$ '+brl(fatiar(v,reg.par)[0])):('R$ '+brl(v)))+
+  toast((v<0?'Estorno salvo em ':'Salvo em ')+c.n,
+        (reg.par?(reg.par+'× de R$ '+brl(fatiar(v,reg.par)[0])):('R$ '+brl(Math.abs(v))))+
         ' · '+diaLabel(reg.d).split(' · ')[0],'Desfazer',function(){
     DB.exp=DB.exp.filter(function(e){return e.id!==reg.id;});
     salvar();render();
@@ -1275,6 +1377,8 @@ function filtrados(){
   var out=ocorrencias();
   if(S.periodo==='mes')out=out.filter(function(e){return mkey(e.d)===S.mesLista;});
   else if(S.periodo==='ano')out=out.filter(function(e){return e.d.slice(0,4)===S.mesLista.slice(0,4);});
+  if(S.fLado==='saida')out=saidasDe(out);
+  else if(S.fLado==='entrada')out=entradasDe(out);
   if(S.fCat)out=out.filter(function(e){return e.cat===S.fCat;});
   if(S.fSub)out=out.filter(function(e){return e.sub===S.fSub;});
   if(S.fPay)out=out.filter(function(e){return e.pay===S.fPay;});
@@ -1297,10 +1401,35 @@ function filtrados(){
 }
 function filtrosAtivos(){return !!(S.fSub||S.fPay||S.fMin!=null||S.fMax!=null);}
 
+/* A base só ganha o seletor de lado quando existe lançamento de entrada. Sem
+   isso, a tela fica idêntica à de antes da v11 para quem só tem saídas. */
+function baseTemEntrada(){
+  for(var i=0;i<DB.exp.length;i++)if(eEntrada(DB.exp[i].cat))return true;
+  return false;
+}
+/* Quando a lista mistura os dois lados, "total" vira SALDO e a média deixa de
+   fazer sentido — soma de coisas de sinais opostos dividida por contagem não
+   diz nada. No lugar dela vão os dois lados em separado. */
+function resumoLista(vis){
+  if(!temEntrada(vis)){
+    var t=somaDe(vis);
+    return {v:'R$ '+brl(t),
+            c:vis.length+(vis.length===1?' lançamento':' lançamentos')+'<br>média R$ '+
+              brl(vis.length?Math.round(t/vis.length):0)};
+  }
+  var e=somaDe(entradasDe(vis)),sa=somaDe(saidasDe(vis)),sal=e-sa;
+  return {v:(sal<0?'− R$ ':'R$ ')+brl(Math.abs(sal)),
+          c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
+            '<br>'+brlSin(e,true)+' · '+brlSin(-sa,true)};
+}
+function totalLinha(itens){
+  if(!temEntrada(itens))return 'R$ '+brl(somaDe(itens));
+  var v=saldoDe(itens);
+  return (v<0?'− R$ ':'R$ ')+brl(Math.abs(v));
+}
 function telaLista(){
   var s=el('<section class="screen"></section>');
   var vis=filtrados();
-  var tot=vis.reduce(function(a,b){return a+b.v;},0);
 
   var top=el('<div class="topbar"></div>');
   var sw=el('<div class="searchwrap">'+ICO.busca+'<input type="search" placeholder="Buscar" autocomplete="off"></div>');
@@ -1319,6 +1448,16 @@ function telaLista(){
   bs[1].onclick=function(){moverPeriodo(1);};
   top.appendChild(pb);
   s.appendChild(top);
+
+  if(baseTemEntrada()){
+    var seg=el('<div class="seg"></div>');
+    [['tudo','Tudo'],['saida','Saídas'],['entrada','Entradas']].forEach(function(o){
+      var sb=el('<button aria-selected="'+(S.fLado===o[0])+'">'+o[1]+'</button>');
+      sb.onclick=function(){S.fLado=o[0];render();};
+      seg.appendChild(sb);
+    });
+    s.appendChild(seg);
+  }
 
   var fc=el('<div class="fchips"></div>');
   var todas=el('<button class="fchip" aria-pressed="'+(!S.fCat)+'">Todas</button>');
@@ -1347,25 +1486,24 @@ function telaLista(){
     return s;
   }
 
+  var rl=resumoLista(vis);
   s.appendChild(el('<div class="totbar"><div><div class="k">'+esc(lbl.textContent)+'</div>'+
-    '<div class="v tnum">R$ '+brl(tot)+'</div></div>'+
-    '<div class="c">'+vis.length+(vis.length===1?' lançamento':' lançamentos')+'<br>média R$ '+
-    brl(vis.length?Math.round(tot/vis.length):0)+'</div></div>'));
+    '<div class="v tnum">'+rl.v+'</div></div>'+
+    '<div class="c">'+rl.c+'</div></div>'));
 
   var sc=el('<div class="scroll"></div>');
   var brl2=bannerRecorrentes();
   if(brl2){brl2.style.margin='0 0 12px';sc.appendChild(brl2);}
   if(!vis.length){
     sc.appendChild(vazio('Nada neste filtro','Nenhum lançamento corresponde ao período e aos filtros escolhidos.','Limpar filtros',function(){
-      S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';S.periodo='tudo';render();}));
+      S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';S.fLado='tudo';S.periodo='tudo';render();}));
   }else if(S.ordena!=='data'){
     sc.appendChild(linhas(vis,true));
   }else{
     var dias=[];vis.forEach(function(e){if(dias.indexOf(e.d)<0)dias.push(e.d);});
     dias.forEach(function(d){
       var it=vis.filter(function(e){return e.d===d;});
-      var t=it.reduce(function(a,b){return a+b.v;},0);
-      var g=el('<div class="daygrp"><div class="dayhd"><span class="d">'+diaLabel(d)+'</span><span class="t tnum">R$ '+brl(t)+'</span></div></div>');
+      var g=el('<div class="daygrp"><div class="dayhd"><span class="d">'+diaLabel(d)+'</span><span class="t tnum">'+totalLinha(it)+'</span></div></div>');
       g.appendChild(linhas(it,false));
       sc.appendChild(g);
     });
@@ -1376,10 +1514,10 @@ function telaLista(){
 function redesenharLista(){
   /* redesenha só a parte de baixo para não perder o foco do campo de busca */
   var sc=main.querySelector('.scroll'),tb=main.querySelector('.totbar');
-  var vis=filtrados(),tot=vis.reduce(function(a,b){return a+b.v;},0);
+  var vis=filtrados(),rl=resumoLista(vis);
   if(tb){
-    tb.querySelector('.v').textContent='R$ '+brl(tot);
-    tb.querySelector('.c').innerHTML=vis.length+(vis.length===1?' lançamento':' lançamentos')+'<br>média R$ '+brl(vis.length?Math.round(tot/vis.length):0);
+    tb.querySelector('.v').textContent=rl.v;
+    tb.querySelector('.c').innerHTML=rl.c;
   }
   if(!sc)return;
   sc.innerHTML='';
@@ -1391,8 +1529,7 @@ function redesenharLista(){
   var dias=[];vis.forEach(function(e){if(dias.indexOf(e.d)<0)dias.push(e.d);});
   dias.forEach(function(d){
     var it=vis.filter(function(e){return e.d===d;});
-    var t=it.reduce(function(a,b){return a+b.v;},0);
-    var g=el('<div class="daygrp"><div class="dayhd"><span class="d">'+diaLabel(d)+'</span><span class="t tnum">R$ '+brl(t)+'</span></div></div>');
+    var g=el('<div class="daygrp"><div class="dayhd"><span class="d">'+diaLabel(d)+'</span><span class="t tnum">'+totalLinha(it)+'</span></div></div>');
     g.appendChild(linhas(it,false));
     sc.appendChild(g);
   });
@@ -1421,6 +1558,10 @@ function linhas(itens,comData){
       if(comData)meta.push(diaLabel(e.d));
       if(e.pay)meta.push(e.pay);
     }
+    var ent=eEntrada(e.cat);
+    /* O sinal já grita, mas "− 300,00" verde numa lista de entradas verdes se
+       confunde. A etiqueta no subtítulo é o que separa estorno de entrada. */
+    if(!ent&&e.v<0)meta.push('estorno');
     if(e.desc)meta.push(e.desc);
     var selo=seloParc(e);
     var box=el('<div class="swipe"><div class="del">Excluir</div></div>');
@@ -1428,7 +1569,7 @@ function linhas(itens,comData){
       '<span class="tx"><span class="t1">'+esc(nomeSub(e.cat,e.sub))+
         (selo?'<span class="pbadge">'+selo+'</span>':'')+'</span>'+
         '<span class="t2">'+esc(meta.join(' · '))+'</span></span>'+
-      '<span class="vl tnum">'+brl(e.v)+'</span></button>');
+      '<span class="vl tnum '+(ent?'vin':(e.v<0?'vneg':''))+'">'+brlSin(e.v,ent)+'</span></button>');
     box.querySelector('.del').onclick=function(){excluirLancamento(e);};
     box.appendChild(r);
     arrastarParaExcluir(box,r,function(){acoesLancamento(e);},function(){excluirLancamento(e);});
@@ -1496,10 +1637,16 @@ function telaResumo(){
   /* "Gasto em setembro" = o que VENCE em setembro. Uma parcela conta no mês
      dela, não no mês da compra. É a leitura de caixa. */
   var todas=ocorrencias();
-  var doMes=todas.filter(function(e){return mkey(e.d)===mk;});
-  var tot=doMes.reduce(function(a,b){return a+b.v;},0);
+  var noMes=todas.filter(function(e){return mkey(e.d)===mk;});
+  /* A partir daqui TUDO que já existia continua lendo `doMes`, que agora é só
+     saídas. É essa linha que garante o contrato da v11: o "Gasto em <mês>", a
+     comparação, a média, a projeção, o ticket e o ranking nunca veem entrada. */
+  var doMes=saidasDe(noMes);
+  var entMes=entradasDe(noMes);
+  var tot=somaDe(doMes);
+  var totEnt=somaDe(entMes);
   var ant=addMes(mk,-1);
-  var totAnt=todas.filter(function(e){return mkey(e.d)===ant;}).reduce(function(a,b){return a+b.v;},0);
+  var totAnt=somaDe(saidasDe(todas.filter(function(e){return mkey(e.d)===ant;})));
 
   var pb=el('<div class="topbar"><div class="periodbar"><button class="pb">'+ICO.esq+'</button>'+
     '<div class="lbl">'+mesLabel(mk)+'</div><button class="pb">'+ICO.dir+'</button></div></div>');
@@ -1526,8 +1673,21 @@ function telaResumo(){
   var b=bannerFechamento();
   if(b){b.style.margin='0 0 12px';sc.appendChild(b);}
 
+  /* O bloco de saldo só existe quando houve entrada no mês. Sem entrada, esta
+     tela fica byte a byte como era antes da v11 — que é o combinado. */
+  if(entMes.length){
+    var sal=totEnt-tot;
+    sc.appendChild(el('<div class="saldo">'+
+      '<div class="lin"><span class="lb">Entradas</span><span class="vv vin tnum">'+brlSinRS(totEnt)+'</span></div>'+
+      '<div class="lin"><span class="lb">Saídas</span><span class="vv tnum">'+brlSinRS(-tot)+'</span></div>'+
+      '<div class="lin tot"><span class="lb">Saldo de '+mesLabel(mk).split(' de ')[0]+'</span>'+
+      '<span class="vv tnum '+(sal<0?'vneg':'vin')+'">'+brlSin(sal)+'</span></div></div>'));
+  }
+
   if(!doMes.length){
-    sc.appendChild(vazio('Sem despesas em '+mesLabel(mk).split(' de ')[0],'Nada foi lançado neste mês.','Ir para hoje',function(){S.mesSum=mkey(hoje());render();}));
+    sc.appendChild(vazio('Sem despesas em '+mesLabel(mk).split(' de ')[0],
+      entMes.length?'Houve entrada neste mês, mas nenhuma saída.':'Nada foi lançado neste mês.',
+      'Ir para hoje',function(){S.mesSum=mkey(hoje());render();}));
     s.appendChild(sc);return s;
   }
 
@@ -1587,6 +1747,24 @@ function telaResumo(){
     bars.appendChild(b2);
   });
   sc.appendChild(bars);
+
+  /* Bloco próprio, e de propósito NÃO é o mesmo do ranking: misturar os dois
+     faria o Salário virar a maior "saída" do mês. */
+  if(entMes.length){
+    var agE={};entMes.forEach(function(e){agE[e.cat]=(agE[e.cat]||0)+e.v;});
+    var rkE=Object.keys(agE).map(function(k){return {id:k,v:agE[k]};})
+      .sort(function(a,b){return b.v-a.v;});
+    sc.appendChild(el('<div class="glabel">Entradas por categoria</div>'));
+    var we=el('<div class="optwrap"></div>');
+    rkE.forEach(function(r){
+      var ce=cat(r.id)||{e:'❓',n:'—'};
+      var row=el('<div class="msk"><span class="mn">'+ce.e+' '+esc(ce.n)+'</span>'+
+        '<span class="mr tnum '+(r.v<0?'vneg':'vin')+'">'+brlSin(r.v,true)+'</span></div>');
+      we.appendChild(row);
+    });
+    sc.appendChild(we);
+  }
+
   s.appendChild(sc);
   return s;
 }
@@ -2687,18 +2865,84 @@ function folhaCategorias(){
     var nv=el('<button class="btnfull sec">Criar categoria</button>');
     nv.onclick=function(){fecharFolhas();folhaEditarCat(null);};
     b.appendChild(nv);
+    /* A semente só roda na primeira execução, para não mexer numa taxonomia que
+       o dono já ajustou. Numa base que já existe, isto é o que evita criar 3
+       categorias e 11 sub-categorias na mão, uma tela de cada vez. */
+    if(faltamEntradas().length){
+      var imp=el('<button class="btnfull sec">Adicionar categorias de entrada sugeridas</button>');
+      imp.onclick=importarEntradas;
+      b.appendChild(imp);
+      b.appendChild(el('<div class="hint">Salários e benefícios, Vendas e Outras entradas. '+
+        'Só cria o que ainda não existe e entra no fim da lista.</div>'));
+    }
   },{cancelar:'Fechar'});
+}
+/* nomes comparados sem acento e sem caixa: "Salarios" não vira uma segunda
+   "Salários" se o dono já tiver criado a dele na mão */
+function normNome(x){
+  x=String(x||'').toLowerCase().trim();
+  try{x=x.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}
+  return x;
+}
+function entradasSugeridas(){
+  return SEED.filter(function(c){return c.tipo==='e';});
+}
+function faltamEntradas(){
+  var tem={};
+  DB.cats.forEach(function(c){tem[normNome(c.n)]=1;});
+  return entradasSugeridas().filter(function(c){return !tem[normNome(c.n)];});
+}
+function importarEntradas(){
+  var f=faltamEntradas();
+  if(!f.length)return;
+  var ns=f.reduce(function(a,c){return a+c.subs.length;},0);
+  fecharFolhas();
+  confirmar2('Adicionar categorias de entrada?',
+    'Entram '+f.length+(f.length===1?' categoria':' categorias')+' e '+ns+' sub-categorias. '+
+    'Nada do que já existe é alterado. Elas entram no fim da lista, então nenhuma categoria '+
+    'sua sai da grade de registro.','Adicionar',false,function(){
+      f.forEach(function(c){
+        /* id da semente pode colidir numa base antiga; nesse caso gera outro */
+        var id=cat(c.id)?uid('c'):c.id;
+        DB.cats.push({id:id,n:c.n,e:c.e,c:c.c,arq:false,tipo:'e',
+          subs:c.subs.map(function(x){
+            return {id:(id===c.id?x.id:uid('s')),n:x.n,e:x.e,arq:false};
+          })});
+        DB.ordem.push(id);
+      });
+      salvar();render();
+      toast('Categorias adicionadas',f.length+' de entrada · '+ns+' sub-categorias','',null);
+    });
 }
 function folhaEditarCat(c){
   var novo=!c;
   folha(novo?'Nova categoria':'Editar categoria',function(b){
     var fn=el('<div class="field"><div class="k">Nome</div><input maxlength="40" value="'+esc(novo?'':c.n)+'" placeholder="Ex.: Educação"></div>');
     var fe=el('<div class="field"><div class="k">Emoji</div><input maxlength="4" value="'+esc(novo?'🏷️':c.e)+'"></div>');
+    /* O tipo trava assim que existe lançamento: virar uma categoria de saída em
+       entrada reescreveria o significado de todos os meses passados de uma vez —
+       o Resumo de junho mudaria sozinho. É o mesmo teste `usada` que já protege
+       a exclusão, algumas linhas abaixo. */
+    var jaUsada=!novo&&DB.exp.some(function(e){return e.cat===c.id;});
+    var ftp=el('<div class="field row'+(jaUsada?' off':'')+'"><span><span class="k">Tipo</span>'+
+      '<span class="v">'+((!novo&&c.tipo==='e')?'Entrada':'Saída')+'</span></span></div>');
+    var selTipo=el('<select'+(jaUsada?' disabled':'')+'>'+
+      '<option value="s"'+((novo||c.tipo!=='e')?' selected':'')+'>Saída</option>'+
+      '<option value="e"'+((!novo&&c.tipo==='e')?' selected':'')+'>Entrada</option></select>');
+    selTipo.onchange=function(){
+      ftp.querySelector('.v').textContent=(selTipo.value==='e')?'Entrada':'Saída';
+    };
+    ftp.appendChild(selTipo);
+
     var fc=el('<div class="field row"><span><span class="k">Cor</span><span class="v">'+esc(novo?'#7C7C86':c.c)+'</span></span></div>');
     var inpc=el('<input type="color" value="'+(novo?'#7C7C86':c.c)+'" style="width:44px;height:32px;border:none;background:none">');
     inpc.oninput=function(){fc.querySelector('.v').textContent=inpc.value.toUpperCase();};
     fc.appendChild(inpc);
-    b.appendChild(fn);b.appendChild(fe);b.appendChild(fc);
+    b.appendChild(fn);b.appendChild(fe);b.appendChild(ftp);
+    if(jaUsada)b.appendChild(el('<div class="hint">O tipo não pode mudar: esta categoria já tem '+
+      DB.exp.filter(function(e){return e.cat===c.id;}).length+
+      ' lançamentos. Trocar o lado reescreveria o Resumo de todos os meses passados.</div>'));
+    b.appendChild(fc);
 
     var ok=el('<button class="btnfull">Salvar</button>');
     ok.onclick=function(){
@@ -2706,11 +2950,15 @@ function folhaEditarCat(c){
       if(!nome){alerta('Nome obrigatório','Toda categoria precisa de um nome.');return;}
       var emo=fe.querySelector('input').value.trim()||'🏷️';
       var cor=inpc.value;
+      var tp=(selTipo.value==='e')?'e':null;
       if(novo){
         var id=uid('c');
-        DB.cats.push({id:id,n:nome,e:emo,c:cor,arq:false,subs:[]});
+        DB.cats.push({id:id,n:nome,e:emo,c:cor,arq:false,tipo:tp,subs:[]});
         DB.ordem.push(id);
-      }else{c.n=nome;c.e=emo;c.c=cor;}
+      }else{
+        c.n=nome;c.e=emo;c.c=cor;
+        if(!jaUsada)c.tipo=tp;   /* travado quando já há lançamento */
+      }
       salvar();fecharFolhas();render();
     };
     b.appendChild(ok);
@@ -2875,9 +3123,10 @@ function csvCampo(v){
    coluna de valor e fechar com o gasto do período. As colunas de parcela e o
    id_compra permitem reagrupar quando for preciso. */
 function exportarCSV(){
-  var l=['id;id_compra;data;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao'];
+  var l=['id;id_compra;data;tipo;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao'];
   ocorrencias().sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);}).forEach(function(e){
-    l.push([e.id,e.oid,e.d,nomeCat(e.cat),nomeSub(e.cat,e.sub),brl(e.v),
+    l.push([e.id,e.oid,e.d,(eEntrada(e.cat)?'entrada':'saida'),
+            nomeCat(e.cat),nomeSub(e.cat,e.sub),brl(e.v),
             e.pi,e.pn,brl(e.vt),e.dc,e.pay||'',e.desc||'']
       .map(csvCampo).join(';'));
   });
@@ -3031,6 +3280,10 @@ try{
     window.__parc={fatiar:fatiar,addMesData:addMesData,nParc:nParc,
                    ocorrenciasDe:ocorrenciasDe,ocorrencias:ocorrencias,
                    comprometido:comprometido,MAXPARC:MAXPARC,SCHEMA:SCHEMA};
+    window.__ent={eEntrada:eEntrada,saidasDe:saidasDe,entradasDe:entradasDe,
+                  somaDe:somaDe,saldoDe:saldoDe,valorFinal:valorFinal,
+                  faltamEntradas:faltamEntradas,importarEntradas:importarEntradas,
+                  normNome:normNome,baseTemEntrada:baseTemEntrada,S:S};
     window.__rec={compsDe:compsDe,dataComp:dataComp,pendentes:pendentes,
                   valorSugerido:valorSugerido,confirmadosDe:confirmadosDe,
                   pularComp:pularComp,reativarComp:reativarComp,rec:rec,
