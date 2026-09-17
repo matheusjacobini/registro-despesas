@@ -675,7 +675,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-17.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-17.2';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -997,6 +997,19 @@ function temEntrada(l){for(var i=0;i<l.length;i++)if(eEntrada(l[i].cat))return t
    do filtro de lado pegou. */
 function brlSin(v,mais){return (v<0?'− ':(mais?'+ ':''))+brl(Math.abs(v));}
 function brlSinRS(v){return (v<0?'− R$ ':'+ R$ ')+brl(Math.abs(v));}
+/* Com estorno, o total de um mês ou de uma categoria pode fechar em ZERO ou
+   negativo. Dividir por ele produz NaN ("NaN% da categoria" chegou à tela) ou
+   um percentual sem sentido, e largura de barra negativa não existe. Em vez de
+   esconder, o app mostra um traço — que é a resposta honesta para "que fatia
+   isto é de zero?". */
+function pctLabel(v,tot,suf){
+  if(!(tot>0))return '—';
+  return (v/tot*100).toFixed(1).replace('.',',')+'% '+suf;
+}
+function largBarra(v,max){
+  if(!(max>0))return 0;
+  return Math.max(0,Math.min(100,v/max*100));
+}
 function catsOrdenadas(incluirArq){
   return DB.ordem.map(cat).filter(function(c){return c&&(incluirArq||!c.arq);});
 }
@@ -1737,12 +1750,11 @@ function telaResumo(){
   var bars=el('<div class="bars"></div>');
   rank.forEach(function(r){
     var c=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
-    var pc=(r.v/tot*100);
     var b2=el('<button class="barrow" style="--c:'+c.c+'">'+
       '<span class="bn"><span>'+c.e+'</span><em>'+esc(c.n)+'</em></span>'+
       '<span class="bv tnum">R$ '+brl(r.v)+'</span>'+
-      '<span class="track"><span class="fill" style="width:'+(r.v/max*100).toFixed(2)+'%"></span></span>'+
-      '<span class="bp tnum">'+pc.toFixed(1).replace('.',',')+'% do mês</span></button>');
+      '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span></span>'+
+      '<span class="bp tnum">'+pctLabel(r.v,tot,'do mês')+'</span></button>');
     b2.onclick=function(){folhaDetalheCat(r.id,mk);};
     bars.appendChild(b2);
   });
@@ -2449,15 +2461,15 @@ function folhaDetalheCat(catId,mk){
   var max=rank.length?rank[0].v:1;
   folha(c.n+' · '+mesLabel(mk).split(' de ')[0],function(b){
     b.appendChild(el('<div class="hero" style="margin-bottom:12px"><div class="k">Total da categoria</div>'+
-      '<div class="big tnum">R$ '+brl(tot)+'</div></div>'));
+      '<div class="big tnum">'+(tot<0?'− R$ ':'R$ ')+brl(Math.abs(tot))+'</div></div>'));
     var bars=el('<div class="bars"></div>');
     rank.forEach(function(r){
       var s=sub(c,r.id);
       bars.appendChild(el('<div class="barrow" style="--c:'+c.c+'">'+
         '<span class="bn"><span>'+(s?s.e:'❓')+'</span><em>'+esc(s?s.n:'Sem sub-categoria')+'</em></span>'+
         '<span class="bv tnum">R$ '+brl(r.v)+'</span>'+
-        '<span class="track"><span class="fill" style="width:'+(r.v/max*100).toFixed(2)+'%"></span></span>'+
-        '<span class="bp tnum">'+(r.v/tot*100).toFixed(1).replace('.',',')+'% da categoria</span></div>'));
+        '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span></span>'+
+        '<span class="bp tnum">'+pctLabel(r.v,tot,'da categoria')+'</span></div>'));
     });
     b.appendChild(bars);
   },{cancelar:'Fechar'});
