@@ -291,6 +291,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .periodbar .pb:disabled{opacity:.3}
 .periodbar .pb svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .periodbar .lbl{text-align:center;font-size:15px;font-weight:600;letter-spacing:-.01em}
+/* A fileira mantém a largura inteira para as categorias. O primeiro chip
+   alterna entre "Todas" e "Limpar" — é troca, não acréscimo. A versão que
+   prendia o Limpar à esquerda e o Filtros à direita foi medida e derrubada:
+   sobravam 164px de 361 para os chips, pouco mais de um chip à mostra. */
+.chiprow{display:flex;align-items:center;gap:6px;padding:1px 16px 10px}
+.chiprow .rola{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.chiprow .rola::-webkit-scrollbar{display:none}
 .fchips{display:flex;gap:6px;overflow-x:auto;padding:1px 16px 10px;scrollbar-width:none}
 .fchips::-webkit-scrollbar{display:none}
 .fchip{
@@ -302,6 +309,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .fchip[aria-pressed="true"] .sw{background:rgba(255,255,255,.85)}
 .fchip.filt{color:var(--tint)}
 .fchip.filt[data-on="1"]{background:var(--tint);color:#fff}
+.fchip.limpar{background:var(--tint-soft);color:var(--tint);font-weight:600}
+.fchip .xs{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round}
+.fchip .fn{width:13px;height:13px;stroke:currentColor;stroke-width:1.9;fill:none;
+  stroke-linejoin:round;stroke-linecap:round}
+.fchip .ct{background:var(--tint);color:#fff;border-radius:9px;min-width:16px;height:16px;
+  display:grid;place-items:center;font-size:10.5px;font-weight:700;padding:0 4px}
+.fchip.filt[data-on="1"] .ct{background:#fff;color:var(--tint)}
+
+/* O período era um texto solto de 20px entre duas setas: sem fundo, sem
+   chevron, sem nada que dissesse "toque aqui" — e é o ÚNICO caminho para
+   Período e Ordenar por. Agora é uma pílula da altura das setas (32px), que de
+   quebra resolve o alvo de toque de 20px que a revisão v2 acusou. */
+/* precisa vencer `.periodbar .lbl`, que é mais específico que `.perbtn` */
+.periodbar .lbl.perbtn{display:flex;align-items:center;justify-content:center;gap:5px;
+  height:32px;padding:0 12px;border-radius:9px;background:var(--fill2);
+  font-size:15px;font-weight:600;letter-spacing:-.01em;min-width:0}
+.perbtn:active{background:var(--line2)}
+.perbtn em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.perbtn .cv{width:13px;height:13px;stroke:var(--tint);stroke-width:2.6;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 .totbar{
   margin:0 16px 12px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
@@ -731,7 +758,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-22.4';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-22.5';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -949,6 +976,9 @@ var ICO={
   dir:'<svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
   hnd:'<svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></svg>',
   fechar:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  baixo:'<svg class="cv" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  xis:'<svg class="xs" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  funil:'<svg class="fn" viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>',
   /* a marca do app: mesma rosa dos ventos do ícone, sem aro e sem cifrão —
      a 26px eles virariam sujeira. Usa currentColor: azul no claro, branca no escuro. */
   marca:'<svg class="marca" viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor" stroke="currentColor" stroke-linejoin="round" stroke-linecap="round"><path d="M50.00 7.00 L58.49 41.51 L93.00 50.00 L58.49 58.49 L50.00 93.00 L41.51 58.49 L7.00 50.00 L41.51 41.51 Z" stroke-width="5.5"/><path d="M73.33 26.67 L59.50 50.00 L73.33 73.33 L50.00 59.50 L26.67 73.33 L40.50 50.00 L26.67 26.67 L50.00 40.50 Z" stroke-width="4.68" opacity=".55"/></g></svg>'
@@ -957,7 +987,10 @@ var TABS=[
   ['reg','Registrar','<path d="M12 5v14M5 12h14"/>'],
   ['list','Lançamentos','<path d="M4 6h16M4 12h16M4 18h10"/>'],
   ['sum','Resumo','<path d="M5 20V10M12 20V4M19 20v-7"/>'],
-  ['cfg','Ajustes','<circle cx="12" cy="12" r="3"/><path d="M12 3v1.6m0 14.8V21M4.2 4.2l1.1 1.1m13.4 13.4l1.1 1.1M3 12h1.6m14.8 0H21M4.2 19.8l1.1-1.1M18.7 5.3l1.1-1.1"/>']
+  /* Engrenagem, não sol: o desenho anterior era um disco com oito raios curtos,
+     que a 22px é exatamente um sol. Seis dentes e não oito — com oito, a 22px a
+     serrilha vira um borrão cinza e some a leitura de "engrenagem". */
+  ['cfg','Ajustes','<path d="M9.7 2.3 L14.3 2.3 L14.5 4.8 L16.9 6.2 L19.3 5.1 L21.6 9.2 L19.5 10.6 L19.5 13.4 L21.6 14.8 L19.3 18.9 L16.9 17.8 L14.5 19.2 L14.3 21.7 L9.7 21.7 L9.5 19.2 L7.1 17.8 L4.7 18.9 L2.4 14.8 L4.5 13.4 L4.5 10.6 L2.4 9.2 L4.7 5.1 L7.1 6.2 L9.5 4.8 Z"/><circle cx="12" cy="12" r="3.4"/>']
 ];
 var PAGTOS=[['Crédito','💳'],['Débito','🏧'],['Pix','⚡'],['Dinheiro','💵']];
 var DENS={'2x3':{c:2,r:3,lab:'Amplo'},'2x4':{c:2,r:4,lab:'Equilibrado'},'2x5':{c:2,r:5,lab:'Compacto'}};
@@ -1541,6 +1574,28 @@ function filtrados(){
   return out;
 }
 function filtrosAtivos(){return !!(S.fSub||S.fPay||S.fMin!=null||S.fMax!=null);}
+/* Quantos filtros estão ativos DENTRO da folha "Filtros" — é o que o contador
+   do chip conta, porque é o que aquele botão abre. Categoria, lado e período
+   ficam de fora: eles têm controle próprio, visível na tela. */
+function nFiltros(){
+  var n=0;
+  if(S.fSub)n++;
+  if(S.fPay)n++;
+  if(S.fMin!=null)n++;
+  if(S.fMax!=null)n++;
+  return n;
+}
+/* Já aqui a pergunta é outra: existe QUALQUER coisa para limpar? Por isso
+   categoria, lado, período e busca entram. */
+function temFiltro(){
+  return !!(S.fCat||S.fBusca||filtrosAtivos()||S.fLado!=='tudo'||S.periodo!=='mes');
+}
+/* Um lugar só para o "volta tudo ao normal" — usado pelo chip Limpar, pelo
+   botão da folha de filtros e pelo estado vazio. */
+function limparTudo(){
+  S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
+  S.fLado='tudo';S.periodo='mes';
+}
 
 /* Rótulo do período, usado na barra de cima E na barra de totais — as duas
    precisam dizer a mesma coisa, senão o número grande fica sem dono. */
@@ -1574,15 +1629,21 @@ function baseTemEntrada(){
 /* Quando a lista mistura os dois lados, "total" vira SALDO e a média deixa de
    fazer sentido — soma de coisas de sinais opostos dividida por contagem não
    diz nada. No lugar dela vão os dois lados em separado. */
+/* Um lado só na lista não é "misto": filtrando Entradas, o ramo de baixo
+   repetia o total das entradas como se fosse o saldo e ainda imprimia
+   "+ R$ 0,00" de saídas. O ramo misto agora exige os DOIS lados presentes. */
+function temSaida(l){for(var i=0;i<l.length;i++)if(!eEntrada(l[i].cat))return true;return false;}
 function resumoLista(vis){
-  if(!temEntrada(vis)){
+  if(!temEntrada(vis)||!temSaida(vis)){
     var t=somaDe(vis);
     /* Média de um conjunto que mistura compra e devolução não diz nada — é o
        mesmo motivo pelo qual ela não existe no ramo misto, logo abaixo. */
     var temNeg=vis.some(function(o){return o.v<0;});
     return {v:(t<0?'− R$ ':'R$ ')+brl(Math.abs(t)),
             c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
-              (temNeg?'':('<br>média R$ '+brl(vis.length?Math.round(t/vis.length):0)))};
+              /* média de um lançamento só é o próprio lançamento: repetir o
+                 número grande logo abaixo dele não informa nada */
+              ((temNeg||vis.length<2)?'':('<br>média R$ '+brl(Math.round(t/vis.length))))};
   }
   var e=somaDe(entradasDe(vis)),sa=somaDe(saidasDe(vis)),sal=e-sa;
   /* A legenda traz a unidade, como o número grande logo acima dela, e a entrada
@@ -1590,8 +1651,12 @@ function resumoLista(vis){
      fica na cor do texto secundário: no app inteiro gastar não é vermelho. */
   return {v:brlRS(sal),
           c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
-            '<br><span class="vin nb">'+brlSinRS(e)+'</span> · '+
-            '<span class="nb">'+brlSinRS(-sa)+'</span>'};
+            /* uma linha por lado. Antes eram os dois na mesma linha separados
+               por "·", e quando o texto não cabia a quebra caía em qualquer
+               lugar, deixando o "·" pendurado no fim da primeira linha. Duas
+               linhas fixas leem melhor e não dependem da largura da tela. */
+            '<br><span class="vin nb">'+brlSinRS(e)+'</span>'+
+            '<br><span class="nb">'+brlSinRS(-sa)+'</span>'};
 }
 function totalLinha(itens){
   if(!temEntrada(itens)){
@@ -1612,10 +1677,14 @@ function telaLista(){
   top.appendChild(sw);
 
   var pb=el('<div class="periodbar"><button class="pb" aria-label="Anterior">'+ICO.esq+'</button>'+
-    '<button class="lbl"></button><button class="pb" aria-label="Próximo">'+ICO.dir+'</button></div>');
+        /* mantém a classe .lbl: ela é o nome do papel ("rótulo do período") e o
+       resto do app e das verificações já a conhece. .perbtn é só a aparência. */
+    '<button class="lbl perbtn" aria-haspopup="true"><em></em>'+ICO.baixo+'</button>'+
+    '<button class="pb" aria-label="Próximo">'+ICO.dir+'</button></div>');
   var bs=pb.querySelectorAll('.pb');
-  var lbl=pb.querySelector('.lbl');
-  lbl.textContent=rotuloPeriodo();
+  var lbl=pb.querySelector('.perbtn');
+  lbl.querySelector('em').textContent=rotuloPeriodo();
+  lbl.setAttribute('aria-label','Período: '+rotuloPeriodo()+'. Tocar para mudar.');
   lbl.onclick=folhaPeriodo;
   bs[0].disabled=!periodoNavega();bs[1].disabled=!periodoNavega();
   bs[0].onclick=function(){moverPeriodo(-1);};
@@ -1633,20 +1702,45 @@ function telaLista(){
     s.appendChild(seg);
   }
 
-  var fc=el('<div class="fchips"></div>');
-  var todas=el('<button class="fchip" aria-pressed="'+(!S.fCat)+'">Todas</button>');
-  todas.onclick=function(){S.fCat=null;S.fSub=null;render();};
-  fc.appendChild(todas);
+  var fc=el('<div class="chiprow"></div>');
+  var rola=el('<div class="rola"></div>');
+  /* O primeiro chip é "Todas" quando não há nada filtrado e "Limpar" quando há.
+     É troca, não acréscimo — por isso a faixa que rola continua com a largura
+     inteira da tela. A versão anterior prendia o Limpar à esquerda e o Filtros
+     à direita, e foi medida: sobravam 164px de 361, pouco mais de um chip.
+
+     A troca também não perde função: tocar de novo no chip de categoria aceso
+     já desmarca ele, então "Todas" sempre foi um segundo caminho para algo que
+     já existia. E com período ou lado filtrados, "Todas" não devolveria a pessoa
+     ao estado normal de qualquer forma — "Limpar" devolve. */
+  rola.appendChild(chipZero());
   var usadas={};DB.exp.forEach(function(e){usadas[e.cat]=1;});
   catsOrdenadas(true).forEach(function(c){
     if(!usadas[c.id])return;
     var b=el('<button class="fchip" aria-pressed="'+(S.fCat===c.id)+'"><span class="sw" style="--sw:'+c.c+'"></span>'+esc(c.n)+'</button>');
     b.onclick=function(){S.fCat=(S.fCat===c.id?null:c.id);S.fSub=null;render();};
-    fc.appendChild(b);
+    rola.appendChild(b);
   });
-  var bf=el('<button class="fchip filt" data-on="'+(filtrosAtivos()?1:0)+'">Filtros'+(filtrosAtivos()?' ✓':'')+'</button>');
+  /* O "Filtros" continua sendo o último item da rolagem, como sempre foi.
+     Tirá-lo de lá o deixaria sempre à vista — ganho real —, mas custava 84px da
+     faixa. Fica no backlog como assunto próprio, não de carona. */
+  var nf=nFiltros();
+  var bf=el('<button class="fchip filt" data-on="'+(nf?1:0)+'">'+ICO.funil+'Filtros'+
+    (nf?('<span class="ct">'+nf+'</span>'):'')+'</button>');
   bf.onclick=folhaFiltros;
-  fc.appendChild(bf);
+  rola.appendChild(bf);
+  fc.appendChild(rola);
+  /* A categoria escolhida pode nascer fora da parte visível da faixa: sem isto,
+     filtrar por "Férias e viagens" mostra uma lista filtrada sem nenhum chip
+     aceso à vista. */
+  if(S.fCat){
+    var ativo=rola.querySelector('.fchip[aria-pressed="true"]');
+    if(ativo)setTimeout(function(){
+      /* 'nearest' e não 'center': centralizar rolava a faixa mesmo quando o chip
+         já estava visível, e isso empurrava o 'Limpar' para fora da tela */
+      if(ativo.isConnected)ativo.scrollIntoView({block:'nearest',inline:'nearest'});
+    },0);
+  }
   s.appendChild(fc);
 
   if(!DB.exp.length){
@@ -1671,7 +1765,9 @@ function telaLista(){
   if(brl2){brl2.style.margin='0 0 12px';sc.appendChild(brl2);}
   if(!vis.length){
     sc.appendChild(vazio('Nada neste filtro','Nenhum lançamento corresponde ao período e aos filtros escolhidos.','Limpar filtros',function(){
-      S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';S.fLado='tudo';S.periodo='tudo';render();}));
+      /* era o único lugar que devolvia o período para "tudo" em vez de "mes":
+         limpar levava para uma tela diferente da que o app abre */
+      limparTudo();render();}));
   }else if(S.ordena!=='data'){
     sc.appendChild(linhas(vis,true));
   }else{
@@ -1686,7 +1782,33 @@ function telaLista(){
   s.appendChild(sc);
   return s;
 }
+/* O chip "Limpar" entra e sai conforme houver filtro. Digitar na busca é um
+   filtro, e a busca NÃO redesenha a tela inteira (isso perderia o foco do
+   campo) — por isso a fileira precisa de uma função de sincronia própria, e não
+   pode depender de render(). */
+function chipZero(){
+  if(temFiltro()){
+    var bl=el('<button class="fchip limpar" aria-label="Limpar todos os filtros">'+
+      ICO.xis+'Limpar</button>');
+    bl.onclick=function(){limparTudo();render();};
+    return bl;
+  }
+  var t=el('<button class="fchip" aria-pressed="true">Todas</button>');
+  t.onclick=function(){S.fCat=null;S.fSub=null;render();};
+  return t;
+}
+/* Digitar na busca é um filtro, e a busca NÃO redesenha a tela inteira (isso
+   perderia o foco do campo). Então a troca do primeiro chip precisa de uma
+   sincronia própria, que não dependa de render(). */
+function sincLimpar(rola){
+  if(!rola)return;
+  var primeiro=rola.firstElementChild;
+  if(!primeiro)return;
+  if(primeiro.classList.contains('limpar')===temFiltro())return;
+  rola.replaceChild(chipZero(),primeiro);
+}
 function redesenharLista(){
+  sincLimpar(main.querySelector('.chiprow .rola'));
   /* redesenha só a parte de baixo para não perder o foco do campo de busca */
   var sc=main.querySelector('.scroll'),tb=main.querySelector('.totbar');
   var vis=filtrados(),rl=resumoLista(vis);
@@ -2909,12 +3031,9 @@ function folhaFiltros(){
     b.appendChild(ap);
     var lp=el('<button class="btnfull sec">Limpar todos os filtros</button>');
     lp.onclick=function(){
-      S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
-      /* v12: o período volta para "Mês". Antes ele não era tocado, o que com
-         intervalo deixaria o usuário preso num recorte que ele mandou limpar.
-         E o seletor de lado volta para "Tudo" — era o defeito 2.6 da revisão v2:
-         o botão dizia "todos" e deixava a lista presa em Entradas. */
-      S.periodo='mes';S.fLado='tudo';
+      /* mesma função do chip "Limpar" da tela: um lugar só decide o que é
+         "voltar ao normal", senão os dois botões divergem com o tempo */
+      limparTudo();
       fecharFolhas();render();
     };
     b.appendChild(lp);
