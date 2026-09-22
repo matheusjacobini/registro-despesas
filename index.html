@@ -309,7 +309,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 }
 .totbar .k{font-size:12px;color:var(--muted)}
 .totbar .v{font-size:25px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
-.totbar .c{font-size:12px;color:var(--muted);text-align:right;line-height:1.45}
+/* O número grande é o dono da barra: ele NUNCA quebra. Quem cede espaço é a
+   legenda, e ela só pode quebrar no "·" — por isso cada valor vem embrulhado
+   em .nb. Sem isto, "+ R$ 999.400,00" partia em "+ R$" / "999.400,00". */
+.totbar .v{white-space:nowrap}
+.totbar .c{font-size:12px;color:var(--muted);text-align:right;line-height:1.45;
+  font-variant-numeric:tabular-nums;min-width:0}
+.totbar .c .nb{white-space:nowrap}
 
 .daygrp{margin-bottom:15px}
 .dayhd{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 6px}
@@ -564,6 +570,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    flex, o .pad não tem de quem herdar altura */
 .padbox{height:min(52vh,430px);display:flex;flex-direction:column;margin-top:10px}
 .padbox .pad{flex:1 1 auto;min-height:0}
+/* `.sheet-b>*{flex:0 0 auto}` congela a altura de todo filho para a folha poder
+   rolar. Este é a exceção: quando a folha se ajusta à de baixo, é ele que
+   estica para ocupar a diferença. */
+.sheet-b>.padbox.cresce{flex:1 1 auto;height:auto;min-height:min(52vh,430px)}
 .btnfull:disabled{opacity:.4}
 .hint{font-size:12.5px;color:var(--muted);line-height:1.45;padding:10px 4px 0}
 
@@ -721,7 +731,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-22.2';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-22.4';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1575,9 +1585,13 @@ function resumoLista(vis){
               (temNeg?'':('<br>média R$ '+brl(vis.length?Math.round(t/vis.length):0)))};
   }
   var e=somaDe(entradasDe(vis)),sa=somaDe(saidasDe(vis)),sal=e-sa;
-  return {v:(sal<0?'− R$ ':'R$ ')+brl(Math.abs(sal)),
+  /* A legenda traz a unidade, como o número grande logo acima dela, e a entrada
+     sai verde — a mesma cor que ela tem na lista e no bloco de saldo. A saída
+     fica na cor do texto secundário: no app inteiro gastar não é vermelho. */
+  return {v:brlRS(sal),
           c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
-            '<br>'+brlSin(e,true)+' · '+brlSin(-sa,true)};
+            '<br><span class="vin nb">'+brlSinRS(e)+'</span> · '+
+            '<span class="nb">'+brlSinRS(-sa)+'</span>'};
 }
 function totalLinha(itens){
   if(!temEntrada(itens)){
@@ -2051,8 +2065,38 @@ function folhaSobre(titulo,montar,opts){
   scrim.onclick=fechar;
   sh.querySelector('.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
   montar(sh.querySelector('.sheet-b'),fechar);
+  var deBaixo=layers.querySelector('.sheet');
   layers.appendChild(scrim);layers.appendChild(sh);
-  return {sh:sh,fechar:fechar};
+
+  /* Duas folhas empilhadas com alturas diferentes deixam à mostra uma faixa da
+     de baixo — e o que se vê ali é o CABEÇALHO dela, então a tela parece ter
+     dois títulos e dois "Cancelar". Media 67px no iPhone SE e 91px no 14.
+
+     A folha de cima passa a assumir a altura da de baixo. Quem absorve a
+     diferença é o conteúdo marcado com `.cresce` — no caso do teclado, isso o
+     deixa mais alto, que é exatamente o que a tela de registro já faz: lá o
+     teclado ocupa o que sobra da tela (tecla de 44px no SE, 88px no 14).
+
+     Se a de baixo for MENOR que o conteúdo natural desta, não encolhemos nada:
+     a de cima fica maior e cobre. Faixa negativa não existe. */
+  function casar(){
+    if(!deBaixo||!deBaixo.isConnected)return;
+    sh.style.height='';
+    var natural=sh.getBoundingClientRect().height;
+    var alvo=deBaixo.getBoundingClientRect().height;
+    if(alvo>natural+1)sh.style.height=alvo+'px';
+  }
+  if(opts.casar){
+    casar();
+    /* girar o aparelho muda as duas alturas; sem isto a de cima ficaria presa
+       no número medido em retrato */
+    window.addEventListener('resize',casar);
+    var fecharOrig=fechar;
+    fechar=function(){window.removeEventListener('resize',casar);fecharOrig();};
+    scrim.onclick=fechar;
+    sh.querySelector('.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
+  }
+  return {sh:sh,fechar:function(){fechar();}};
 }
 
 /* Folha de valor: o visor e o teclado da tela de registro, usados para editar um
@@ -2069,11 +2113,14 @@ function folhaValor(titulo,cents,cfg,cb){
   }});
   var f=folhaSobre(titulo,function(b){
     b.appendChild(bv.amt);
-    var cx=el('<div class="padbox"></div>');
+    /* `cresce`: é este bloco que absorve a diferença de altura quando a folha
+       se ajusta à de baixo. Sem ele, a sobra viraria um buraco entre o visor e
+       os somadores — que foi a opção D do estudo, descartada por isso. */
+    var cx=el('<div class="padbox cresce"></div>');
     cx.appendChild(bv.pad);
     b.appendChild(cx);
     bv.upd();
-  });
+  },{casar:true});
   return f;
 }
 

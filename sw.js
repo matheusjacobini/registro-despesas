@@ -1,7 +1,7 @@
 /* Service worker — só entra em cena quando o app é servido por HTTPS.
    Guarda o app para funcionar sem rede. Os dados ficam no localStorage,
    nunca passam por aqui. */
-var CACHE='despesas-2026-09-22.2';
+var CACHE='despesas-2026-09-22.4';
 var ARQS=['./','./index.html','./manifest.webmanifest','./icon180.png'];
 self.addEventListener('install',function(e){
   self.skipWaiting();
