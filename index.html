@@ -519,6 +519,52 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .btnfull.sec{background:var(--fill2);color:var(--tint)}
 .btnfull.dan{background:var(--fill2);color:var(--danger)}
 .btnfull:disabled{opacity:.4}
+
+/* ============================================================
+   CALENDÁRIO (v12)
+   Alvo de toque de 44px em cada dia — o mínimo da Apple. Com 7 colunas em
+   393px de tela, cada célula fica com ~48px de largura, então a folga é real
+   e não depende de o dedo acertar o número.
+   ============================================================ */
+.calwrap{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 10px 12px}
+.calhd{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:6px;padding:2px 0 6px}
+.calhd .pb{display:grid;place-items:center;height:32px;border-radius:9px;color:var(--tint);background:var(--fill2)}
+.calhd .pb:disabled{opacity:.3}
+.calhd .pb svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.calhd .m{text-align:center;font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+.caldow{display:grid;grid-template-columns:repeat(7,1fr)}
+.caldow span{text-align:center;font-size:11px;color:var(--muted);padding:3px 0 5px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cday{height:44px;position:relative;display:grid;place-items:center}
+/* a faixa do intervalo fica ATRÁS do número, encostando de célula em célula
+   para virar uma barra contínua em vez de 15 pastilhas soltas */
+.cday i{position:absolute;inset:3px 0;display:none;background:var(--tint-soft)}
+.cday.in i{display:block}
+.cday.ini i{border-radius:19px 0 0 19px;left:3px}
+.cday.fim i{border-radius:0 19px 19px 0;right:3px}
+.cday b{position:relative;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;
+  font-size:15px;font-weight:400;font-variant-numeric:tabular-nums}
+.cday.ponta b{background:var(--tint);color:#fff;font-weight:600}
+.cday.hoje b{box-shadow:inset 0 0 0 1.5px var(--tint)}
+.cday.hoje.ponta b{box-shadow:none}
+.cday.out{pointer-events:none}
+.cday:active b{opacity:.55}
+.calft{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:9px 4px 5px;margin-top:4px;border-top:.5px solid var(--line);min-height:44px}
+.calft .l{font-size:13px;color:var(--muted)}
+.calft .l b{color:var(--ink);font-weight:600}
+.calft .z{color:var(--tint);font-size:13.5px;font-weight:500;
+  min-height:44px;min-width:44px;display:grid;place-items:center;margin:-9px 0}
+
+/* linha de valor que abre o teclado do app, na folha de edição */
+.field.tap .v{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.field.tap .v.vneg{color:var(--danger)}
+.field.tap:active{background:var(--fill2)}
+/* a folha de valor precisa dar altura ao teclado: dentro do .sheet-b, que é
+   flex, o .pad não tem de quem herdar altura */
+.padbox{height:min(52vh,430px);display:flex;flex-direction:column;margin-top:10px}
+.padbox .pad{flex:1 1 auto;min-height:0}
+.btnfull:disabled{opacity:.4}
 .hint{font-size:12.5px;color:var(--muted);line-height:1.45;padding:10px 4px 0}
 
 /* reordenação */
@@ -675,7 +721,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-17.2';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-22.2';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -709,6 +755,8 @@ function porExtenso(s){
   return (+s.slice(8))+' de '+MES[+s.slice(5,7)-1]+' de '+s.slice(0,4);
 }
 function diasEntre(a,b){return Math.round((parseYmd(b)-parseYmd(a))/86400000);}
+function addDias(s,n){var d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d);}
+function diaCurto(s){return (+s.slice(8))+' '+MESC[+s.slice(5,7)-1];}
 function diasNoMes(mk){var p=mk.split('-');return new Date(+p[0],+p[1],0).getDate();}
 
 /* ============================================================
@@ -997,13 +1045,20 @@ function temEntrada(l){for(var i=0;i<l.length;i++)if(eEntrada(l[i].cat))return t
    do filtro de lado pegou. */
 function brlSin(v,mais){return (v<0?'− ':(mais?'+ ':''))+brl(Math.abs(v));}
 function brlSinRS(v){return (v<0?'− R$ ':'+ R$ ')+brl(Math.abs(v));}
+/* Saldo não é fluxo: leva "R$" sempre e sinal só quando é negativo. Escrever
+   "+ R$" num saldo positivo daria a ele cara de entrada, que ele não é. */
+function brlRS(v){return (v<0?'− R$ ':'R$ ')+brl(Math.abs(v));}
 /* Com estorno, o total de um mês ou de uma categoria pode fechar em ZERO ou
    negativo. Dividir por ele produz NaN ("NaN% da categoria" chegou à tela) ou
    um percentual sem sentido, e largura de barra negativa não existe. Em vez de
    esconder, o app mostra um traço — que é a resposta honesta para "que fatia
    isto é de zero?". */
 function pctLabel(v,tot,suf){
-  if(!(tot>0))return '—';
+  /* Três casos em que "que fatia isto é do total?" não tem resposta:
+     total zero ou negativo; a própria fatia negativa (categoria estornada); e
+     fatia maior que o total, que acontece quando OUTRA categoria ficou negativa
+     — foi assim que a tela chegou a imprimir "200,0% do mês". */
+  if(!(tot>0)||v<0||v>tot)return '—';
   return (v/tot*100).toFixed(1).replace('.',',')+'% '+suf;
 }
 function largBarra(v,max){
@@ -1082,6 +1137,10 @@ var S={
   data:null,pay:null,desc:'',parc:1,
   mesLista:mkey(hoje()),mesSum:mkey(hoje()),
   fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',ordena:'data',periodo:'mes',
+  /* v12: dois recortes novos de período. `dia` usa S.dia; `faixa` usa S.de e S.ate,
+     sempre normalizados com de<=ate antes de serem gravados aqui. Nada disso é
+     persistido — é estado de tela, como o resto de S. */
+  dia:hoje(),de:hoje(),ate:hoje(),
   fLado:'tudo'
 };
 function limparRascunho(){
@@ -1089,29 +1148,60 @@ function limparRascunho(){
   S.data=null;S.pay=null;S.desc='';S.parc=1;S.passo='cat';
 }
 
-/* ---------------- valor: reais primeiro ---------------- */
-function totalCents(){
-  return (parseInt(S.intD||'0',10)||0)*100+parseInt((S.centD+'00').slice(0,2),10);
+/* ---------------- valor: reais primeiro ----------------
+   As funções abaixo trabalham sobre um OBJETO de digitação — `{intD,centD,modo,
+   sinal}` — e não sobre S diretamente. S é só o objeto usado pela tela de
+   registro. Foi assim que a folha de valor da edição (v12) conseguiu usar o
+   mesmo teclado sem encostar no rascunho do registro: ela passa o objeto dela.
+   As versões sem sufixo continuam existindo e continuam lendo S, para que nada
+   escrito antes da v12 precise mudar. */
+function centsDe(st){
+  return (parseInt(st.intD||'0',10)||0)*100+parseInt((st.centD+'00').slice(0,2),10);
 }
+function totalCents(){return centsDe(S);}
 /* totalCents() continua sendo a MAGNITUDE digitada — é o que o teclado, o
    "Confirmar" desabilitado e a prévia de parcelas leem. O sinal entra só aqui. */
-function valorFinal(){return totalCents()*(S.sinal<0?-1:1);}
-function fmtIntD(){
-  var n=(S.intD||'0').replace(/^0+(?=\d)/,'');
+function valorDe(st){return centsDe(st)*(st.sinal<0?-1:1);}
+function valorFinal(){return valorDe(S);}
+function fmtIntDe(st){
+  var n=(st.intD||'0').replace(/^0+(?=\d)/,'');
   return n.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
 }
-function decD(){return (S.centD+'00').slice(0,2);}
-function decDigitado(){return S.modo==='cent'||S.centD!=='';}
-function kDig(d){
-  if(S.modo==='cent'){if(S.centD.length<2)S.centD+=d;}
-  else{if(S.intD.length<7)S.intD=(S.intD+d).replace(/^0+(?=\d)/,'');}
+function fmtIntD(){return fmtIntDe(S);}
+function decDe(st){return (st.centD+'00').slice(0,2);}
+function decD(){return decDe(S);}
+function decDigitadoDe(st){return st.modo==='cent'||st.centD!=='';}
+function decDigitado(){return decDigitadoDe(S);}
+function kDigEm(st,d){
+  if(st.modo==='cent'){if(st.centD.length<2)st.centD+=d;}
+  else{if(st.intD.length<7)st.intD=(st.intD+d).replace(/^0+(?=\d)/,'');}
 }
-function kVirg(){if(S.modo!=='cent')S.modo='cent';}
-function kBack(){
-  if(S.modo==='cent'){if(S.centD)S.centD=S.centD.slice(0,-1);else S.modo='reais';}
-  else S.intD=S.intD.slice(0,-1);
+function kDig(d){kDigEm(S,d);}
+function kVirgEm(st){
+  if(st.modo==='cent')return;
+  st.modo='cent';
+  /* Num valor que já veio preenchido (edição), os centavos chegam com dois
+     dígitos. Sem esta linha, tocar na vírgula e digitar não faria NADA: o
+     campo de centavos já estaria cheio. Então a primeira vírgula depois de
+     semear limpa os centavos, para que sejam redigitados. */
+  if(st.semeado){st.centD='';st.semeado=false;}
 }
-function kSoma(n){S.intD=String((parseInt(S.intD||'0',10)||0)+n);}
+function kVirg(){kVirgEm(S);}
+function kBackEm(st){
+  if(st.modo==='cent'){if(st.centD)st.centD=st.centD.slice(0,-1);else st.modo='reais';}
+  else st.intD=st.intD.slice(0,-1);
+}
+function kBack(){kBackEm(S);}
+function kSomaEm(st,n){st.intD=String((parseInt(st.intD||'0',10)||0)+n);}
+function kSoma(n){kSomaEm(S,n);}
+/* Objeto de digitação já preenchido com um valor que existe (edição). O sinal
+   vem do próprio valor, nunca de um parâmetro à parte — foi assim que a v11
+   evitou o "− -250,00". */
+function estadoValor(cents){
+  var a=Math.abs(cents||0);
+  return {intD:String(Math.floor(a/100)),centD:('0'+(a%100)).slice(-2),
+          modo:'reais',sinal:(cents<0?-1:1),semeado:true};
+}
 
 /* ---------------- render ---------------- */
 var main=document.getElementById('main');
@@ -1262,6 +1352,76 @@ function telaSub(){
 }
 
 /* ============================================================
+   VISOR + TECLADO (componente)
+   Extraído da tela 3 na v12 para que a folha de valor da edição use
+   exatamente o mesmo componente — mesmo visor, mesmas teclas, mesmo ±,
+   mesmos três avisos de estorno. O DOM produzido é idêntico ao que a tela
+   de registro produzia antes, classe por classe: é isso que mantém as
+   verificações de geometria e de estorno valendo sem tocar nelas.
+
+   cfg = {ent:bool, okTxt:'Confirmar', onOk:fn, onUpd:fn(st), onSinal:fn(st)}
+   ============================================================ */
+function blocoValor(st,cfg){
+  cfg=cfg||{};
+  var amt=el('<div class="amount"><div class="k">Valor da '+(cfg.ent?'entrada':'saída')+'</div>'+
+    '<div class="n"><span class="cur">R$</span><span class="fig"><span class="int">0</span>'+
+    '<span class="dec">,00</span></span></div></div>');
+  var rFig=amt.querySelector('.fig'),rInt=amt.querySelector('.int'),rDec=amt.querySelector('.dec');
+  var rN=amt.querySelector('.n'),rCur=amt.querySelector('.cur');
+  var rPar=el('<div class="parc" hidden></div>');
+  amt.appendChild(rPar);
+
+  var pad=el('<div class="pad"><div class="quick"></div><div class="keys"></div></div>');
+  var q=pad.querySelector('.quick'),k=pad.querySelector('.keys');
+  [10,50,100].forEach(function(v){
+    var b=el('<button>+'+v+'</button>');
+    b.onclick=function(){kSomaEm(st,v);upd();};
+    q.appendChild(b);
+  });
+  /* O ± fica na mesma fileira dos somadores, mas separado por um respiro: os três
+     primeiros SOMAM dinheiro, o ± INVERTE o sentido. Encostados, pareceriam a
+     mesma coisa. */
+  q.appendChild(el('<span class="gap"></span>'));
+  var rSig=el('<button class="sig" aria-pressed="false" aria-label="Inverter o sinal">±</button>');
+  rSig.onclick=function(){
+    st.sinal=(st.sinal<0?1:-1);
+    if(cfg.onSinal)cfg.onSinal(st);
+    upd();
+  };
+  q.appendChild(rSig);
+  ['1','2','3','4','5','6','7','8','9','v','0','b','ok'].forEach(function(d){
+    var b;
+    if(d==='ok'){b=el('<button class="key go">Confirmar</button>');b.onclick=function(){if(cfg.onOk)cfg.onOk();};}
+    else if(d==='b'){b=el('<button class="key back" aria-label="Apagar">'+ICO.apagar+'</button>');b.onclick=function(){kBackEm(st);upd();};}
+    else if(d==='v'){b=el('<button class="key comma" aria-label="Centavos">,</button>');b.onclick=function(){kVirgEm(st);upd();};}
+    else{b=el('<button class="key">'+d+'</button>');b.onclick=function(){kDigEm(st,d);upd();};}
+    k.appendChild(b);
+  });
+  var rGo=k.querySelector('.go'),rVir=k.querySelector('.comma');
+
+  function upd(){
+    var t=centsDe(st),neg=(st.sinal<0);
+    rInt.textContent=fmtIntDe(st);
+    rDec.textContent=','+decDe(st);
+    rDec.classList.toggle('typed',decDigitadoDe(st));
+    rFig.classList.toggle('zero',t===0);
+    rGo.disabled=(t===0);
+    rVir.disabled=(st.modo==='cent');
+    /* Três avisos ao mesmo tempo para o estorno, em três lugares da tela: o
+       número, o próprio ± e o botão de confirmar. Um toque sem querer no ± tem
+       de ser impossível de não ver. */
+    rN.classList.toggle('neg',neg);
+    rN.classList.toggle('rec',!!cfg.ent&&!neg);
+    rCur.textContent=neg?'− R$':'R$';
+    rSig.setAttribute('aria-pressed',neg?'true':'false');
+    rGo.textContent=neg?(cfg.okNegTxt||'Confirmar estorno'):(cfg.okTxt||'Confirmar');
+    rGo.classList.toggle('dan',neg);
+    if(cfg.onUpd)cfg.onUpd(st,{par:rPar});
+  }
+  return {amt:amt,pad:pad,upd:upd,par:rPar,go:rGo,sig:rSig};
+}
+
+/* ============================================================
    TELA 3 — valor
    ============================================================ */
 function telaValor(){
@@ -1270,13 +1430,28 @@ function telaValor(){
   var w=s.firstElementChild;
 
   var ent=eEntrada(S.cat);
-  var amt=el('<div class="amount"><div class="k">Valor da '+(ent?'entrada':'saída')+'</div>'+
-    '<div class="n"><span class="cur">R$</span><span class="fig"><span class="int">0</span><span class="dec">,00</span></span></div></div>');
-  w.appendChild(amt);
-  var rFig=amt.querySelector('.fig'),rInt=amt.querySelector('.int'),rDec=amt.querySelector('.dec');
-  var rN=amt.querySelector('.n'),rCur=amt.querySelector('.cur');
-  var rPar=el('<div class="parc" hidden></div>');
-  amt.appendChild(rPar);
+  /* v12: visor e teclado vêm do componente. O que sobrou aqui é só o que é
+     exclusivo do registro — chips, descrição e a prévia de parcelas. */
+  var bv=blocoValor(S,{ent:ent,onOk:confirmar,onSinal:function(){
+    /* valor negativo não combina com parcelamento: estornar parcela a parcela é
+       o item 12 do backlog, cancelado. */
+    if(S.sinal<0)S.parc=1;
+    cxv.textContent='à vista';cxv.className='v sem';
+  },onUpd:function(st,r){
+    var t=centsDe(st),neg=(st.sinal<0);
+    cx.disabled=neg;
+    /* o app sempre pede o TOTAL; esta linha mostra na hora o que isso vira por mês */
+    if(S.parc>1&&t>0&&!neg){
+      var base=S.data||hoje();
+      var fim=addMesData(base,S.parc-1);
+      r.par.innerHTML='Total da compra · <b>'+S.parc+'× de R$ '+brl(fatiar(t,S.parc)[0])+'</b> · '+
+        MESC[+base.slice(5,7)-1]+' a '+MESC[+fim.slice(5,7)-1];
+      r.par.hidden=false;
+    }else{
+      r.par.hidden=true;
+    }
+  }});
+  w.appendChild(bv.amt);
 
   var chips=el('<div class="chips"></div>');
   var dtxt=S.data===null?'Hoje':(S.data===hoje()?'Hoje':(S.data===ontem()?'Ontem':(+S.data.slice(8))+' '+MESC[+S.data.slice(5,7)-1]));
@@ -1297,69 +1472,8 @@ function telaValor(){
   inp.addEventListener('input',function(){S.desc=inp.value;});
   w.appendChild(db);
 
-  var pad=el('<div class="pad"><div class="quick"></div><div class="keys"></div></div>');
-  var q=pad.querySelector('.quick'),k=pad.querySelector('.keys');
-  [10,50,100].forEach(function(v){
-    var b=el('<button>+'+v+'</button>');
-    b.onclick=function(){kSoma(v);upd();};
-    q.appendChild(b);
-  });
-  /* O ± fica na mesma fileira dos somadores, mas separado por um respiro: os três
-     primeiros SOMAM dinheiro, o ± INVERTE o sentido. Encostados, pareceriam a
-     mesma coisa. */
-  q.appendChild(el('<span class="gap"></span>'));
-  var rSig=el('<button class="sig" aria-pressed="false" aria-label="Inverter o sinal">±</button>');
-  rSig.onclick=function(){
-    S.sinal=(S.sinal<0?1:-1);
-    /* valor negativo não combina com parcelamento: estornar parcela a parcela é
-       o item 12 do backlog, cancelado. */
-    if(S.sinal<0)S.parc=1;
-    cxv.textContent='à vista';cxv.className='v sem';
-    upd();
-  };
-  q.appendChild(rSig);
-  ['1','2','3','4','5','6','7','8','9','v','0','b','ok'].forEach(function(d){
-    var b;
-    if(d==='ok'){b=el('<button class="key go">Confirmar</button>');b.onclick=confirmar;}
-    else if(d==='b'){b=el('<button class="key back" aria-label="Apagar">'+ICO.apagar+'</button>');b.onclick=function(){kBack();upd();};}
-    else if(d==='v'){b=el('<button class="key comma" aria-label="Centavos">,</button>');b.onclick=function(){kVirg();upd();};}
-    else{b=el('<button class="key">'+d+'</button>');b.onclick=function(){kDig(d);upd();};}
-    k.appendChild(b);
-  });
-  w.appendChild(pad);
-
-  var rGo=k.querySelector('.go'),rVir=k.querySelector('.comma');
-  function upd(){
-    var t=totalCents();
-    var neg=(S.sinal<0);
-    rInt.textContent=fmtIntD();
-    rDec.textContent=','+decD();
-    rDec.classList.toggle('typed',decDigitado());
-    rFig.classList.toggle('zero',t===0);
-    rGo.disabled=(t===0);
-    rVir.disabled=(S.modo==='cent');
-    /* Três avisos ao mesmo tempo para o estorno, em três lugares da tela: o
-       número, o próprio ± e o botão de confirmar. Um toque sem querer no ± tem
-       de ser impossível de não ver. */
-    rN.classList.toggle('neg',neg);
-    rN.classList.toggle('rec',ent&&!neg);
-    rCur.textContent=neg?'− R$':'R$';
-    rSig.setAttribute('aria-pressed',neg?'true':'false');
-    rGo.textContent=neg?'Confirmar estorno':'Confirmar';
-    rGo.classList.toggle('dan',neg);
-    cx.disabled=neg;
-    /* o app sempre pede o TOTAL; esta linha mostra na hora o que isso vira por mês */
-    if(S.parc>1&&t>0&&!neg){
-      var base=S.data||hoje();
-      var fim=addMesData(base,S.parc-1);
-      rPar.innerHTML='Total da compra · <b>'+S.parc+'× de R$ '+brl(fatiar(t,S.parc)[0])+'</b> · '+
-        MESC[+base.slice(5,7)-1]+' a '+MESC[+fim.slice(5,7)-1];
-      rPar.hidden=false;
-    }else{
-      rPar.hidden=true;
-    }
-  }
-  upd();
+  w.appendChild(bv.pad);
+  bv.upd();
   return s;
 }
 function confirmar(){
@@ -1390,6 +1504,10 @@ function filtrados(){
   var out=ocorrencias();
   if(S.periodo==='mes')out=out.filter(function(e){return mkey(e.d)===S.mesLista;});
   else if(S.periodo==='ano')out=out.filter(function(e){return e.d.slice(0,4)===S.mesLista.slice(0,4);});
+  /* Datas em AAAA-MM-DD comparam como texto na ordem certa, então não há
+     conversão nem fuso horário envolvido aqui. As duas pontas entram. */
+  else if(S.periodo==='dia')out=out.filter(function(e){return e.d===S.dia;});
+  else if(S.periodo==='faixa')out=out.filter(function(e){return e.d>=S.de&&e.d<=S.ate;});
   if(S.fLado==='saida')out=saidasDe(out);
   else if(S.fLado==='entrada')out=entradasDe(out);
   if(S.fCat)out=out.filter(function(e){return e.cat===S.fCat;});
@@ -1414,6 +1532,29 @@ function filtrados(){
 }
 function filtrosAtivos(){return !!(S.fSub||S.fPay||S.fMin!=null||S.fMax!=null);}
 
+/* Rótulo do período, usado na barra de cima E na barra de totais — as duas
+   precisam dizer a mesma coisa, senão o número grande fica sem dono. */
+function rotuloPeriodo(){
+  if(S.periodo==='tudo')return 'Tudo';
+  if(S.periodo==='ano')return 'Ano de '+S.mesLista.slice(0,4);
+  if(S.periodo==='dia')return diaCurto(S.dia)+' '+S.dia.slice(0,4);
+  if(S.periodo==='faixa'){
+    if(S.de===S.ate)return diaCurto(S.de)+' '+S.de.slice(0,4);
+    /* mesmo mês: "1 – 15 set 2026". Meses diferentes, o mês entra nas duas
+       pontas. Anos diferentes, o ano também. */
+    if(mkey(S.de)===mkey(S.ate))
+      return (+S.de.slice(8))+' – '+(+S.ate.slice(8))+' '+MESC[+S.ate.slice(5,7)-1]+' '+S.ate.slice(0,4);
+    if(S.de.slice(0,4)===S.ate.slice(0,4))
+      return diaCurto(S.de)+' – '+diaCurto(S.ate)+' '+S.ate.slice(0,4);
+    return diaCurto(S.de)+' '+S.de.slice(0,4)+' – '+diaCurto(S.ate)+' '+S.ate.slice(0,4);
+  }
+  return mesLabel(S.mesLista);
+}
+/* Setas: mês e ano andam de mês e de ano, dia anda de dia. Intervalo NÃO anda —
+   deslocar uma janela de 15 dias em 15 dias produz recortes que ninguém pede
+   ("16–30 set" não é um período que exista para alguém). */
+function periodoNavega(){return S.periodo==='mes'||S.periodo==='ano'||S.periodo==='dia';}
+
 /* A base só ganha o seletor de lado quando existe lançamento de entrada. Sem
    isso, a tela fica idêntica à de antes da v11 para quem só tem saídas. */
 function baseTemEntrada(){
@@ -1426,9 +1567,12 @@ function baseTemEntrada(){
 function resumoLista(vis){
   if(!temEntrada(vis)){
     var t=somaDe(vis);
-    return {v:'R$ '+brl(t),
-            c:vis.length+(vis.length===1?' lançamento':' lançamentos')+'<br>média R$ '+
-              brl(vis.length?Math.round(t/vis.length):0)};
+    /* Média de um conjunto que mistura compra e devolução não diz nada — é o
+       mesmo motivo pelo qual ela não existe no ramo misto, logo abaixo. */
+    var temNeg=vis.some(function(o){return o.v<0;});
+    return {v:(t<0?'− R$ ':'R$ ')+brl(Math.abs(t)),
+            c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
+              (temNeg?'':('<br>média R$ '+brl(vis.length?Math.round(t/vis.length):0)))};
   }
   var e=somaDe(entradasDe(vis)),sa=somaDe(saidasDe(vis)),sal=e-sa;
   return {v:(sal<0?'− R$ ':'R$ ')+brl(Math.abs(sal)),
@@ -1436,7 +1580,10 @@ function resumoLista(vis){
             '<br>'+brlSin(e,true)+' · '+brlSin(-sa,true)};
 }
 function totalLinha(itens){
-  if(!temEntrada(itens))return 'R$ '+brl(somaDe(itens));
+  if(!temEntrada(itens)){
+    var s1=somaDe(itens);
+    return (s1<0?'− R$ ':'R$ ')+brl(Math.abs(s1));
+  }
   var v=saldoDe(itens);
   return (v<0?'− R$ ':'R$ ')+brl(Math.abs(v));
 }
@@ -1454,9 +1601,9 @@ function telaLista(){
     '<button class="lbl"></button><button class="pb" aria-label="Próximo">'+ICO.dir+'</button></div>');
   var bs=pb.querySelectorAll('.pb');
   var lbl=pb.querySelector('.lbl');
-  lbl.textContent=S.periodo==='tudo'?'Tudo':(S.periodo==='ano'?('Ano de '+S.mesLista.slice(0,4)):mesLabel(S.mesLista));
+  lbl.textContent=rotuloPeriodo();
   lbl.onclick=folhaPeriodo;
-  bs[0].disabled=S.periodo==='tudo';bs[1].disabled=S.periodo==='tudo';
+  bs[0].disabled=!periodoNavega();bs[1].disabled=!periodoNavega();
   bs[0].onclick=function(){moverPeriodo(-1);};
   bs[1].onclick=function(){moverPeriodo(1);};
   top.appendChild(pb);
@@ -1492,9 +1639,10 @@ function telaLista(){
     var sc0=el('<div class="scroll"></div>');
     var brv=bannerRecorrentes();
     if(brv){brv.style.margin='0 0 12px';sc0.appendChild(brv);}
-    sc0.appendChild(vazio('Nenhum lançamento encontrado',
-      'Se você já usou o app neste aparelho, o armazenamento pode ter sido limpo. Restaure um backup antes de começar de novo.',
-      'Restaurar backup',function(){S.aba='cfg';render();setTimeout(restaurarJSON,120);},true));
+    sc0.appendChild(vazio('Nada lançado ainda',
+      'Toque em Registrar, escolha uma categoria e informe o valor.',
+      'Registrar agora',function(){S.aba='reg';render();}));
+    sc0.appendChild(dicaRestaurar());
     s.appendChild(sc0);
     return s;
   }
@@ -1552,6 +1700,7 @@ function moverPeriodo(n){
   else if(S.periodo==='ano'){
     var y=+S.mesLista.slice(0,4)+n;S.mesLista=y+'-01';
   }
+  else if(S.periodo==='dia')S.dia=addDias(S.dia,n);
   render();
 }
 function linhas(itens,comData){
@@ -1626,7 +1775,18 @@ function arrastarParaExcluir(box,row,aoTocar,aoExcluir){
     if(!ativo)return;ativo=false;
     row.style.transition='';
     if(eixo==='x'){
-      if(dx<=ARMA){ pos(-row.offsetWidth); armar(false); aoExcluir(); eixo=null; return; }
+      if(dx<=ARMA){
+        pos(-row.offsetWidth); armar(false); eixo=null;
+        aoExcluir();
+        /* Excluir nem sempre exclui na hora: parcela e lançamento de recorrência
+           abrem uma pergunta antes. Se o usuário cancelar, não há redesenho e a
+           linha ficaria fora da tela para sempre. Quando a exclusão acontece de
+           fato, render() troca a lista e esta linha sai do documento. */
+        setTimeout(function(){
+          if(row.isConnected){row.style.transition='transform .18s';pos(0);aberto=false;}
+        },50);
+        return;
+      }
       aberto=dx<-44;pos(aberto?ABRE:0);
     }
     armar(false);
@@ -1674,9 +1834,10 @@ function telaResumo(){
     var sc0=el('<div class="scroll"></div>');
     var br0=bannerRecorrentes();
     if(br0){br0.style.margin='0 0 12px';sc0.appendChild(br0);}
-    sc0.appendChild(vazio('Nenhum lançamento encontrado',
-      'Se você já usou o app neste aparelho, o armazenamento pode ter sido limpo. Restaure um backup antes de começar de novo.',
-      'Restaurar backup',function(){S.aba='cfg';render();setTimeout(restaurarJSON,120);},true));
+    sc0.appendChild(vazio('Nada lançado ainda',
+      'Toque em Registrar, escolha uma categoria e informe o valor.',
+      'Registrar agora',function(){S.aba='reg';render();}));
+    sc0.appendChild(dicaRestaurar());
     s.appendChild(sc0);return s;
   }
 
@@ -1694,7 +1855,10 @@ function telaResumo(){
       '<div class="lin"><span class="lb">Entradas</span><span class="vv vin tnum">'+brlSinRS(totEnt)+'</span></div>'+
       '<div class="lin"><span class="lb">Saídas</span><span class="vv tnum">'+brlSinRS(-tot)+'</span></div>'+
       '<div class="lin tot"><span class="lb">Saldo de '+mesLabel(mk).split(' de ')[0]+'</span>'+
-      '<span class="vv tnum '+(sal<0?'vneg':'vin')+'">'+brlSin(sal)+'</span></div></div>'));
+      /* faltava o "R$" aqui, e só aqui: as duas linhas de cima usam brlSinRS e
+         a de baixo saía "6.659,60" no meio delas. Passou despercebido nas duas
+         revisões porque o número está certo — o que falta é a unidade. */
+      '<span class="vv tnum '+(sal<0?'vneg':'vin')+'">'+brlRS(sal)+'</span></div></div>'));
   }
 
   if(!doMes.length){
@@ -1743,11 +1907,18 @@ function telaResumo(){
       '<div class="cbars">'+sp+'</div></div>'));
   }
 
-  sc.appendChild(el('<div class="glabel">Por categoria</div>'));
+  /* v12: o rótulo passa a dizer o que o bloco mede, e SEMPRE — inclusive em mês
+     sem entrada nenhuma. Isso rompe um detalhe do contrato da v11 ("sem entrada,
+     a tela fica byte a byte como antes"), mas aquele contrato existia para
+     proteger os números, não os rótulos, e título que só aparece às vezes é pior
+     do que título fixo. */
+  sc.appendChild(el('<div class="glabel">Saídas por categoria</div>'));
   var agg={};doMes.forEach(function(e){agg[e.cat]=(agg[e.cat]||0)+e.v;});
   var rank=Object.keys(agg).map(function(k){return {id:k,v:agg[k]};}).sort(function(a,b){return b.v-a.v;});
   var max=rank[0].v;
-  var bars=el('<div class="bars"></div>');
+  /* .sai e .ent: os dois blocos usam a mesma barra, e é preciso poder dizer
+     qual é qual — na leitura da tela e na verificação automática. */
+  var bars=el('<div class="bars sai"></div>');
   rank.forEach(function(r){
     var c=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
     var b2=el('<button class="barrow" style="--c:'+c.c+'">'+
@@ -1767,14 +1938,28 @@ function telaResumo(){
     var rkE=Object.keys(agE).map(function(k){return {id:k,v:agE[k]};})
       .sort(function(a,b){return b.v-a.v;});
     sc.appendChild(el('<div class="glabel">Entradas por categoria</div>'));
-    var we=el('<div class="optwrap"></div>');
+    /* v12: mesma barra das saídas, com duas diferenças que NÃO são detalhe.
+       (1) O denominador é o total de ENTRADAS, e o texto diz isso: "91,5% das
+       entradas". Escrever "do mês" aqui seria falso — o salário não é 91,5%
+       de nada que o mês gastou.
+       (2) A largura é relativa à maior ENTRADA. São duas escalas independentes;
+       nada nesta tela compara barra de entrada com barra de saída. */
+    var maxE=rkE[0].v;
+    var barsE=el('<div class="bars ent"></div>');
     rkE.forEach(function(r){
-      var ce=cat(r.id)||{e:'❓',n:'—'};
-      var row=el('<div class="msk"><span class="mn">'+ce.e+' '+esc(ce.n)+'</span>'+
-        '<span class="mr tnum '+(r.v<0?'vneg':'vin')+'">'+brlSin(r.v,true)+'</span></div>');
-      we.appendChild(row);
+      var ce=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
+      var be=el('<button class="barrow" style="--c:'+ce.c+'">'+
+        '<span class="bn"><span>'+ce.e+'</span><em>'+esc(ce.n)+'</em></span>'+
+        /* com "R$", como nas barras de saída logo acima: as duas listas ficam
+           lado a lado na mesma tela e uma escrevendo "+ 8.600,00" enquanto a
+           outra escreve "R$ 880,40" faria parecer que são unidades diferentes */
+        '<span class="bv tnum '+(r.v<0?'vneg':'vin')+'">'+brlSinRS(r.v)+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+largBarra(r.v,maxE).toFixed(2)+'%"></span></span>'+
+        '<span class="bp tnum">'+pctLabel(r.v,totEnt,'das entradas')+'</span></button>');
+      be.onclick=function(){folhaDetalheCat(r.id,mk);};
+      barsE.appendChild(be);
     });
-    sc.appendChild(we);
+    sc.appendChild(barsE);
   }
 
   s.appendChild(sc);
@@ -1782,6 +1967,20 @@ function telaResumo(){
 }
 
 /* ---------------- blocos reutilizados ---------------- */
+/* A lista vazia atende dois públicos opostos: quem acabou de instalar e quem
+   perdeu os dados. Antes, os dois viam um alerta VERMELHO dizendo que o
+   armazenamento pode ter sido limpo — ou seja, o primeiro contato com o app era
+   uma tela de erro mandando restaurar um backup que não existe. Agora o estado
+   é acolhedor e a saída de emergência fica logo abaixo, discreta, para quem
+   precisar dela. */
+function dicaRestaurar(){
+  var d=el('<div class="hint">Já usou o app neste aparelho e a lista sumiu? '+
+    '<b>Restaure um backup</b> antes de começar de novo.</div>');
+  var b=d.querySelector('b');
+  b.style.color='var(--tint)';
+  b.onclick=function(){S.aba='cfg';render();setTimeout(restaurarJSON,120);};
+  return d;
+}
 function vazio(t,d,btxt,fn,alerta){
   var e=el('<div class="empty'+(alerta?' alert':'')+'"><div class="e1">'+esc(t)+'</div><div class="e2">'+esc(d)+'</div></div>');
   if(btxt){var b=el('<button class="eb">'+esc(btxt)+'</button>');b.onclick=fn;e.appendChild(b);}
@@ -1833,6 +2032,51 @@ function folha(titulo,montar,opts){
   layers.appendChild(scrim);layers.appendChild(sh);
   return sh;
 }
+/* Folha EMPILHADA: fecha só a si mesma, deixando a de baixo aberta.
+   `folha()` usa `fecharFolhas()`, que varre tudo — o que está certo para o fluxo
+   normal e errado para uma folha aberta de dentro de outra: fechar o teclado
+   levaria embora o formulário de edição inteiro, com tudo o que já foi digitado.
+   Só quem é aberto por cima de outra folha usa esta função. */
+function folhaSobre(titulo,montar,opts){
+  opts=opts||{};
+  var scrim=el('<div class="scrim"></div>');
+  var sh=el('<div class="sheet"><div class="sheet-h">'+
+    '<button class="sa">'+(opts.cancelar||'Cancelar')+'</button>'+
+    '<div class="st">'+esc(titulo)+'</div>'+
+    '<span class="sa right"></span></div><div class="sheet-b"></div></div>');
+  function fechar(){
+    if(scrim.parentNode)scrim.parentNode.removeChild(scrim);
+    if(sh.parentNode)sh.parentNode.removeChild(sh);
+  }
+  scrim.onclick=fechar;
+  sh.querySelector('.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
+  montar(sh.querySelector('.sheet-b'),fechar);
+  layers.appendChild(scrim);layers.appendChild(sh);
+  return {sh:sh,fechar:fechar};
+}
+
+/* Folha de valor: o visor e o teclado da tela de registro, usados para editar um
+   valor que já existe. Ela NÃO grava nada — devolve o valor em centavos pelo
+   callback e quem chamou decide o que fazer. É por isso que o botão "Confirmar"
+   aqui não é o mesmo "Confirmar" do registro, ainda que pareça: lá ele cria um
+   lançamento, aqui ele fecha uma folha. */
+function folhaValor(titulo,cents,cfg,cb){
+  cfg=cfg||{};
+  var st=estadoValor(cents);
+  var bv=blocoValor(st,{ent:cfg.ent,onUpd:cfg.onUpd,onOk:function(){
+    if(!centsDe(st))return;
+    f.fechar();cb(valorDe(st));
+  }});
+  var f=folhaSobre(titulo,function(b){
+    b.appendChild(bv.amt);
+    var cx=el('<div class="padbox"></div>');
+    cx.appendChild(bv.pad);
+    b.appendChild(cx);
+    bv.upd();
+  });
+  return f;
+}
+
 function toast(t,s,btxt,fn){
   var old=document.getElementById('toast');if(old)old.remove();
   if(toastTimer)clearTimeout(toastTimer);
@@ -1986,10 +2230,22 @@ function folhaParcelas(){
 /* ============================================================
    RECORRÊNCIAS — faixa, revisão, moldes
    ============================================================ */
+/* Somar pendência de entrada com pendência de saída produz um número que não é
+   gasto, nem receita, nem saldo. É o mesmo defeito que o comprometido() tinha:
+   os moldes nasceram quando toda categoria era despesa. */
+function totaisPend(lista){
+  var e=0,sa=0;
+  lista.forEach(function(x){if(eEntrada(x.cat))e+=x.v;else sa+=x.v;});
+  return {ent:e,sai:sa,misto:e!==0&&sa!==0};
+}
+function txtPend(lista){
+  var t=totaisPend(lista);
+  if(!t.misto)return 'R$ '+brl(t.ent||t.sai);
+  return '− R$ '+brl(t.sai)+' · + R$ '+brl(t.ent);
+}
 function bannerRecorrentes(){
   var ps=pendentes();
   if(!ps.length)return null;
-  var tot=ps.reduce(function(a,x){return a+x.v;},0);
   var nomes=[];
   ps.forEach(function(x){if(nomes.indexOf(x.n)<0&&nomes.length<3)nomes.push(x.n);});
   var lista=nomes.join(', ');
@@ -1999,7 +2255,7 @@ function bannerRecorrentes(){
             :(meses.length+' meses');
   var b=el('<div class="banner"><div><div class="bt">'+ps.length+
     (ps.length===1?' recorrente a confirmar':' recorrentes a confirmar')+'</div>'+
-    '<div class="bs">'+esc(lista)+' · '+esc(quando)+' · R$ '+brl(tot)+'</div></div>'+
+    '<div class="bs">'+esc(lista)+' · '+esc(quando)+' · '+txtPend(ps)+'</div></div>'+
     '<button class="ba">Revisar</button></div>');
   b.querySelector('.ba').onclick=folhaRevisao;
   return b;
@@ -2013,12 +2269,21 @@ function folhaRevisao(){
   var estado=ps.map(function(x){return {p:x,on:true,v:x.v};});
   folha('A confirmar',function(b,sh){
     var btn=el('<button class="btnfull"></button>');
+    var avisoSV=el('<div class="hint" hidden></div>');
     function atualizar(){
-      var sel=estado.filter(function(x){return x.on;});
-      var tot=sel.reduce(function(a,x){return a+x.v;},0);
-      btn.textContent=sel.length?('Confirmar '+sel.length+(sel.length===1?' lançamento · R$ ':' lançamentos · R$ ')+brl(tot))
+      /* O botão contava as linhas MARCADAS e a criação usava `on && v>0`. Uma
+         linha marcada com o valor apagado fazia o botão prometer dois e entregar
+         um, calado. Agora a conta do botão é a mesma da criação. */
+      var sel=estado.filter(function(x){return x.on&&x.v>0;});
+      var semValor=estado.filter(function(x){return x.on&&!(x.v>0);}).length;
+      var lados=sel.map(function(x){return {cat:x.p.cat,v:x.v};});
+      btn.textContent=sel.length?('Confirmar '+sel.length+(sel.length===1?' lançamento · ':' lançamentos · ')+txtPend(lados))
                                 :'Nada selecionado';
       btn.disabled=!sel.length;
+      avisoSV.textContent=semValor?(semValor===1
+        ?'1 linha marcada está sem valor e não será confirmada.'
+        :(semValor+' linhas marcadas estão sem valor e não serão confirmadas.')):'';
+      avisoSV.hidden=!semValor;
     }
     var mesAtual=null,wrap=null;
     estado.forEach(function(st,i){
@@ -2084,14 +2349,14 @@ function folhaRevisao(){
         return;
       }
       fecharFolhas();render();
-      var tot=criados.reduce(function(a,e){return a+e.v;},0);
       toast(criados.length+(criados.length===1?' lançamento confirmado':' lançamentos confirmados'),
-        'R$ '+brl(tot),'Desfazer',function(){
+        txtPend(criados),'Desfazer',function(){
           var ids2={};criados.forEach(function(e){ids2[e.id]=1;});
           DB.exp=DB.exp.filter(function(e){return !ids2[e.id];});
           salvar();render();
         });
     };
+    b.appendChild(avisoSV);
     b.appendChild(btn);
     atualizar();
   },{cancelar:'Fechar'});
@@ -2137,6 +2402,14 @@ function folhaRecorrentes(){
 
 /* Cria ou edita um molde. `base` prefixa os campos quando vem de um lançamento. */
 function folhaMolde(r,base){
+  /* Sem categoria ativa não há molde possível, e a linha abaixo fazia
+     catsOrdenadas(false)[0].id estourar — a folha nem abria, sem mensagem.
+     A tela de registro já trata esse mesmo estado; aqui faltava. */
+  if(!r&&!catsOrdenadas(false).length){
+    alerta('Nenhuma categoria ativa',
+      'Todas as categorias estão arquivadas. Reative uma em Ajustes → Categorias antes de criar uma recorrência.');
+    return;
+  }
   var novo=!r;
   var t=r?{n:r.n,cat:r.cat,sub:r.sub,v:r.v,fixo:r.fixo!==false,freq:r.freq||'mensal',
            dia:parseInt(r.dia,10)||1,mes:parseInt(r.mes,10)||1,ate:r.ate||null}
@@ -2220,7 +2493,9 @@ function folhaMolde(r,base){
       var nome=(fn.querySelector('input').value||'').trim();
       var v=lerValor(fv.querySelector('input').value);
       if(!nome){alerta('Falta o nome','Dê um nome à recorrência — é ele que aparece na faixa de cobrança.');return;}
-      if(!v){alerta('Valor inválido','Informe um valor de referência maior que zero.');return;}
+      /* `!v` deixava passar negativo (−100 é truthy) e nascia um molde que gera
+         pendência impossível de confirmar: o botão fica aceso e não faz nada. */
+      if(!(v>0)){alerta('Valor inválido','Informe um valor de referência maior que zero. Recorrência não aceita valor negativo — um estorno é um lançamento avulso.');return;}
       if(novo){
         /* Quando o molde nasce de um lançamento que já existe, esse lançamento
            VIRA a primeira confirmação. Sem isso o app cobraria o mês atual de
@@ -2371,18 +2646,35 @@ function excluirMolde(r){
 /* atalho: cria o molde a partir de um lançamento que já existe */
 function tornarRecorrente(o){
   var e=compraDe(o)||o;
-  folhaMolde(null,{n:nomeSub(e.cat,e.sub),cat:e.cat,sub:e.sub,v:e.v,
+  /* de um estorno não nasce molde negativo; o valor entra em módulo e o dono
+     decide. E de uma compra parcelada o que se repete é a PARCELA, não o total
+     — sugerir 4.800/mês a partir de uma compra de 4.800 em 6× é absurdo. */
+  var vSug=Math.abs(nParc(e)>1?fatiar(e.v,nParc(e))[0]:e.v);
+  folhaMolde(null,{n:nomeSub(e.cat,e.sub),cat:e.cat,sub:e.sub,v:vSug,
                    pay:e.pay,desc:e.desc,dia:(+e.d.slice(8)),vinc:e});
 }
 
 function folhaPeriodo(){
   folha('Período',function(b){
     var w=el('<div class="optwrap"></div>');
-    [['mes','Mês','navegue com as setas'],['ano','Ano inteiro',''],['tudo','Tudo','todo o histórico']].forEach(function(p){
-      var o=el('<button class="opt"><span class="ic">'+(p[0]==='mes'?'🗓️':(p[0]==='ano'?'📆':'🗄️'))+'</span>'+
-        '<span class="nm">'+p[1]+(p[2]?'<small>'+p[2]+'</small>':'')+'</span>'+
+    var OPCS=[
+      ['mes','🗓️','Mês','navegue com as setas'],
+      ['ano','📆','Ano inteiro',''],
+      ['tudo','🗄️','Tudo','todo o histórico'],
+      ['dia','📅','Data específica',S.periodo==='dia'?porExtenso(S.dia):'um único dia'],
+      ['faixa','↔️','Intervalo',S.periodo==='faixa'?(diaCurto(S.de)+' a '+diaCurto(S.ate)):'de uma data a outra']
+    ];
+    OPCS.forEach(function(p){
+      var o=el('<button class="opt"><span class="ic">'+p[1]+'</span>'+
+        '<span class="nm">'+p[2]+(p[3]?'<small>'+esc(p[3])+'</small>':'')+'</span>'+
         (S.periodo===p[0]?'<span class="tag">✓</span>':'<span></span>')+'</button>');
-      o.onclick=function(){S.periodo=p[0];fecharFolhas();render();};
+      /* Mês, ano e tudo aplicam na hora. Dia e intervalo precisam de uma data,
+         então abrem o calendário — e só lá é que S.periodo muda. Sair do
+         calendário sem escolher deixa o período como estava. */
+      o.onclick=function(){
+        if(p[0]==='dia'||p[0]==='faixa'){fecharFolhas();folhaCalendario(p[0]);return;}
+        S.periodo=p[0];fecharFolhas();render();
+      };
       w.appendChild(o);
     });
     b.appendChild(w);
@@ -2396,6 +2688,136 @@ function folhaPeriodo(){
     b.appendChild(seg);
   });
 }
+/* ---------------- calendário (v12) ----------------
+   Grade própria em vez do seletor nativo do iOS. A escolha foi sua, em 22/09,
+   depois de ver as duas alternativas lado a lado: o nativo custava ~40 linhas e
+   não sabe pintar um intervalo; este custa o que está aqui e mostra o intervalo
+   como intervalo.
+
+   Uma correção em relação ao mockup: os dias FUTUROS não ficam apagados. O
+   mockup os desenhava assim por analogia com a folha de data de um lançamento,
+   onde futuro não existe — mas a lista mostra `ocorrencias()`, e uma compra em 6×
+   tem parcelas em meses que ainda não chegaram. Apagar o futuro aqui esconderia
+   justamente o que as setas de mês já deixam ver.
+   ---------------------------------------------------- */
+function limitesCal(){
+  var min=mkey(hoje()),max=mkey(hoje());
+  ocorrencias().forEach(function(o){
+    var m=mkey(o.d);
+    if(m<min)min=m;
+    if(m>max)max=m;
+  });
+  return {min:min,max:max};
+}
+function folhaCalendario(modo){
+  var lim=limitesCal();
+  var a=null,b=null;
+  if(modo==='dia')a=(S.periodo==='dia'?S.dia:hoje());
+  else if(S.periodo==='faixa'){a=S.de;b=S.ate;}
+  var mesCal=mkey(a||hoje());
+  if(mesCal<lim.min)mesCal=lim.min;
+  if(mesCal>lim.max)mesCal=lim.max;
+
+  folha(modo==='dia'?'Data específica':'Intervalo',function(bd){
+    var wrap=el('<div class="calwrap"></div>');
+    var ft=el('<div class="calft"><div class="l"></div></div>');
+    var lz=el('<button class="z">Limpar</button>');
+    var ok=el('<button class="btnfull">Aplicar</button>');
+
+    function aplicar(){
+      if(modo==='dia'){
+        if(!a)return;
+        S.periodo='dia';S.dia=a;
+      }else{
+        if(!a||!b)return;
+        /* Escolher a ponta final antes da inicial é um engano comum e barato de
+           perdoar: o app troca as duas em silêncio em vez de devolver lista
+           vazia. Daqui para baixo, S.de <= S.ate é invariante. */
+        S.periodo='faixa';S.de=(a<b?a:b);S.ate=(a<b?b:a);
+      }
+      fecharFolhas();render();
+    }
+    lz.onclick=function(){a=null;b=null;pinta();};
+    ok.onclick=aplicar;
+
+    function tocar(d){
+      if(modo==='dia'){a=d;pinta();aplicar();return;}
+      if(!a||(a&&b)){a=d;b=null;}
+      else b=d;
+      pinta();
+    }
+
+    function pinta(){
+      wrap.innerHTML='';
+      var y=+mesCal.slice(0,4),m=+mesCal.slice(5,7);
+      var hd=el('<div class="calhd"><button class="pb" aria-label="Mês anterior">'+ICO.esq+'</button>'+
+        '<div class="m">'+mesLabel(mesCal)+'</div>'+
+        '<button class="pb" aria-label="Próximo mês">'+ICO.dir+'</button></div>');
+      var pbs=hd.querySelectorAll('.pb');
+      pbs[0].disabled=(mesCal<=lim.min);
+      pbs[1].disabled=(mesCal>=lim.max);
+      pbs[0].onclick=function(){mesCal=addMes(mesCal,-1);pinta();};
+      pbs[1].onclick=function(){mesCal=addMes(mesCal,1);pinta();};
+      wrap.appendChild(hd);
+
+      var dw=el('<div class="caldow"></div>');
+      ['D','S','T','Q','Q','S','S'].forEach(function(x,i){
+        dw.appendChild(el('<span aria-hidden="true">'+x+'</span>'));
+      });
+      wrap.appendChild(dw);
+
+      var g=el('<div class="calgrid"></div>');
+      var vazias=new Date(y,m-1,1).getDay();
+      for(var i=0;i<vazias;i++)g.appendChild(el('<span class="cday out" aria-hidden="true"></span>'));
+      var ini=(a&&b)?(a<b?a:b):a, fim=(a&&b)?(a<b?b:a):null;
+      var n=diasNoMes(mesCal);
+      for(var d=1;d<=n;d++){
+        var ds=mesCal+'-'+String(d).padStart(2,'0');
+        var cl='cday';
+        if(ini&&fim&&ds>=ini&&ds<=fim){
+          cl+=' in';
+          if(ds===ini)cl+=' ini';
+          if(ds===fim)cl+=' fim';
+        }
+        if(ds===ini||ds===fim)cl+=' ponta';
+        if(!fim&&ds===ini)cl+=' ponta';
+        if(ds===hoje())cl+=' hoje';
+        var bt=el('<button class="'+cl+'" aria-label="'+porExtenso(ds)+'"'+
+          ((ds===ini||ds===fim)?' aria-pressed="true"':'')+'><i></i><b>'+d+'</b></button>');
+        (function(x){bt.onclick=function(){tocar(x);};})(ds);
+        g.appendChild(bt);
+      }
+      wrap.appendChild(g);
+
+      var txt;
+      if(modo==='dia')txt=a?('<b>'+esc(porExtenso(a))+'</b>'):'Toque num dia';
+      else if(!a)txt='Toque no primeiro dia';
+      else if(!b)txt='De <b>'+esc(diaCurto(a))+'</b> · toque no dia final';
+      else{
+        var i2=(a<b?a:b),f2=(a<b?b:a),qt=diasEntre(i2,f2)+1;
+        txt='De <b>'+esc(diaCurto(i2))+'</b> até <b>'+esc(diaCurto(f2))+'</b> · '+qt+(qt===1?' dia':' dias');
+      }
+      ft.querySelector('.l').innerHTML=txt;
+      lz.hidden=(modo==='dia'||!a);
+      ft.appendChild(lz);
+      wrap.appendChild(ft);
+      ok.disabled=!(a&&b);
+    }
+
+    pinta();
+    bd.appendChild(wrap);
+    if(modo==='dia'){
+      bd.appendChild(el('<div class="hint">Tocar num dia já aplica o filtro. '+
+        'Depois, as setas da lista andam de um dia por vez.</div>'));
+    }else{
+      bd.appendChild(el('<div class="hint">Toque no primeiro dia e depois no último. '+
+        'As duas pontas entram na conta. Na lista, as setas ficam desligadas '+
+        'enquanto o intervalo estiver ativo.</div>'));
+      bd.appendChild(ok);
+    }
+  },{cancelar:'Voltar',aoFechar:folhaPeriodo});
+}
+
 function folhaFiltros(){
   folha('Filtros',function(b){
     var c=S.fCat?cat(S.fCat):null;
@@ -2441,6 +2863,11 @@ function folhaFiltros(){
     var lp=el('<button class="btnfull sec">Limpar todos os filtros</button>');
     lp.onclick=function(){
       S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
+      /* v12: o período volta para "Mês". Antes ele não era tocado, o que com
+         intervalo deixaria o usuário preso num recorte que ele mandou limpar.
+         E o seletor de lado volta para "Tudo" — era o defeito 2.6 da revisão v2:
+         o botão dizia "todos" e deixava a lista presa em Entradas. */
+      S.periodo='mes';S.fLado='tudo';
       fecharFolhas();render();
     };
     b.appendChild(lp);
@@ -2580,7 +3007,24 @@ function editarLancamento(o){
   var e=compraDe(o)||o;
   var tmp={cat:e.cat,sub:e.sub,parc:nParc(e)};
   folha(nParc(e)>1?'Editar a compra':'Editar lançamento',function(b){
-    var fv=el('<div class="field"><div class="k">Valor total da compra (R$)</div><input inputmode="decimal" value="'+brl(e.v)+'"></div>');
+    /* v12: era um <input inputmode="decimal">, que abria o teclado do SISTEMA —
+       outro app dentro do app, sem os somadores, sem o ±, sem o visor. E, por ser
+       texto livre, era a porta por onde entrava o que a tela de registro proíbe
+       (o grave 1.4 da revisão v2). Virou uma linha tocável que abre o teclado
+       do app; o valor vive em `tmp.v`, não no DOM. */
+    tmp.v=e.v;
+    var fv=el('<button class="field row tap"><span><span class="k">Valor</span>'+
+      '<span class="v tnum"></span></span>'+ICO.chev+'</button>');
+    var fvv=fv.querySelector('.v');
+    function pintaValor(){
+      fvv.textContent=(tmp.v<0?'− R$ ':'R$ ')+brl(Math.abs(tmp.v));
+      fvv.classList.toggle('vneg',tmp.v<0);
+    }
+    fv.onclick=function(){
+      folhaValor(nParc(e)>1?'Valor total da compra':'Valor',tmp.v,
+        {ent:eEntrada(tmp.cat)},function(v){tmp.v=v;pintaValor();pintaParc();});
+    };
+    pintaValor();
     b.appendChild(fv);
     var fc=el('<button class="field row"><span><span class="k">Categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
     var fs=el('<button class="field row"><span><span class="k">Sub-categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
@@ -2627,8 +3071,20 @@ function editarLancamento(o){
     }
     var fxAviso=el('<div class="hint" hidden></div>');
     function pintaParc(){
-      var n=parseInt(fx.querySelector('select').value,10)||1;
-      var v=lerValor(fv.querySelector('input').value)||0;
+      var sel=fx.querySelector('select');
+      /* v12: a tela de registro desliga as parcelas quando o valor fica
+         negativo; aqui o valor negativo passava e o parcelamento era descartado
+         em silêncio no Salvar. Agora a folha diz isso ANTES, em vez de o app
+         jogar fora o que a pessoa escolheu. */
+      if((tmp.v||0)<0){
+        sel.value='1';sel.disabled=true;
+        fxAviso.innerHTML='Estorno não é parcelado — o valor é negativo.';
+        fxAviso.hidden=false;
+        return;
+      }
+      sel.disabled=false;
+      var n=parseInt(sel.value,10)||1;
+      var v=tmp.v||0;
       if(n>1&&v>0){
         var base=fd.querySelector('input').value||e.d;
         fxAviso.innerHTML='<b>'+n+'× de R$ '+brl(fatiar(v,n)[0])+'</b>, de '+
@@ -2637,7 +3093,6 @@ function editarLancamento(o){
       }else{fxAviso.hidden=true;}
     }
     fx.querySelector('select').onchange=pintaParc;
-    fv.querySelector('input').addEventListener('input',pintaParc);
     fd.querySelector('input').addEventListener('change',pintaParc);
 
     b.appendChild(fc);b.appendChild(fs);b.appendChild(sub2);b.appendChild(fd);b.appendChild(fp);b.appendChild(ft);
@@ -2645,13 +3100,17 @@ function editarLancamento(o){
     pintaParc();
     var ok=el('<button class="btnfull">Salvar</button>');
     ok.onclick=function(){
-      var v=lerValor(fv.querySelector('input').value);
-      if(!v){alerta('Valor inválido','Informe um valor maior que zero, por exemplo 47,83.');return;}
+      var v=tmp.v;
+      /* O teclado do app já impede zero (o "Confirmar" fica desabilitado), mas a
+         folha pode ter sido cancelada sem nunca ser aberta num registro vindo de
+         um CSV estranho. A trava fica. Valor negativo É válido aqui — edita-se um
+         estorno; o que não pode é negativo COM parcelas. */
+      if(!v){alerta('Valor inválido','Toque em Valor e informe um número diferente de zero.');return;}
       var antes=JSON.parse(JSON.stringify(e));
       e.v=v;e.cat=tmp.cat;e.sub=tmp.sub;e.d=fd.querySelector('input').value||e.d;
       e.pay=fp.querySelector('select').value||null;e.desc=ft.querySelector('input').value||'';
       var np=parseInt(fx.querySelector('select').value,10)||1;
-      if(np>1&&np<=MAXPARC)e.par=np;else delete e.par;
+      if(np>1&&np<=MAXPARC&&v>0)e.par=np;else delete e.par;
       if(!salvar()){
         for(var k in antes)e[k]=antes[k];
         if(antes.par===undefined)delete e.par;
@@ -2877,54 +3336,7 @@ function folhaCategorias(){
     var nv=el('<button class="btnfull sec">Criar categoria</button>');
     nv.onclick=function(){fecharFolhas();folhaEditarCat(null);};
     b.appendChild(nv);
-    /* A semente só roda na primeira execução, para não mexer numa taxonomia que
-       o dono já ajustou. Numa base que já existe, isto é o que evita criar 3
-       categorias e 11 sub-categorias na mão, uma tela de cada vez. */
-    if(faltamEntradas().length){
-      var imp=el('<button class="btnfull sec">Adicionar categorias de entrada sugeridas</button>');
-      imp.onclick=importarEntradas;
-      b.appendChild(imp);
-      b.appendChild(el('<div class="hint">Salários e benefícios, Vendas e Outras entradas. '+
-        'Só cria o que ainda não existe e entra no fim da lista.</div>'));
-    }
   },{cancelar:'Fechar'});
-}
-/* nomes comparados sem acento e sem caixa: "Salarios" não vira uma segunda
-   "Salários" se o dono já tiver criado a dele na mão */
-function normNome(x){
-  x=String(x||'').toLowerCase().trim();
-  try{x=x.normalize('NFD').replace(/[\u0300-\u036f]/g,'');}catch(e){}
-  return x;
-}
-function entradasSugeridas(){
-  return SEED.filter(function(c){return c.tipo==='e';});
-}
-function faltamEntradas(){
-  var tem={};
-  DB.cats.forEach(function(c){tem[normNome(c.n)]=1;});
-  return entradasSugeridas().filter(function(c){return !tem[normNome(c.n)];});
-}
-function importarEntradas(){
-  var f=faltamEntradas();
-  if(!f.length)return;
-  var ns=f.reduce(function(a,c){return a+c.subs.length;},0);
-  fecharFolhas();
-  confirmar2('Adicionar categorias de entrada?',
-    'Entram '+f.length+(f.length===1?' categoria':' categorias')+' e '+ns+' sub-categorias. '+
-    'Nada do que já existe é alterado. Elas entram no fim da lista, então nenhuma categoria '+
-    'sua sai da grade de registro.','Adicionar',false,function(){
-      f.forEach(function(c){
-        /* id da semente pode colidir numa base antiga; nesse caso gera outro */
-        var id=cat(c.id)?uid('c'):c.id;
-        DB.cats.push({id:id,n:c.n,e:c.e,c:c.c,arq:false,tipo:'e',
-          subs:c.subs.map(function(x){
-            return {id:(id===c.id?x.id:uid('s')),n:x.n,e:x.e,arq:false};
-          })});
-        DB.ordem.push(id);
-      });
-      salvar();render();
-      toast('Categorias adicionadas',f.length+' de entrada · '+ns+' sub-categorias','',null);
-    });
 }
 function folhaEditarCat(c){
   var novo=!c;
@@ -3104,15 +3516,17 @@ function baixar(nome,texto,mime){
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1200);
 }
+/* Devolve uma PROMESSA quando a folha do iOS entra em cena, e null quando o
+   arquivo foi baixado direto (aí já acabou). Quem precisa saber se deu certo
+   espera a promessa — cancelar a folha rejeita, e cancelar não é backup. */
 function partilhar(nome,texto,mime){
   var f=null;
   try{f=new File([texto],nome,{type:mime});}catch(e){f=null;}
   if(f&&navigator.canShare&&navigator.canShare({files:[f]})&&navigator.share){
-    navigator.share({files:[f],title:nome}).catch(function(){});
-    return true;
+    return navigator.share({files:[f],title:nome});
   }
   baixar(nome,texto,mime);
-  return false;
+  return null;
 }
 function pacoteJSON(){
   return JSON.stringify({
@@ -3122,10 +3536,18 @@ function pacoteJSON(){
 }
 function compartilharJSON(){
   var txt=pacoteJSON();
-  partilhar(nomeArquivo('json'),txt,'application/json');
-  DB.prefs.ultBackup=hoje();
-  DB.prefs.bannerOff=mkey(hoje());
-  salvar();render();
+  var pr=partilhar(nomeArquivo('json'),txt,'application/json');
+  function marcar(){
+    DB.prefs.ultBackup=hoje();
+    DB.prefs.bannerOff=mkey(hoje());
+    salvar();render();
+    toast('Backup guardado',diaLabel(hoje()).split(' · ')[0],'',null);
+  }
+  /* null = baixou direto, então terminou. Promessa = folha do iOS aberta: só
+     marca se ela resolver. Cancelar rejeita, e aí NADA é marcado — a faixa de
+     cobrança continua, que é o comportamento honesto. */
+  if(!pr){marcar();return;}
+  pr.then(marcar).catch(function(){});
 }
 function csvCampo(v){
   v=String(v==null?'':v);
@@ -3135,11 +3557,15 @@ function csvCampo(v){
    coluna de valor e fechar com o gasto do período. As colunas de parcela e o
    id_compra permitem reagrupar quando for preciso. */
 function exportarCSV(){
-  var l=['id;id_compra;data;tipo;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao'];
+  /* As duas últimas colunas existem para a volta: sem elas, reimportar apaga o
+     vínculo com a recorrência e o app recobra meses já confirmados. Entram no
+     FIM para não quebrar planilha de quem já usa as anteriores. */
+  var l=['id;id_compra;data;tipo;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao;recorrencia;competencia'];
   ocorrencias().sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);}).forEach(function(e){
     l.push([e.id,e.oid,e.d,(eEntrada(e.cat)?'entrada':'saida'),
             nomeCat(e.cat),nomeSub(e.cat,e.sub),brl(e.v),
-            e.pi,e.pn,brl(e.vt),e.dc,e.pay||'',e.desc||'']
+            e.pi,e.pn,brl(e.vt),e.dc,e.pay||'',e.desc||'',
+            e.rec||'',e.comp||'']
       .map(csvCampo).join(';'));
   });
   partilhar(nomeArquivo('csv'),'﻿'+l.join('\r\n'),'text/csv');
@@ -3205,9 +3631,15 @@ function importarCSV(){
       alerta('Colunas não encontradas','A planilha precisa ter pelo menos as colunas data, categoria e valor, separadas por ponto e vírgula.');
       return;}
     var iId=col('id'),iP=col('pagamento'),iT=col('descricao');
+    /* O CSV é UMA LINHA POR PARCELA: as linhas de uma compra em 6× são dado
+       DERIVADO da compra, não seis lançamentos. Importar linha a linha devolvia
+       seis à vista e o "Comprometido à frente" sumia. Aqui elas são colapsadas
+       de volta numa compra só, usando as colunas que o export sempre trouxe. */
+    var iOid=col('id_compra'),iNP=col('parcelas'),iVT=col('valor_compra'),
+        iDC=col('data_compra'),iRec=col('recorrencia'),iComp=col('competencia');
     var porNome={};DB.cats.forEach(function(c){porNome[c.n.toLowerCase()]={c:c,subs:{}};
       c.subs.forEach(function(s){porNome[c.n.toLowerCase()].subs[s.n.toLowerCase()]=s;});});
-    var novos=[],faltando={},invalidas=0;
+    var novos=[],faltando={},invalidas=0,vistos={},colapsadas=0,vinculadas=0;
     for(var i=1;i<linhas.length;i++){
       var L=linhas[i];
       var data=(L[iD]||'').trim();
@@ -3217,14 +3649,45 @@ function importarCSV(){
       var ref=porNome[cn.toLowerCase()];
       if(!ref){faltando[cn]=(faltando[cn]||0)+1;continue;}
       var s=sn?ref.subs[sn.toLowerCase()]:null;
-      novos.push({id:(iId>=0&&L[iId])?L[iId]:uid('e'),d:data,cat:ref.c.id,sub:s?s.id:null,
-        v:v,pay:(iP>=0?(L[iP]||'').trim():'')||null,desc:(iT>=0?(L[iT]||'').trim():''),ts:Date.now()});
+      var oid=(iOid>=0&&L[iOid])?String(L[iOid]).trim():null;
+      var np=(iNP>=0)?(parseInt(L[iNP],10)||1):1;
+      var vt=(iVT>=0)?lerValor(L[iVT]):null;
+      var dc=(iDC>=0)?String(L[iDC]||'').trim():'';
+      /* Só colapsa quando a planilha traz TUDO que descreve a compra. Um CSV de
+         outra origem, sem essas colunas, continua entrando linha a linha. */
+      var ehParcela=!!(oid&&np>1&&vt&&/^\d{4}-\d{2}-\d{2}$/.test(dc));
+      if(ehParcela){
+        if(vistos[oid]){continue;}       /* as outras parcelas são derivadas */
+        vistos[oid]=1;
+        novos.push({id:oid,d:dc,cat:ref.c.id,sub:s?s.id:null,v:vt,par:np,
+          pay:(iP>=0?(L[iP]||'').trim():'')||null,desc:(iT>=0?(L[iT]||'').trim():''),
+          ts:Date.now(),_oid:oid});
+        colapsadas+=np;
+        continue;
+      }
+      var reg={id:(iId>=0&&L[iId])?L[iId]:uid('e'),d:data,cat:ref.c.id,sub:s?s.id:null,
+        v:v,pay:(iP>=0?(L[iP]||'').trim():'')||null,desc:(iT>=0?(L[iT]||'').trim():''),ts:Date.now(),
+        _oid:oid};
+      /* o vínculo só volta se o molde existir NESTE aparelho; apontar para um
+         molde que não está aqui seria pior que não apontar para nada */
+      var rid=(iRec>=0)?String(L[iRec]||'').trim():'';
+      var cp=(iComp>=0)?String(L[iComp]||'').trim():'';
+      if(rid&&/^\d{4}-\d{2}$/.test(cp)&&rec(rid)){reg.rec=rid;reg.comp=cp;vinculadas++;}
+      novos.push(reg);
     }
     var faltaNomes=Object.keys(faltando);
     folha('Importar planilha',function(b){
-      b.appendChild(el('<div class="hero" style="margin-bottom:12px"><div class="k">Linhas lidas</div>'+
+      /* Com o colapso das parcelas, "linhas lidas" e "lançamentos a criar"
+         deixaram de ser o mesmo número. O rótulo tem de dizer qual dos dois é. */
+      b.appendChild(el('<div class="hero" style="margin-bottom:12px"><div class="k">Lançamentos a importar</div>'+
         '<div class="big tnum">'+novos.length+'</div>'+
         '<div class="delta flat">'+(invalidas?invalidas+' linha(s) ignorada(s) por data ou valor inválido':'nenhuma linha com problema')+'</div></div>'));
+      if(colapsadas||vinculadas){
+        var av=[];
+        if(colapsadas)av.push(colapsadas+' linha(s) de parcela reunidas nas compras de origem');
+        if(vinculadas)av.push(vinculadas+' lançamento(s) religados à recorrência de origem');
+        b.appendChild(el('<div class="hint" style="padding-top:0">'+esc(av.join(' · '))+'.</div>'));
+      }
       if(faltaNomes.length){
         b.appendChild(el('<div class="glabel">Categorias que não existem aqui</div>'));
         var w=el('<div class="optwrap"></div>');
@@ -3238,19 +3701,24 @@ function importarCSV(){
       if(!novos.length){
         b.appendChild(el('<div class="hint">Nada para importar.</div>'));return;
       }
-      var m=el('<button class="btnfull">Mesclar ('+novos.length+' linhas)</button>');
+      var m=el('<button class="btnfull">Mesclar ('+novos.length+(novos.length===1?' lançamento':' lançamentos')+')</button>');
       m.onclick=function(){
         var tem={};DB.exp.forEach(function(e){tem[e.id]=1;});
-        var add=novos.filter(function(e){return !tem[e.id];});
+        /* uma linha já existe se o id dela bate com um lançamento OU se ela veio
+           de uma compra que já está aqui (o caso das parcelas) */
+        var add=novos.filter(function(e){return !tem[e.id]&&!(e._oid&&tem[e._oid]);});
+        add.forEach(function(e){delete e._oid;});
         DB.exp=add.concat(DB.exp);
         ordenarExp();salvar();fecharFolhas();S.aba='list';S.periodo='tudo';render();
         toast('Importação concluída',add.length+' novos · '+(novos.length-add.length)+' já existiam','',null);
       };
       b.appendChild(m);
-      var r=el('<button class="btnfull dan">Substituir os lançamentos</button>');
+      var r=el('<button class="btnfull dan">Substituir os lançamentos ('+novos.length+')</button>');
       r.onclick=function(){
         confirmar2('Substituir lançamentos?','Os '+DB.exp.length+' lançamentos atuais serão apagados e trocados pelos '+
-          novos.length+' da planilha. As categorias não mudam.','Substituir',true,function(){
+          novos.length+' da planilha. As categorias não mudam.',
+          'Substituir',true,function(){
+          novos.forEach(function(e){delete e._oid;});
           DB.exp=novos.slice();ordenarExp();salvar();S.aba='list';S.periodo='tudo';render();
           toast('Lançamentos substituídos',novos.length+' importados.','',null);
         });
@@ -3294,12 +3762,21 @@ try{
                    comprometido:comprometido,MAXPARC:MAXPARC,SCHEMA:SCHEMA};
     window.__ent={eEntrada:eEntrada,saidasDe:saidasDe,entradasDe:entradasDe,
                   somaDe:somaDe,saldoDe:saldoDe,valorFinal:valorFinal,
-                  faltamEntradas:faltamEntradas,importarEntradas:importarEntradas,
-                  normNome:normNome,baseTemEntrada:baseTemEntrada,S:S};
+                  baseTemEntrada:baseTemEntrada,S:S};
     window.__rec={compsDe:compsDe,dataComp:dataComp,pendentes:pendentes,
                   valorSugerido:valorSugerido,confirmadosDe:confirmadosDe,
                   pularComp:pularComp,reativarComp:reativarComp,rec:rec,
                   MAXRETRO:MAXRETRO};
+    /* v12: o estado de período e as funções puras que dependem dele. `S` já
+       estava exposto em __ent, mas a bateria da v12 lê `periodo`, `de`, `ate` e
+       `dia` dezenas de vezes e um nome próprio deixa o teste legível. */
+    window.__v12={S:S,estadoValor:estadoValor,centsDe:centsDe,valorDe:valorDe,
+                  rotuloPeriodo:rotuloPeriodo,periodoNavega:periodoNavega,
+                  limitesCal:limitesCal,
+                  get periodo(){return S.periodo;},
+                  get dia(){return S.dia;},
+                  get de(){return S.de;},
+                  get ate(){return S.ate;}};
   }
 }catch(e){}
 })();
