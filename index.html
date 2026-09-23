@@ -914,7 +914,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-23.3';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-23.5';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -3603,7 +3603,22 @@ function folhaFormacao(noMes,mk){
       if(!lista.length)return;
       b.appendChild(el('<div class="glabel">'+titulo+' · R$ '+brl(soma(lista))+'</div>'));
       var w=el('<div class="optwrap"></div>');
-      lista.sort(function(a,x){return x.v-a.v;}).forEach(function(e){
+      /* v17: ordenado por CATEGORIA dentro de cada lado, e não pelo valor solto.
+         Uma linha por lançamento continua sendo a unidade — o corte desta folha
+         é comprometido × decidido, e categoria é ortogonal a ele: Moradia pode
+         ter o aluguel de molde de um lado e um conserto à vista do outro.
+         Agrupar de verdade diria que a categoria escolheu um lado. O que muda é
+         só a ordem: as categorias entram pelo peso que têm NAQUELE lado, e as
+         linhas de uma mesma categoria ficam vizinhas. */
+      var totCat={};
+      lista.forEach(function(e){totCat[e.cat]=(totCat[e.cat]||0)+e.v;});
+      lista.sort(function(a,x){
+        if(a.cat!==x.cat){
+          if(totCat[x.cat]!==totCat[a.cat])return totCat[x.cat]-totCat[a.cat];
+          return a.cat<x.cat?-1:1;   /* empate de peso: ordem estável, não sorteio */
+        }
+        return x.v-a.v;
+      }).forEach(function(e){
         var c=cat(e.cat)||{e:'❓',n:'—'};
         var porq=e.rec?'recorrente':(e.pi>=2?('parcela '+e.pi+'/'+e.pn):'à vista');
         w.appendChild(el('<div class="opt"><span class="ic">'+c.e+'</span>'+
@@ -3650,6 +3665,24 @@ function folhaMudou(mk){
     }
     b.appendChild(corpo);
     pinta(corpo,mk,regs[i]);
+    /* v16: dizer o que FALTA e por quê.
+       As réguas somem quando não há base, e sumir em silêncio faz você procurar
+       um controle que nunca esteve lá — foi exatamente o que aconteceu. Uma
+       linha no rodapé, só quando falta alguma, resolve sem trazer de volta um
+       botão morto. */
+    var tem={};regs.forEach(function(r){tem[r.id]=1;});
+    var faltam=[],nf=mesesAntes(mk);
+    if(!tem.ant)faltam.push('A comparação com o <b>mês anterior</b> aparece quando '+
+      esc(mesCurto(addMes(mk,-1)))+' tiver saída na base.');
+    /* o texto diz 4 e não 6 porque a régua nasce com 4 meses fechados e se
+       chama pelo número que tem — "Média de 4m". Prometer 6 aqui seria a
+       mesma mentira que a v14 tirou do rótulo. */
+    if(!tem.media)faltam.push('A <b>média dos meses anteriores</b> aparece a partir de '+
+      '4 meses fechados na base — hoje há '+nf+(nf===1?' mês.':' meses.'));
+    if(!tem.ano)faltam.push('A comparação com <b>'+esc(mesCurto(addMes(mk,-12)))+
+      '</b> aparece quando esse mês tiver saída na base.');
+    if(faltam.length)b.appendChild(el('<div class="hint" style="margin-top:16px">'+
+      faltam.join('<br>')+'</div>'));
   });
 }
 function pinta(corpo,mk,reg){
@@ -3950,6 +3983,22 @@ function telaCfg(){
   var s=el('<section class="screen"><div class="scroll pad-top"></div></section>');
   var b=s.firstElementChild;
 
+  /* v16: Planejamento nasceu porque "Recorrentes" estava em Estrutura, e não é
+     estrutura — estrutura é a taxonomia, que você mexe uma vez e esquece;
+     recorrente é compromisso, que você revisa todo mês. O bloco vem ANTES de
+     Aparência, e não só antes de Estrutura: tema e densidade se escolhem uma
+     vez na vida, e o que se usa todo mês tem de estar no topo.
+     O Orçamento entra aqui no lote C. */
+  b.appendChild(el('<div class="glabel">Planejamento</div>'));
+  var gp=el('<div class="group"></div>');
+  var nRec=(DB.rec||[]).length,nPend=pendentes().length;
+  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div>'+
+    '<div class="r2">Aluguel, assinaturas e contas que se repetem todo mês.</div></div>'+
+    '<div class="right"><span>'+(nRec?(nRec+(nPend?(' · '+nPend+' a confirmar'):'')):'nenhuma')+
+    '</span>'+ICO.chev+'</div></button>');
+  rr.onclick=folhaRecorrentes;gp.appendChild(rr);
+  b.appendChild(gp);
+
   /* Aparência */
   b.appendChild(el('<div class="glabel">Aparência</div>'));
   var g1=el('<div class="group"></div>');
@@ -3977,12 +4026,6 @@ function telaCfg(){
   var ro=el('<button class="grow tap"><div><div class="r1">Ordem das categorias</div>'+
     '<div class="r2">As '+L.mostra+' primeiras viram botão na tela 1.</div></div>'+ICO.chev+'</button>');
   ro.onclick=folhaOrdem;g2.appendChild(ro);
-  var nRec=(DB.rec||[]).length,nPend=pendentes().length;
-  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div>'+
-    '<div class="r2">Aluguel, assinaturas e contas que se repetem todo mês.</div></div>'+
-    '<div class="right"><span>'+(nRec?(nRec+(nPend?(' · '+nPend+' a confirmar'):'')):'nenhuma')+
-    '</span>'+ICO.chev+'</div></button>');
-  rr.onclick=folhaRecorrentes;g2.appendChild(rr);
   var rc=el('<button class="grow tap"><div><div class="r1">Categorias e sub-categorias</div>'+
     '<div class="r2">'+DB.cats.filter(function(c){return !c.arq;}).length+' categorias · '+
     DB.cats.reduce(function(a,c){return a+c.subs.filter(function(s){return !s.arq;}).length;},0)+' sub-categorias</div></div>'+ICO.chev+'</button>');
