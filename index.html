@@ -153,7 +153,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 
 /* abas */
 #tabs{
-  display:grid;grid-template-columns:repeat(4,1fr);
+  /* v18: cinco colunas. Medido a 393px: a coluna cai de 96,3px para 77,0px e
+     nenhum rótulo estoura. Num aparelho de 320px "Lançamentos" estouraria por
+     6px — ali a régua teria de ser outra, e por ora não é o caso. */
+  display:grid;grid-template-columns:repeat(5,1fr);
   background:var(--card);border-top:.5px solid var(--line);
   padding:6px 4px calc(env(safe-area-inset-bottom,0px) + 6px);
 }
@@ -161,6 +164,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .tab svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .tab span{font-size:10px;font-weight:500;letter-spacing:.01em}
 .tab[aria-selected="true"]{color:var(--tint)}
+/* v18: o aviso de pendência. Fica colado no ícone e não no rótulo, porque é do
+   assunto que ele fala; e é posicionado sobre um invólucro do tamanho do ícone,
+   senão a pílula empurraria a coluna e desalinharia a barra inteira. */
+.tab .tw{position:relative;display:block;width:22px;height:22px}
+.tab .pill{
+  position:absolute;top:-4px;left:12px;background:var(--danger);color:#fff;
+  font-size:9px;font-weight:700;line-height:1;border-radius:7px;padding:3px 4.5px;
+  min-width:14px;text-align:center;letter-spacing:0;
+}
 
 /* ============================================================
    GRADE DE CARDS (telas 1 e 2)
@@ -607,6 +619,37 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .barrow .track{grid-column:1/-1;height:8px;border-radius:4px;background:var(--fill2);overflow:hidden;margin-top:3px}
 .barrow .fill{display:block;height:100%;min-width:4px;background:var(--c);border-radius:0 4px 4px 0}
 .barrow .bp{grid-column:1/-1;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* v18: a meta na linha do ranking. O trilho precisa deixar o traço escapar
+   para cima, então perde o overflow:hidden — e por isso o preenchimento ganha
+   o arredondamento de volta, que antes vinha do corte do trilho. */
+.barrow.meta .track{overflow:visible;position:relative}
+.barrow.meta .fill{border-radius:4px}
+.barrow .metamk{
+  position:absolute;top:-3px;width:2px;height:14px;border-radius:1px;
+  background:var(--ink2);padding:0;
+}
+.barrow.estourou .track{background:color-mix(in srgb,var(--danger) 16%,var(--fill2))}
+.barrow.estourou .bp{color:var(--danger);font-weight:600}
+/* a faixa de aviso das metas: atalho, não alarme — por isso o vermelho entra
+   só como fundo de 9% e no número, e não como borda inteira. */
+.metahd{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  background:color-mix(in srgb,var(--danger) 9%,var(--card));
+  border-radius:12px;padding:12px 13px;margin-top:14px;font-size:13.5px;
+  min-height:44px;
+}
+.metahd:active{opacity:.6}
+.metahd .tx{flex:1}
+.metahd svg.chev{flex:none}
+/* a caixa de vigência, na folha de definir a meta */
+.vigbox{
+  font-size:12.5px;color:var(--ink2);background:var(--fill);border-radius:10px;
+  padding:10px 12px;line-height:1.45;margin-top:9px;
+}
+.vigbox b{font-weight:600}
+.vigbox .av{color:var(--muted);display:block;margin-top:3px;font-size:11.5px}
+.opt .tag.def{color:var(--tint);font-weight:600}
+.opt .tag.tem{color:var(--ink2);font-weight:600}
 
 /* ============================================================
    BANNER / VAZIO / TOAST
@@ -911,10 +954,10 @@ var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"
 
 /* ---------------- utilidades ---------------- */
 var KEY='despesas.v1';
-var SCHEMA=4;
+var SCHEMA=5;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-23.5';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-23.8';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1146,6 +1189,13 @@ var TABS=[
   /* Engrenagem, não sol: o desenho anterior era um disco com oito raios curtos,
      que a 22px é exatamente um sol. Seis dentes e não oito — com oito, a 22px a
      serrilha vira um borrão cinza e some a leitura de "engrenagem". */
+  /* v18: "Planejar" entrou como quinta aba porque Recorrentes e Orçamento não
+     são ajustes — ajuste é como o app se comporta, planejamento é o que vale
+     para o futuro em reais. O ícone é um alvo: dois anéis e o centro cheio.
+     Não é engrenagem (aquilo é configuração) nem barras (aquilo é o passado,
+     que o Resumo já conta) — é onde se quer chegar. */
+  ['plan','Planejar','<circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/>'+
+   '<circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>'],
   ['cfg','Ajustes','<path d="M9.7 2.3 L14.3 2.3 L14.5 4.8 L16.9 6.2 L19.3 5.1 L21.6 9.2 L19.5 10.6 L19.5 13.4 L21.6 14.8 L19.3 18.9 L16.9 17.8 L14.5 19.2 L14.3 21.7 L9.7 21.7 L9.5 19.2 L7.1 17.8 L4.7 18.9 L2.4 14.8 L4.5 13.4 L4.5 10.6 L2.4 9.2 L4.7 5.1 L7.1 6.2 L9.5 4.8 Z"/><circle cx="12" cy="12" r="3.4"/>']
 ];
 var PAGTOS=[['Crédito','💳'],['Débito','🏧'],['Pix','⚡'],['Dinheiro','💵']];
@@ -1158,6 +1208,7 @@ var avisoGravacao=false;
 function novoDB(){
   return {
     v:SCHEMA,
+    metas:[],
     cats:SEED.map(function(c){
       return {id:c.id,n:c.n,e:c.e,c:c.c,arq:false,tipo:c.tipo||null,
         subs:c.subs.map(function(s){return {id:s.id,n:s.n,e:s.e,arq:false};})};
@@ -1195,6 +1246,10 @@ function migrar(d){
   /* formato 3 -> 4: entradas. Nada a converter — categoria sem `tipo` é saída,
      que é exatamente o que toda categoria gravada até aqui significa. Nenhum
      lançamento é lido, nenhum valor é reescrito. */
+  /* formato 4 -> 5: orçamento. Só cria a coleção vazia. Nenhum lançamento é
+     lido e nenhuma categoria é tocada — quem nunca definir meta tem um app
+     byte a byte igual ao de antes. */
+  d.metas=d.metas||[];
   d.ordem=d.ordem||d.cats.map(function(c){return c.id;});
   /* garante que a ordem cobre todas as categorias e só elas */
   var ids=d.cats.map(function(c){return c.id;});
@@ -1263,6 +1318,69 @@ function pctLabel(v,tot,suf){
 function largBarra(v,max){
   if(!(max>0))return 0;
   return Math.max(0,Math.min(100,v/max*100));
+}
+
+/* ---------------- orçamento (v18, formato 5) ----------------
+   Meta com VIGÊNCIA. Cada mudança grava a partir de que mês vale, e meses
+   fechados continuam com a meta que valia neles. Sem isso, aumentar a meta
+   hoje faria agosto virar "dentro da meta" por uma decisão que agosto não
+   conheceu — o passado mudaria de veredito sozinho.
+   Na tela isso não aparece como configuração: você define um número e ele vale
+   do mês corrente em diante. A vigência só é dita quando há passado afetado.
+   Remover é evento com data também, gravado como v:0: apagar uma meta não pode
+   apagar o histórico de tê-la cumprido. */
+function metaDe(catId,mk){
+  var L=DB.metas||[],melhor=null;
+  for(var i=0;i<L.length;i++){
+    var m=L[i];
+    if(m.cat!==catId||m.desde>mk)continue;
+    if(!melhor||m.desde>melhor.desde)melhor=m;
+  }
+  return (melhor&&melhor.v>0)?melhor.v:null;
+}
+function definirMeta(catId,cents,mk){
+  mk=mk||mkey(hoje());
+  var L=DB.metas=DB.metas||[];
+  for(var i=0;i<L.length;i++)if(L[i].cat===catId&&L[i].desde===mk){L[i].v=cents;return;}
+  L.push({cat:catId,desde:mk,v:cents});
+}
+/* quantas categorias de SAÍDA têm meta valendo em mk */
+function comMeta(mk){
+  var n=0;
+  catsOrdenadas(false).forEach(function(c){if(!eEntrada(c.id)&&metaDe(c.id,mk))n++;});
+  return n;
+}
+/* as metas do mês com o que foi gasto de fato, para a faixa de aviso */
+function balancoMetas(mk){
+  var todas=ocorrencias().filter(function(e){return mkey(e.d)===mk;});
+  var gasto={};
+  saidasDe(todas).forEach(function(e){gasto[e.cat]=(gasto[e.cat]||0)+e.v;});
+  var out=[];
+  catsOrdenadas(false).forEach(function(c){
+    if(eEntrada(c.id))return;
+    var m=metaDe(c.id,mk);
+    if(!m)return;
+    out.push({id:c.id,meta:m,v:gasto[c.id]||0,estourou:(gasto[c.id]||0)>m});
+  });
+  return out;
+}
+/* média de saída de uma categoria nos meses FECHADOS anteriores a mk.
+   É a única âncora honesta para escolher um número: meta chutada no vazio não
+   se cumpre. Devolve null quando não há mês fechado — inventar uma média de
+   zero meses seria pior que não mostrar nada. */
+function mediaCat(catId,mk,n){
+  var disp=Math.min(n||6,mesesAntes(mk));
+  if(disp<1)return null;
+  var todas=ocorrencias(),soma=0;
+  /* serieMeses devolve {m,v}, não a chave do mês — o `.m` aqui é o que faltava
+     na primeira versão, que somava zero em silêncio. */
+  var meses=serieMeses(addMes(mk,-1),disp);
+  for(var i=0;i<meses.length;i++){
+    var m=meses[i].m;
+    saidasDe(todas.filter(function(e){return mkey(e.d)===m;}))
+      .forEach(function(e){if(e.cat===catId)soma+=e.v;});
+  }
+  return {v:Math.round(soma/disp),n:disp};
 }
 
 /* ---------------- séries e réguas de comparação (v14) ----------------
@@ -1621,7 +1739,7 @@ function render(){
   aplicarTema();
   cabecalho();
   main.innerHTML='';
-  var f={reg:telaReg,list:telaLista,sum:telaResumo,cfg:telaCfg}[S.aba];
+  var f={reg:telaReg,list:telaLista,sum:telaResumo,plan:telaPlanejar,cfg:telaCfg}[S.aba];
   main.appendChild(f());
   abas();
 }
@@ -1658,6 +1776,9 @@ function cabecalho(){
   }else if(S.aba==='sum'){
     marcaNaEsquerda();
     hdr.t.textContent='Resumo';
+  }else if(S.aba==='plan'){
+    marcaNaEsquerda();
+    hdr.t.textContent='Planejar';
   }else{
     marcaNaEsquerda();
     hdr.t.textContent='Ajustes';
@@ -1674,7 +1795,19 @@ function voltarPasso(){
 function abas(){
   var t=document.getElementById('tabs');t.innerHTML='';
   TABS.forEach(function(x){
-    var b=el('<button class="tab" role="tab" aria-selected="'+(S.aba===x[0])+'"><svg viewBox="0 0 24 24">'+x[2]+'</svg><span>'+x[1]+'</span></button>');
+    /* v18: o aviso de pendência no rodapé. Até aqui ele só existia na faixa
+       do Resumo — quem não abre o Resumo não sabe que tem recorrente esperando.
+       Número, e não bolinha: "3 a confirmar" e "1 a confirmar" pedem urgências
+       diferentes. Acima de 9 vira "9+", senão a pílula empurra o ícone. */
+    var av='';
+    if(x[0]==='plan'){
+      var np=0;try{np=pendentes().length;}catch(e){}
+      if(np>0)av='<span class="pill" aria-hidden="true">'+(np>9?'9+':np)+'</span>';
+    }
+    var b=el('<button class="tab" role="tab" aria-selected="'+(S.aba===x[0])+'">'+
+      '<span class="tw"><svg viewBox="0 0 24 24">'+x[2]+'</svg>'+av+'</span>'+
+      '<span>'+x[1]+'</span></button>');
+    if(av)b.setAttribute('aria-label',x[1]+', '+np+' a confirmar');
     b.onclick=function(){
       fecharFolhas();
       if(x[0]==='reg')limparRascunho();
@@ -1764,7 +1897,10 @@ function telaSub(){
    ============================================================ */
 function blocoValor(st,cfg){
   cfg=cfg||{};
-  var amt=el('<div class="amount"><div class="k">Valor da '+(cfg.ent?'entrada':'saída')+'</div>'+
+  /* v18: o rótulo do visor deixa de presumir que todo número é lançamento.
+     "Valor da saída" em cima de uma meta mensal é simplesmente errado. */
+  var amt=el('<div class="amount"><div class="k">'+
+    (cfg.rotulo||('Valor da '+(cfg.ent?'entrada':'saída')))+'</div>'+
     '<div class="n"><span class="cur">R$</span><span class="fig"><span class="int">0</span>'+
     '<span class="dec">,00</span></span></div></div>');
   var rFig=amt.querySelector('.fig'),rInt=amt.querySelector('.int'),rDec=amt.querySelector('.dec');
@@ -1789,6 +1925,10 @@ function blocoValor(st,cfg){
     if(cfg.onSinal)cfg.onSinal(st);
     upd();
   };
+  /* v18: há valores que não têm lado negativo. Meta de gasto é um deles —
+     "orçamento de menos quinhentos reais" não quer dizer nada. Esconder o ±
+     é mais honesto que aceitar o estado e consertar depois. */
+  if(cfg.semSinal)rSig.hidden=true;
   q.appendChild(rSig);
   ['1','2','3','4','5','6','7','8','9','v','0','b','ok'].forEach(function(d){
     var b;
@@ -1806,7 +1946,7 @@ function blocoValor(st,cfg){
     rDec.textContent=','+decDe(st);
     rDec.classList.toggle('typed',decDigitadoDe(st));
     rFig.classList.toggle('zero',t===0);
-    rGo.disabled=(t===0);
+    rGo.disabled=(t===0&&!cfg.zeroOk);
     rVir.disabled=(st.modo==='cent');
     /* Três avisos ao mesmo tempo para o estorno, em três lugares da tela: o
        número, o próprio ± e o botão de confirmar. Um toque sem querer no ± tem
@@ -1817,7 +1957,7 @@ function blocoValor(st,cfg){
     rSig.setAttribute('aria-pressed',neg?'true':'false');
     rGo.textContent=neg?(cfg.okNegTxt||'Confirmar estorno'):(cfg.okTxt||'Confirmar');
     rGo.classList.toggle('dan',neg);
-    if(cfg.onUpd)cfg.onUpd(st,{par:rPar});
+    if(cfg.onUpd)cfg.onUpd(st,{par:rPar,go:rGo});
   }
   return {amt:amt,pad:pad,upd:upd,par:rPar,go:rGo,sig:rSig};
 }
@@ -2461,6 +2601,20 @@ function telaResumo(){
   var carr=carrossel(cartoes);
   if(carr)sc.appendChild(carr);
 
+  /* v18: a faixa das metas estouradas.
+     Só existe quando há meta E há estouro — quem não usa orçamento continua
+     com a tela byte a byte igual, e quem usa e está dentro de todas não
+     precisa de um aviso para dizer que está tudo bem. Ela é atalho, não
+     alarme: leva direto à tela de metas, que é onde a decisão se toma. */
+  var bal=balancoMetas(mk),furo=bal.filter(function(x){return x.estourou;});
+  if(furo.length){
+    var fh=el('<button class="metahd"><span class="tx">'+furo.length+' de '+bal.length+
+      (bal.length===1?' meta estourada':' metas estouradas')+' em '+
+      esc(mesLabel(mk).split(' de ')[0])+'</span>'+ICO.chev+'</button>');
+    fh.onclick=folhaMetas;
+    sc.appendChild(fh);
+  }
+
   /* v13 (item 31): onde antes vinham dois rankings empilhados, agora vem UM
      bloco — rosca em cima, ranking embaixo — e um seletor que escolhe o lado.
      O seletor só existe quando houve entrada no mês: com um lado só ele seria
@@ -2561,10 +2715,26 @@ function blocoCats(lista,tot,ent,mk){
        escreve "R$ 880,40" faria parecer que são unidades diferentes */
     var val=ent?('<span class="bv tnum '+(r.v<0?'vneg':'vin')+'">'+brlSinRS(r.v)+'</span>')
                :('<span class="bv tnum">R$ '+brl(r.v)+'</span>');
-    var b2=el('<button class="barrow" style="--c:'+c.c+'">'+
+    /* v18: os três estados da meta. Sem meta, a linha é byte a byte a de
+       antes — quem não usa orçamento não ganha traço, cor nem texto novo.
+       O traço no trilho é a meta, e não leva rótulo: esta é a linha mais densa
+       da tela e a palavra "meta" bateria no texto de baixo, que já diz o
+       número. Entrada nunca tem meta: orçamento é sobre gasto. */
+    var meta=ent?null:metaDe(r.id,mk),marca='',cls='',txt=pctLabel(r.v,tot,suf);
+    if(meta){
+      cls=' meta';
+      marca='<span class="metamk" style="left:'+largBarra(meta,max).toFixed(2)+'%"></span>';
+      if(r.v>meta){
+        cls+=' estourou';
+        txt='R$ '+brl(r.v-meta)+' acima da meta de R$ '+brl(meta);
+      }else{
+        txt='R$ '+brl(r.v)+' de R$ '+brl(meta);
+      }
+    }
+    var b2=el('<button class="barrow'+cls+'" style="--c:'+c.c+'">'+
       '<span class="bn"><span>'+c.e+'</span><em>'+esc(c.n)+'</em></span>'+val+
-      '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span></span>'+
-      '<span class="bp tnum">'+pctLabel(r.v,tot,suf)+'</span></button>');
+      '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span>'+marca+'</span>'+
+      '<span class="bp tnum">'+txt+'</span></button>');
     /* é ESTA linha que abre a sub-categoria, e não a fatia da rosca: a menor
        fatia de um mês real dá 20px de arco, menos da metade do mínimo de toque
        da Apple. A rosca mostra a proporção; a linha é o controle. */
@@ -2702,12 +2872,16 @@ function folhaSobre(titulo,montar,opts){
 function folhaValor(titulo,cents,cfg,cb){
   cfg=cfg||{};
   var st=estadoValor(cents);
-  var bv=blocoValor(st,{ent:cfg.ent,onUpd:cfg.onUpd,onOk:function(){
-    if(!centsDe(st))return;
+  var bv=blocoValor(st,{ent:cfg.ent,rotulo:cfg.rotulo,onUpd:cfg.onUpd,zeroOk:cfg.zeroOk,
+                        semSinal:cfg.semSinal,okTxt:cfg.okTxt,onOk:function(){
+    if(!centsDe(st)&&!cfg.zeroOk)return;
     f.fechar();cb(valorDe(st));
   }});
   var f=folhaSobre(titulo,function(b){
     b.appendChild(bv.amt);
+    /* v18: um aviso entre o visor e o teclado, para quem precisa dizer o que
+       aquele número vai significar — hoje só a vigência da meta usa. */
+    if(cfg.aviso)b.appendChild(cfg.aviso);
     /* `cresce`: é este bloco que absorve a diferença de altura quando a folha
        se ajusta à de baixo. Sem ele, a sobra viraria um buraco entre o visor e
        os somadores — que foi a opção D do estudo, descartada por isso. */
@@ -3043,18 +3217,31 @@ function folhaRecorrentes(){
       L.slice().sort(function(a,b2){return String(a.n).localeCompare(String(b2.n),'pt-BR');})
        .forEach(function(r){
         var c=cat(r.cat)||{c:'#78716C'};
+        var ent=eEntrada(r.cat);
         var enc=r.ate?(' · encerrada em '+mesCurto(r.ate)):'';
         var o=el('<button class="grow tap"><div><div class="r1">'+
           (emojiSub(r.cat,r.sub)||'🔁')+' '+esc(r.n)+'</div>'+
           '<div class="r2">'+esc(resumoMolde(r)+enc)+'</div></div>'+
-          '<div class="right"><span class="tnum">'+(r.fixo===false?'~':'')+brl(r.v)+'</span>'+
+          /* v19: o til saiu e o lado entrou.
+             O til queria dizer "valor de referência, varia todo mês" — mas num
+             app de dinheiro a marca ANTES do número é sinal, e a 15px o til de
+             -apple-system tem a mesma altura e a mesma largura do menos. Quem
+             lê vê "−1.760,00". E ele era redundante: a linha de baixo já diz
+             "variável", com todas as letras.
+             No lugar dele entra o que estava faltando de verdade: ENTRADA e
+             SAÍDA na mesma lista estavam idênticas — "Crédito alimentação" é
+             dinheiro entrando e aparecia igual ao condomínio. Agora segue a
+             mesma regra do resto do app (blocoCats): entrada com sinal e cor,
+             saída sem sinal, R$ nos dois. */
+          '<div class="right"><span class="tnum'+(ent?' vin':'')+'">'+
+          (ent?brlSinRS(r.v):('R$ '+brl(r.v)))+'</span>'+
           ICO.chev+'</div></button>');
         o.onclick=function(){fecharFolhas();folhaMolde(r);};
         w.appendChild(o);
       });
       b.appendChild(w);
-      b.appendChild(el('<div class="hint">O valor do variável é só referência: na confirmação '+
-        'o app sugere o do último mês.</div>'));
+      b.appendChild(el('<div class="hint">O valor do <b>variável</b> é só referência: na '+
+        'confirmação o app sugere o do último mês.</div>'));
     }
     var nova=el('<button class="btnfull sec">Nova recorrente</button>');
     nova.onclick=function(){fecharFolhas();folhaMolde(null);};
@@ -3977,27 +4164,127 @@ function editarLancamento(o){
 }
 
 /* ============================================================
+   PLANEJAR  (v18)
+   ============================================================
+   O que vale para o FUTURO em reais: moldes recorrentes e metas de gasto.
+   A fronteira com Ajustes é essa, e ela precisa ser dita porque a próxima
+   dúvida é sempre a mesma: "Categorias e sub-categorias" PARECE planejamento,
+   mas é o vocabulário que o app inteiro usa para nomear as coisas — se a
+   taxonomia vier para cá, a fronteira vira discussão a cada item novo. */
+function telaPlanejar(){
+  var s=el('<section class="screen"><div class="scroll pad-top"></div></section>');
+  var b=s.firstElementChild;
+
+  b.appendChild(el('<div class="hint" style="margin:2px 0 10px">O que você decidiu '+
+    'de antemão — e que vai valer nos próximos meses.</div>'));
+
+  b.appendChild(el('<div class="glabel">Compromissos</div>'));
+  var g1=el('<div class="group"></div>');
+  var nRec=(DB.rec||[]).length,nPend=pendentes().length;
+  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div>'+
+    '<div class="r2">Aluguel, assinaturas e contas que se repetem todo mês.</div></div>'+
+    '<div class="right"><span>'+(nRec?(nRec+(nPend?(' · '+nPend+' a confirmar'):'')):'nenhum')+
+    '</span>'+ICO.chev+'</div></button>');
+  rr.onclick=folhaRecorrentes;g1.appendChild(rr);
+  b.appendChild(g1);
+
+  b.appendChild(el('<div class="glabel">Metas</div>'));
+  var g2=el('<div class="group"></div>');
+  var mkA=mkey(hoje()),nM=comMeta(mkA),nC=0;
+  catsOrdenadas(false).forEach(function(c){if(!eEntrada(c.id))nC++;});
+  var ro=el('<button class="grow tap"><div><div class="r1">Orçamento</div>'+
+    '<div class="r2">Quanto você pretende gastar em cada categoria.</div></div>'+
+    '<div class="right"><span>'+(nM?(nM+' de '+nC+' com meta'):'nenhuma')+
+    '</span>'+ICO.chev+'</div></button>');
+  ro.onclick=folhaMetas;g2.appendChild(ro);
+  b.appendChild(g2);
+
+  return s;
+}
+
+/* ---------------- orçamento (v18) ---------------- */
+/* A tela de metas. Cada categoria traz a MÉDIA dos meses fechados ao lado,
+   porque é a única âncora honesta para escolher um número — e a média
+   reaparece na folha de definir, que é onde a decisão acontece. */
+function folhaMetas(){
+  var mk=mkey(hoje());
+  folha('Orçamento',function(b){
+    b.appendChild(el('<div class="hint" style="margin:2px 0 12px">A meta vale '+
+      '<b>do mês corrente em diante</b>. Meses já fechados continuam com a meta '+
+      'que valia neles.</div>'));
+    var w=el('<div class="optwrap"></div>');
+    catsOrdenadas(false).forEach(function(c){
+      if(eEntrada(c.id))return;
+      var m=metaDe(c.id,mk),md=mediaCat(c.id,mk,6);
+      /* média zero é verdade — a categoria não teve gasto — mas escrita como
+         "R$ 0,00" parece defeito. Dizer o fato é mais claro que imprimir o
+         número. */
+      var sub=!md?'ainda sem mês fechado para comparar'
+              :(md.v===0?('sem gasto nos últimos '+md.n+(md.n===1?' mês':' meses'))
+                        :('média de '+md.n+(md.n===1?' mês':' meses')+': R$ '+brl(md.v)));
+      var o=el('<button class="opt" style="--c:'+c.c+'">'+
+        '<span class="ic">'+c.e+'</span>'+
+        '<span class="nm">'+esc(c.n)+'<small>'+sub+'</small></span>'+
+        '<span class="tag tnum '+(m?'tem':'def')+'">'+(m?('R$ '+brl(m)):'definir')+
+        '</span></button>');
+      o.onclick=function(){folhaMeta(c,mk,md);};
+      w.appendChild(o);
+    });
+    b.appendChild(w);
+  });
+}
+/* A folha de definir. Zerar o valor É remover a meta: a primeira versão tinha
+   um "Remover a meta" em vermelho logo acima do teclado, na zona do polegar e
+   encostado no 7-8-9 — destrutivo em lugar de errar. Sem controle novo, sem
+   alvo perigoso: o visor em zero já muda a caixa de vigência e o botão. */
+function folhaMeta(c,mk,md){
+  var atual=metaDe(c.id,mk)||0;
+  var antes=metaDe(c.id,addMes(mk,-1));
+  var cx=el('<div class="vigbox"></div>');
+  var pinta=function(cents){
+    var quando='<b>Vale a partir de '+esc(mesLabel(mk))+'.</b>';
+    var pass='';
+    if(antes!==null&&antes!==cents)
+      pass='<span class="av">'+esc(mesCurto(addMes(mk,-1)))+' e antes continuam com R$ '+
+           brl(antes)+'.</span>';
+    if(!cents)quando='<b>Sem meta a partir de '+esc(mesLabel(mk))+'.</b>';
+    var anc=md?('<span class="av">Média de '+md.n+(md.n===1?' mês':' meses')+
+                ': R$ '+brl(md.v)+'.</span>'):'';
+    cx.innerHTML=quando+pass+anc;
+  };
+  pinta(atual);
+  var f=folhaValor('Meta de '+c.n,atual,{
+    rotulo:'Meta mensal de '+c.n,
+    zeroOk:atual>0,
+    semSinal:true,
+    aviso:cx,
+    onUpd:function(st,r){
+      var t=centsDe(st)*(st.sinal<0?-1:1);
+      if(t<0)t=0;
+      pinta(t);
+      if(r&&r.go)r.go.textContent=(t===0?'Remover a meta':'Salvar a meta');
+    }
+  },function(v){
+    definirMeta(c.id,Math.max(0,v),mk);
+    salvar();fecharFolhas();render();
+    folhaMetas();
+    toast(v>0?'Meta salva':'Meta removida',
+      c.n+' · '+(v>0?('R$ '+brl(v)+' a partir de '+mesCurto(mk)):'sem meta a partir de '+mesCurto(mk)),
+      '',null);
+  });
+  return f;
+}
+
+/* ============================================================
    AJUSTES
    ============================================================ */
 function telaCfg(){
   var s=el('<section class="screen"><div class="scroll pad-top"></div></section>');
   var b=s.firstElementChild;
 
-  /* v16: Planejamento nasceu porque "Recorrentes" estava em Estrutura, e não é
-     estrutura — estrutura é a taxonomia, que você mexe uma vez e esquece;
-     recorrente é compromisso, que você revisa todo mês. O bloco vem ANTES de
-     Aparência, e não só antes de Estrutura: tema e densidade se escolhem uma
-     vez na vida, e o que se usa todo mês tem de estar no topo.
-     O Orçamento entra aqui no lote C. */
-  b.appendChild(el('<div class="glabel">Planejamento</div>'));
-  var gp=el('<div class="group"></div>');
-  var nRec=(DB.rec||[]).length,nPend=pendentes().length;
-  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div>'+
-    '<div class="r2">Aluguel, assinaturas e contas que se repetem todo mês.</div></div>'+
-    '<div class="right"><span>'+(nRec?(nRec+(nPend?(' · '+nPend+' a confirmar'):'')):'nenhuma')+
-    '</span>'+ICO.chev+'</div></button>');
-  rr.onclick=folhaRecorrentes;gp.appendChild(rr);
-  b.appendChild(gp);
+  /* v18: o bloco Planejamento que nasceu aqui na v16 saiu para a aba própria
+     (telaPlanejar). A v16 já dizia que Recorrentes não é estrutura; a v18 diz
+     que também não é ajuste. Esta tela voltou a ser só sobre o app. */
 
   /* Aparência */
   b.appendChild(el('<div class="glabel">Aparência</div>'));
@@ -4386,7 +4673,11 @@ function partilhar(nome,texto,mime){
 function pacoteJSON(){
   return JSON.stringify({
     app:'despesas',schemaVersion:SCHEMA,exportadoEm:new Date().toISOString(),
-    cats:DB.cats,ordem:DB.ordem,exp:DB.exp,rec:DB.rec||[],prefs:DB.prefs
+    /* v18: `metas` entra AQUI e em restaurarJSON(). Estes dois lugares montam
+       o objeto campo a campo, então coleção nova não entra sozinha — sem esta
+       linha, exportar e restaurar apagaria as metas em silêncio: lançamentos
+       voltam, categorias voltam, metas não. */
+    cats:DB.cats,ordem:DB.ordem,exp:DB.exp,rec:DB.rec||[],metas:DB.metas||[],prefs:DB.prefs
   },null,1);
 }
 function compartilharJSON(){
@@ -4453,7 +4744,8 @@ function restaurarJSON(){
     confirmar2('Restaurar backup?','Entram '+d.exp.length+' lançamentos, '+d.cats.length+
       ' categorias'+(nRec?(' e '+nRec+(nRec===1?' recorrente':' recorrentes')):'')+
       '. Saem os '+DB.exp.length+' lançamentos atuais deste aparelho. A substituição é total.','Restaurar',true,function(){
-      DB=migrar({v:SCHEMA,cats:d.cats,ordem:d.ordem,exp:d.exp,rec:d.rec||[],prefs:d.prefs||{}});
+      DB=migrar({v:SCHEMA,cats:d.cats,ordem:d.ordem,exp:d.exp,rec:d.rec||[],
+                 metas:d.metas||[],prefs:d.prefs||{}});
       salvar();S.aba='list';S.periodo='tudo';render();
       toast('Backup restaurado',d.exp.length+' lançamentos carregados.','',null);
     });
@@ -4643,6 +4935,14 @@ try{
     /* v15: as funções puras do lote B. */
     window.__v15={formacaoMes:formacaoMes,carrossel:carrossel,
                   folhaComprometido:folhaComprometido,folhaFormacao:folhaFormacao};
+    /* v18: orçamento e o número do formato. O formato entra aqui porque
+       verificação que compara com um literal ("sobe para o formato 4") vira
+       falso vermelho a cada mudança de formato — o que ela quer dizer é
+       "sobe para o formato ATUAL do app". */
+    window.__v18={SCHEMA:SCHEMA,metaDe:metaDe,definirMeta:definirMeta,
+                  comMeta:comMeta,balancoMetas:balancoMetas,mediaCat:mediaCat,
+                  folhaMetas:folhaMetas,pacoteJSON:pacoteJSON};
+    window.__schema=SCHEMA;
     window.__v13={S:S,fatiasRosca:fatiasRosca,roscaHTML:roscaHTML,
                   resumoLista:resumoLista,RO_CIRC:RO_CIRC,
                   get ladoSum(){return S.ladoSum;}};
