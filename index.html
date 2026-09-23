@@ -296,7 +296,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    prendia o Limpar à esquerda e o Filtros à direita foi medida e derrubada:
    sobravam 164px de 361 para os chips, pouco mais de um chip à mostra. */
 .chiprow{display:flex;align-items:center;gap:6px;padding:1px 16px 10px}
-.chiprow .rola{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+/* `overflow-x:auto` faz o navegador computar `overflow-y:auto` também, e isso
+   RECORTA o que passa da altura da faixa — inclusive a área de toque esticada
+   dos chips de ícone. O padding vertical abre espaço para ela, e a margem
+   negativa devolve os pixels ao layout, para a fileira não crescer. */
+.chiprow .rola{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;
+  padding:7px 0;margin:-7px 0}
 .chiprow .rola::-webkit-scrollbar{display:none}
 .fchips{display:flex;gap:6px;overflow-x:auto;padding:1px 16px 10px;scrollbar-width:none}
 .fchips::-webkit-scrollbar{display:none}
@@ -310,6 +315,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .fchip.filt{color:var(--tint)}
 .fchip.filt[data-on="1"]{background:var(--tint);color:#fff}
 .fchip.limpar{background:var(--tint-soft);color:var(--tint);font-weight:600}
+/* Chip só de ícone. O ✕ sozinho media 35px, abaixo do mínimo de 44 da Apple.
+   Crescer o chip resolveria, mas ele ficaria mais alto que os chips de
+   categoria (30px) e a fileira sairia desalinhada. Então a ÁREA DE TOQUE é
+   esticada por um pseudo-elemento: 44px de alvo real, 30px de desenho.
+   Medir isto com getBoundingClientRect dá o número errado — o teste usa
+   elementFromPoint, como o do campo de data. */
+.fchip.so{min-width:44px;justify-content:center;padding:6px 10px;position:relative}
+.fchip.so::after{content:"";position:absolute;left:0;right:0;top:50%;
+  height:44px;transform:translateY(-50%)}
+.fchip.so .xs{width:13px;height:13px}
+.fchip.so .fn{width:15px;height:15px}
 .fchip .xs{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round}
 .fchip .fn{width:13px;height:13px;stroke:currentColor;stroke-width:1.9;fill:none;
   stroke-linejoin:round;stroke-linecap:round}
@@ -387,10 +403,28 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .delta.up{color:var(--warn)}
 .delta.down{color:var(--ok)}
 .delta.flat{color:var(--muted)}
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
-.tile{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:11px 13px}
-.tile .k{font-size:11.5px;color:var(--muted)}
-.tile .v{font-size:18px;font-weight:600;letter-spacing:-.025em;margin-top:2px;font-variant-numeric:tabular-nums}
+/* v13 (item 31): a rosca do Resumo.
+   O app tem `svg{width:20px;height:20px}` global para os ícones — a rosca
+   precisa de largura e altura próprias ou nasce com 20px. */
+.dwrap{position:relative;display:flex;justify-content:center;margin-top:2px}
+.donut{display:block;width:184px;height:184px;transform:rotate(-90deg)}
+/* `butt` e não `round`: com ponta arredondada as fatias pequenas se sobrepõem
+   às vizinhas e a proporção que a rosca existe para mostrar deixa de ser real. */
+.donut circle{fill:none;stroke-linecap:butt}
+/* a rosca NÃO é tocável: a menor fatia de um mês real dá 20px de arco, menos da
+   metade dos 44px da Apple. Quem abre a sub-categoria é a linha do ranking logo
+   abaixo, que já tem altura de sobra. Daí o pointer-events:none aqui. */
+.dmid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;pointer-events:none;text-align:center}
+/* O buraco tem ~117px de diâmetro; o texto para em 100px para não encostar no
+   anel nas diagonais. Nome de categoria longo ("Salários e benefícios") para em
+   duas linhas com reticências em vez de empurrar o bloco para fora do buraco. */
+.dmid>*{max-width:100px}
+.dmid .dk{font-size:11px;color:var(--muted);line-height:1.25}
+.dmid .dv{font-size:15px;font-weight:600;letter-spacing:-.02em;margin-top:1px;line-height:1.18;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dmid .dp{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
 /* comprometido à frente: sem ele, o parcelamento faria o mês parecer menor
    sem dizer para onde o resto foi */
 .compr{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-top:9px}
@@ -683,6 +717,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .seg{display:flex;background:var(--fill2);border-radius:9px;padding:2px;gap:2px;margin:0 4px 8px}
 .seg button{flex:1;font-size:13.5px;font-weight:600;padding:6px 0;border-radius:7px;color:var(--ink2)}
 .seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.10);color:var(--ink)}
+/* No Resumo o seletor abre um bloco novo, não continua o de cima: por isso o
+   respiro maior em cima do que embaixo. Altura total 36px — acima dos 44px só
+   com o dedo, mas é a mesma régua do seletor da aba Lançamentos, que já roda. */
+.seg.res{margin:18px 0 10px}
 </style>
 </head>
 <body>
@@ -758,7 +796,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-22.5';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-23.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1108,6 +1146,55 @@ function largBarra(v,max){
   if(!(max>0))return 0;
   return Math.max(0,Math.min(100,v/max*100));
 }
+
+/* ---------------- a rosca do Resumo (v13, item 31) ----------------
+   Geometria em unidades de viewBox; a tela renderiza a 184px. */
+var RO_R=38,RO_W=12.5,RO_CIRC=2*Math.PI*38,RO_CINZA='#A8A29E';
+/* Quantas fatias a rosca aguenta. A taxonomia tem 12 categorias de saída; com
+   todas desenhadas, as seis últimas viram tiras de 0 a 3px e três cores
+   vizinhas (rosa, magenta, roxo) já não se distinguem.
+
+   A regra: no máximo SEIS fatias de categoria; o que sobrar vira "Outras"
+   (cinza) no fim do anel. Nada some — o ranking logo abaixo continua listando
+   todas. Sete ou menos desenha todas, porque agrupar aí economizaria no máximo
+   uma fatia e custaria dois nomes.
+
+   A primeira versão disto tinha também um corte por cobertura ("fatias até
+   90% do total"). Ela parecia mais esperta e era pior: com sete categorias o
+   corte disparava na quinta e jogava DUAS categorias no cinza para economizar
+   UMA fatia. Quantas fatias aparecem não pode depender de como o mês se
+   distribuiu — senão a mesma tela muda de forma sem que nada tenha mudado de
+   tamanho. Regra fixa é mais previsível e sempre deixa mais nomes à vista. */
+function fatiasRosca(rank,tot){
+  if(rank.length<=7)return rank.slice();
+  var out=rank.slice(0,6),acum=0,i;
+  for(i=0;i<6;i++)acum+=rank[i].v;
+  var resto=tot-acum;
+  if(resto>0)out.push({id:null,v:resto});
+  return out;
+}
+/* Devolve '' quando a rosca não teria significado: total zero ou negativo, ou
+   alguma categoria negativa por estorno. É a mesma resposta que pctLabel dá
+   nesses casos — lá um traço, aqui a ausência do desenho. O ranking fica. */
+function roscaHTML(rank,tot,meio){
+  if(!(tot>0))return '';
+  for(var j=0;j<rank.length;j++)if(rank[j].v<0)return '';
+  var fat=fatiasRosca(rank,tot),off=0,sv='';
+  for(var i=0;i<fat.length;i++){
+    var f=fat[i];
+    var cor=f.id?((cat(f.id)||{c:'#78716C'}).c):RO_CINZA;
+    var frac=f.v/tot;
+    /* o 1.2 é o fio de respiro entre uma fatia e a seguinte: sem ele, duas
+       cores próximas encostam e viram uma fatia só aos olhos */
+    var comp=Math.max(0,frac*RO_CIRC-1.2);
+    sv+='<circle cx="50" cy="50" r="'+RO_R+'" stroke="'+cor+'" stroke-width="'+RO_W+'"'+
+        ' stroke-dasharray="'+comp.toFixed(3)+' '+(RO_CIRC-comp).toFixed(3)+'"'+
+        ' stroke-dashoffset="'+(RO_CIRC/4-off*RO_CIRC).toFixed(3)+'"></circle>';
+    off+=frac;
+  }
+  return '<div class="dwrap"><svg class="donut" viewBox="0 0 100 100" aria-hidden="true">'+
+         sv+'</svg><div class="dmid">'+meio+'</div></div>';
+}
 function catsOrdenadas(incluirArq){
   return DB.ordem.map(cat).filter(function(c){return c&&(incluirArq||!c.arq);});
 }
@@ -1184,7 +1271,10 @@ var S={
      sempre normalizados com de<=ate antes de serem gravados aqui. Nada disso é
      persistido — é estado de tela, como o resto de S. */
   dia:hoje(),de:hoje(),ate:hoje(),
-  fLado:'tudo'
+  fLado:'tudo',
+  /* v13 (item 31): qual lado o bloco de gráficos do Resumo está mostrando.
+     Só o bloco — o número grande continua sendo o gasto do mês, sempre. */
+  ladoSum:'s'
 };
 function limparRascunho(){
   S.cat=null;S.sub=null;S.intD='';S.centD='';S.modo='reais';S.sinal=1;
@@ -1635,15 +1725,14 @@ function baseTemEntrada(){
 function temSaida(l){for(var i=0;i<l.length;i++)if(!eEntrada(l[i].cat))return true;return false;}
 function resumoLista(vis){
   if(!temEntrada(vis)||!temSaida(vis)){
+    /* item 35: a média saiu dos DOIS lados. Ela já não existia no ramo misto
+       (soma de sinais opostos dividida por contagem não diz nada) nem com
+       estorno nem com um lançamento só — ou seja, era um número que aparecia
+       e sumia conforme o filtro, e ninguém consegue confiar num rodapé assim.
+       Agora a legenda deste ramo é sempre a mesma: a contagem. */
     var t=somaDe(vis);
-    /* Média de um conjunto que mistura compra e devolução não diz nada — é o
-       mesmo motivo pelo qual ela não existe no ramo misto, logo abaixo. */
-    var temNeg=vis.some(function(o){return o.v<0;});
     return {v:(t<0?'− R$ ':'R$ ')+brl(Math.abs(t)),
-            c:vis.length+(vis.length===1?' lançamento':' lançamentos')+
-              /* média de um lançamento só é o próprio lançamento: repetir o
-                 número grande logo abaixo dele não informa nada */
-              ((temNeg||vis.length<2)?'':('<br>média R$ '+brl(Math.round(t/vis.length))))};
+            c:vis.length+(vis.length===1?' lançamento':' lançamentos')};
   }
   var e=somaDe(entradasDe(vis)),sa=somaDe(saidasDe(vis)),sal=e-sa;
   /* A legenda traz a unidade, como o número grande logo acima dela, e a entrada
@@ -1704,6 +1793,17 @@ function telaLista(){
 
   var fc=el('<div class="chiprow"></div>');
   var rola=el('<div class="rola"></div>');
+  /* O funil abre a folha de filtros e é o PRIMEIRO chip. Antes ele era o
+     último, depois de todas as categorias — com seis delas em uso ele já saía
+     da tela, e quem não sabia que ele existia não o encontrava.
+     Sem a palavra: medi e o espaço economizado não vira categoria visível
+     (a próxima não cabe de qualquer jeito), então o que está em jogo aqui é
+     só quantos rótulos a fileira carrega. */
+  var nf=nFiltros();
+  var bf=el('<button class="fchip filt so" data-on="'+(nf?1:0)+'" aria-label="Filtros">'+
+    ICO.funil+(nf?('<span class="ct">'+nf+'</span>'):'')+'</button>');
+  bf.onclick=folhaFiltros;
+  rola.appendChild(bf);
   /* O primeiro chip é "Todas" quando não há nada filtrado e "Limpar" quando há.
      É troca, não acréscimo — por isso a faixa que rola continua com a largura
      inteira da tela. A versão anterior prendia o Limpar à esquerda e o Filtros
@@ -1721,14 +1821,6 @@ function telaLista(){
     b.onclick=function(){S.fCat=(S.fCat===c.id?null:c.id);S.fSub=null;render();};
     rola.appendChild(b);
   });
-  /* O "Filtros" continua sendo o último item da rolagem, como sempre foi.
-     Tirá-lo de lá o deixaria sempre à vista — ganho real —, mas custava 84px da
-     faixa. Fica no backlog como assunto próprio, não de carona. */
-  var nf=nFiltros();
-  var bf=el('<button class="fchip filt" data-on="'+(nf?1:0)+'">'+ICO.funil+'Filtros'+
-    (nf?('<span class="ct">'+nf+'</span>'):'')+'</button>');
-  bf.onclick=folhaFiltros;
-  rola.appendChild(bf);
   fc.appendChild(rola);
   /* A categoria escolhida pode nascer fora da parte visível da faixa: sem isto,
      filtrar por "Férias e viagens" mostra uma lista filtrada sem nenhum chip
@@ -1788,8 +1880,8 @@ function telaLista(){
    pode depender de render(). */
 function chipZero(){
   if(temFiltro()){
-    var bl=el('<button class="fchip limpar" aria-label="Limpar todos os filtros">'+
-      ICO.xis+'Limpar</button>');
+    var bl=el('<button class="fchip limpar so" aria-label="Limpar todos os filtros">'+
+      ICO.xis+'</button>');
     bl.onclick=function(){limparTudo();render();};
     return bl;
   }
@@ -1802,10 +1894,11 @@ function chipZero(){
    sincronia própria, que não dependa de render(). */
 function sincLimpar(rola){
   if(!rola)return;
-  var primeiro=rola.firstElementChild;
-  if(!primeiro)return;
-  if(primeiro.classList.contains('limpar')===temFiltro())return;
-  rola.replaceChild(chipZero(),primeiro);
+  /* o primeiro chip agora é o funil; o que alterna é o SEGUNDO */
+  var alvo=rola.children[1];
+  if(!alvo)return;
+  if(alvo.classList.contains('limpar')===temFiltro())return;
+  rola.replaceChild(chipZero(),alvo);
 }
 function redesenharLista(){
   sincLimpar(main.querySelector('.chiprow .rola'));
@@ -2006,9 +2099,6 @@ function telaResumo(){
 
   var eMesAtual=(mk===mkey(hoje()));
   var diasCorridos=eMesAtual?(+hoje().slice(8)):diasNoMes(mk);
-  var media=Math.round(tot/Math.max(1,diasCorridos));
-  var proj=eMesAtual?media*diasNoMes(mk):tot;
-
   var cls='flat',arw='',txt='sem mês anterior para comparar';
   if(totAnt>0){
     var p=(tot-totAnt)/totAnt*100;
@@ -2021,11 +2111,11 @@ function telaResumo(){
     '<div class="big tnum">R$ '+brl(tot)+'</div>'+
     '<div class="delta '+cls+'"><span>'+arw+'</span>'+esc(txt)+'</div></div>'));
 
-  sc.appendChild(el('<div class="tiles">'+
-    '<div class="tile"><div class="k">Média diária</div><div class="v tnum">R$ '+brl(media)+'</div></div>'+
-    '<div class="tile"><div class="k">'+(eMesAtual?'Projeção do mês':'Total do mês')+'</div><div class="v tnum">R$ '+brl(proj)+'</div></div>'+
-    '<div class="tile"><div class="k">Lançamentos</div><div class="v tnum">'+doMes.length+'</div></div>'+
-    '<div class="tile"><div class="k">Ticket médio</div><div class="v tnum">R$ '+brl(Math.round(tot/doMes.length))+'</div></div></div>'));
+  /* v13 (item 31): os quatro tiles saíram — média diária, projeção do mês,
+     lançamentos e ticket médio. Três eram derivações sem uso e a quarta, a
+     projeção, era média × dias do mês: ignorava recorrente pendente e parcela
+     já agendada, ou seja, prometia previsão sem fazer previsão. Previsão de
+     verdade é outro assunto (item 14) e não entra escondida num tile. */
 
   /* Sem este bloco o parcelamento faria o mês parecer menor sem dizer para
      onde o resto foi. Só aparece quando existe parcela futura. */
@@ -2043,63 +2133,81 @@ function telaResumo(){
       '<div class="cbars">'+sp+'</div></div>'));
   }
 
-  /* v12: o rótulo passa a dizer o que o bloco mede, e SEMPRE — inclusive em mês
-     sem entrada nenhuma. Isso rompe um detalhe do contrato da v11 ("sem entrada,
-     a tela fica byte a byte como antes"), mas aquele contrato existia para
-     proteger os números, não os rótulos, e título que só aparece às vezes é pior
-     do que título fixo. */
-  sc.appendChild(el('<div class="glabel">Saídas por categoria</div>'));
-  var agg={};doMes.forEach(function(e){agg[e.cat]=(agg[e.cat]||0)+e.v;});
-  var rank=Object.keys(agg).map(function(k){return {id:k,v:agg[k]};}).sort(function(a,b){return b.v-a.v;});
-  var max=rank[0].v;
-  /* .sai e .ent: os dois blocos usam a mesma barra, e é preciso poder dizer
-     qual é qual — na leitura da tela e na verificação automática. */
-  var bars=el('<div class="bars sai"></div>');
-  rank.forEach(function(r){
-    var c=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
-    var b2=el('<button class="barrow" style="--c:'+c.c+'">'+
-      '<span class="bn"><span>'+c.e+'</span><em>'+esc(c.n)+'</em></span>'+
-      '<span class="bv tnum">R$ '+brl(r.v)+'</span>'+
-      '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span></span>'+
-      '<span class="bp tnum">'+pctLabel(r.v,tot,'do mês')+'</span></button>');
-    b2.onclick=function(){folhaDetalheCat(r.id,mk);};
-    bars.appendChild(b2);
-  });
-  sc.appendChild(bars);
-
-  /* Bloco próprio, e de propósito NÃO é o mesmo do ranking: misturar os dois
-     faria o Salário virar a maior "saída" do mês. */
+  /* v13 (item 31): onde antes vinham dois rankings empilhados, agora vem UM
+     bloco — rosca em cima, ranking embaixo — e um seletor que escolhe o lado.
+     O seletor só existe quando houve entrada no mês: com um lado só ele seria
+     um controle de uma opção, e aí o rótulo fixo da v12 continua valendo. */
   if(entMes.length){
-    var agE={};entMes.forEach(function(e){agE[e.cat]=(agE[e.cat]||0)+e.v;});
-    var rkE=Object.keys(agE).map(function(k){return {id:k,v:agE[k]};})
-      .sort(function(a,b){return b.v-a.v;});
-    sc.appendChild(el('<div class="glabel">Entradas por categoria</div>'));
-    /* v12: mesma barra das saídas, com duas diferenças que NÃO são detalhe.
-       (1) O denominador é o total de ENTRADAS, e o texto diz isso: "91,5% das
-       entradas". Escrever "do mês" aqui seria falso — o salário não é 91,5%
-       de nada que o mês gastou.
-       (2) A largura é relativa à maior ENTRADA. São duas escalas independentes;
-       nada nesta tela compara barra de entrada com barra de saída. */
-    var maxE=rkE[0].v;
-    var barsE=el('<div class="bars ent"></div>');
-    rkE.forEach(function(r){
-      var ce=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
-      var be=el('<button class="barrow" style="--c:'+ce.c+'">'+
-        '<span class="bn"><span>'+ce.e+'</span><em>'+esc(ce.n)+'</em></span>'+
-        /* com "R$", como nas barras de saída logo acima: as duas listas ficam
-           lado a lado na mesma tela e uma escrevendo "+ 8.600,00" enquanto a
-           outra escreve "R$ 880,40" faria parecer que são unidades diferentes */
-        '<span class="bv tnum '+(r.v<0?'vneg':'vin')+'">'+brlSinRS(r.v)+'</span>'+
-        '<span class="track"><span class="fill" style="width:'+largBarra(r.v,maxE).toFixed(2)+'%"></span></span>'+
-        '<span class="bp tnum">'+pctLabel(r.v,totEnt,'das entradas')+'</span></button>');
-      be.onclick=function(){folhaDetalheCat(r.id,mk);};
-      barsE.appendChild(be);
+    var sg=el('<div class="seg res"></div>');
+    [['s','Saídas'],['e','Entradas']].forEach(function(o){
+      var sb=el('<button aria-selected="'+(S.ladoSum===o[0])+'">'+o[1]+'</button>');
+      sb.onclick=function(){S.ladoSum=o[0];render();};
+      sg.appendChild(sb);
     });
-    sc.appendChild(barsE);
+    sc.appendChild(sg);
+    if(S.ladoSum==='e')sc.appendChild(blocoCats(entMes,totEnt,true,mk));
+    else sc.appendChild(blocoCats(doMes,tot,false,mk));
+  }else{
+    sc.appendChild(el('<div class="glabel">Saídas por categoria</div>'));
+    sc.appendChild(blocoCats(doMes,tot,false,mk));
   }
 
   s.appendChild(sc);
   return s;
+}
+
+/* Rosca + ranking de um lado só. Saídas e entradas usam o MESMO desenho, com
+   as duas diferenças da v12 preservadas: o denominador do percentual é o total
+   do próprio lado ("do mês" × "das entradas") e a largura da barra é relativa
+   ao maior do próprio lado. São duas escalas independentes — nada aqui compara
+   barra de entrada com barra de saída, senão o salário viraria a maior "saída"
+   do mês. */
+function blocoCats(lista,tot,ent,mk){
+  var frag=document.createDocumentFragment();
+  var agg={};lista.forEach(function(e){agg[e.cat]=(agg[e.cat]||0)+e.v;});
+  var rank=Object.keys(agg).map(function(k){return {id:k,v:agg[k]};})
+    .sort(function(a,b){return b.v-a.v;});
+  if(!rank.length)return frag;
+  var suf=ent?'das entradas':'do mês';
+
+  /* O centro diz a maior categoria e o peso dela. Poderia dizer o total, mas o
+     total já está no número grande três dedos acima — e repetir número não
+     informa. Qual categoria dominou o mês não está em nenhum outro lugar da
+     tela, e é exatamente a leitura que a rosca existe para dar. */
+  var c0=cat(rank[0].id)||{n:'—'};
+  /* No centro vai só o número, sem o "do mês"/"das entradas": o seletor logo
+     acima já diz de que lado é, e com o sufixo "93,2% das entradas" quebrava em
+     duas linhas e o texto encostava no anel. Na barra o sufixo continua — lá
+     não há seletor imediatamente acima dizendo o lado. */
+  var pl=pctLabel(rank[0].v,tot,suf),so=(pl==='—'?'—':pl.split(' ')[0]);
+  var meio='<div class="dk">maior categoria</div>'+
+           '<div class="dv">'+esc(c0.n)+'</div>'+
+           '<div class="dp">'+so+'</div>';
+  var ro=roscaHTML(rank,tot,meio);
+  if(ro)frag.appendChild(el(ro));
+
+  /* .sai e .ent: os dois lados usam a mesma barra, e é preciso poder dizer qual
+     é qual — na leitura da tela e na verificação automática. */
+  var max=rank[0].v;
+  var bars=el('<div class="bars '+(ent?'ent':'sai')+'"></div>');
+  rank.forEach(function(r){
+    var c=cat(r.id)||{e:'❓',n:'—',c:'#78716C'};
+    /* com "R$" dos dois lados: um lado escrevendo "+ 8.600,00" enquanto o outro
+       escreve "R$ 880,40" faria parecer que são unidades diferentes */
+    var val=ent?('<span class="bv tnum '+(r.v<0?'vneg':'vin')+'">'+brlSinRS(r.v)+'</span>')
+               :('<span class="bv tnum">R$ '+brl(r.v)+'</span>');
+    var b2=el('<button class="barrow" style="--c:'+c.c+'">'+
+      '<span class="bn"><span>'+c.e+'</span><em>'+esc(c.n)+'</em></span>'+val+
+      '<span class="track"><span class="fill" style="width:'+largBarra(r.v,max).toFixed(2)+'%"></span></span>'+
+      '<span class="bp tnum">'+pctLabel(r.v,tot,suf)+'</span></button>');
+    /* é ESTA linha que abre a sub-categoria, e não a fatia da rosca: a menor
+       fatia de um mês real dá 20px de arco, menos da metade do mínimo de toque
+       da Apple. A rosca mostra a proporção; a linha é o controle. */
+    b2.onclick=function(){folhaDetalheCat(r.id,mk);};
+    bars.appendChild(b2);
+  });
+  frag.appendChild(bars);
+  return frag;
 }
 
 /* ---------------- blocos reutilizados ---------------- */
@@ -3943,6 +4051,12 @@ try{
                   get dia(){return S.dia;},
                   get de(){return S.de;},
                   get ate(){return S.ate;}};
+    /* v13 (item 31): as funções puras da rosca e o lado do bloco de gráficos.
+       fatiasRosca é onde mora a regra dos 90%/6 fatias; roscaHTML é onde mora
+       a decisão de NÃO desenhar quando o total é zero, negativo ou tem estorno. */
+    window.__v13={S:S,fatiasRosca:fatiasRosca,roscaHTML:roscaHTML,
+                  resumoLista:resumoLista,RO_CIRC:RO_CIRC,
+                  get ladoSum(){return S.ladoSum;}};
   }
 }catch(e){}
 })();
