@@ -403,6 +403,129 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .delta.up{color:var(--warn)}
 .delta.down{color:var(--ok)}
 .delta.flat{color:var(--muted)}
+/* v14 (ideias 1, 2 e 4) — o cartão do topo.
+   A comparação é UM controle e não três: o bloco inteiro é um alvo só, com
+   chevron à direita. Mesmo tratamento que o rótulo do período recebeu no
+   item 33, e pelo mesmo motivo — texto solto ninguém descobre ser botão. */
+.deltabtn{display:flex;align-items:center;gap:6px;margin-top:9px;padding:8px 10px;
+  border-radius:9px;background:var(--fill2);font-size:13.5px;font-weight:500;
+  font-variant-numeric:tabular-nums;width:100%;min-height:38px}
+.deltabtn .gp{flex:1;text-align:left;display:flex;align-items:center;gap:5px;min-width:0}
+.deltabtn.up{color:var(--warn)}
+.deltabtn.down{color:var(--ok)}
+.deltabtn.flat{color:var(--muted)}
+.deltabtn:active{opacity:.6}
+.deltabtn .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* a sparkline: sem eixo, sem valores, só o formato */
+.sparkwrap{position:relative;margin-top:11px}
+.sparkwrap .pt{position:absolute;right:-1px;width:7px;height:7px;border-radius:50%;
+  background:var(--tint);box-shadow:0 0 0 2px var(--card);transform:translate(0,-50%)}
+/* mês corrente é parcial: ponto vazado, para não parecer número fechado */
+.sparkwrap .pt.parc{background:var(--card);box-shadow:0 0 0 2px var(--tint)}
+.spark{display:block;width:100%;height:38px}
+.spark path{fill:none;stroke:var(--tint);stroke-width:1.8;stroke-linejoin:round;
+  stroke-linecap:round}
+.spark .area{fill:var(--tint-soft);stroke:none}
+.spark .parc{stroke-dasharray:3 3}
+.sparkl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);
+  margin-top:3px}
+/* v14 (arrumação a): Entradas e Saldo como rodapé do cartão, não como bloco
+   próprio. Um cartão, um número grande, hierarquia inequívoca. */
+.herolin{display:flex;justify-content:space-between;gap:10px;margin-top:12px;
+  padding-top:11px;border-top:.5px solid var(--line);font-variant-numeric:tabular-nums}
+.herolin .c{display:flex;flex-direction:column;gap:1px;min-width:0}
+.herolin .c.dir{text-align:right;align-items:flex-end}
+.herolin .k{font-size:11.5px;color:var(--muted)}
+.herolin .v{font-weight:600;font-size:15px;letter-spacing:-.02em;white-space:nowrap}
+.herolin .v.vin{color:var(--ok)}
+.herolin .v.vneg{color:var(--danger)}
+/* v14 (ideia 3): a linha de fechamento dentro da faixa de recorrentes.
+   Com ela, a faixa fica com dois blocos de altura e o botão centralizado
+   flutuaria em cima do segundo — então ele sobe para a linha do título. */
+.banner .bw{min-width:0}
+.banner.fech{align-items:flex-start}
+.banner.fech .ba{margin-top:2px}
+.banner .bf{font-size:12.5px;color:var(--ink2);margin-top:6px;padding-top:6px;
+  border-top:.5px solid var(--line);line-height:1.4}
+.banner .bf b{font-weight:600}
+/* v14 (ideia 1): a folha "O que mudou". Eixo no meio: sobe para a direita na
+   cor do delta que sobe, cai para a esquerda na cor do que cai. */
+.vars{display:flex;flex-direction:column;gap:2px}
+.varrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;
+  padding:10px 0;align-items:baseline;width:100%}
+.varrow:active{opacity:.6}
+.varrow .bn{font-size:14.5px;font-weight:500;display:flex;align-items:center;gap:7px;
+  min-width:0;letter-spacing:-.01em}
+.varrow .bn em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.varrow .bv{font-size:14px;font-variant-numeric:tabular-nums;font-weight:600}
+.varrow .bv.up{color:var(--warn)}
+.varrow .bv.down{color:var(--ok)}
+.varrow .eixo{grid-column:1/-1;height:8px;position:relative;margin-top:3px}
+.varrow .eixo::before{content:"";position:absolute;left:50%;top:-2px;width:1.5px;
+  height:12px;background:var(--line2);border-radius:1px}
+.varrow .eixo i{position:absolute;top:0;height:8px;border-radius:3px}
+.varrow .vsub{grid-column:1/-1;font-size:11.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums;text-align:left}
+
+/* v15 (arrumação b): o Comprometido ganhou valor e toque.
+   O valor cabe ACIMA da barra e a barra encolheu 6px — mesma altura total. */
+.comprhd{display:flex;align-items:center;gap:8px}
+.comprhd .k{flex:1}
+.compr{width:100%;text-align:left}
+.compr:active{opacity:.6}
+.compr .cbar em.vv{display:block;font-size:9.5px;color:var(--ink2);font-weight:600;
+  margin-bottom:3px;font-variant-numeric:tabular-nums}
+.compr .comprhd .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* v15 (ideia 5): como o mês se formou */
+.mix{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
+  padding:14px 16px;width:100%;text-align:left}
+.mix:active{opacity:.6}
+.mixhd{display:flex;align-items:center;gap:8px}
+.mixhd .k{flex:1;font-size:12.5px;color:var(--muted)}
+.mixhd .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mixbar{display:flex;height:13px;border-radius:7px;overflow:hidden;margin-top:10px;gap:2px}
+.mixbar i{display:block;height:100%}
+.mixbar i.a,.mixleg .sw.a{background:#6366F1}
+.mixbar i.b,.mixleg .sw.b{background:var(--tint)}
+.mixleg{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.mixleg .ln{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.mixleg .sw{width:9px;height:9px;border-radius:3px;flex:none}
+.mixleg .nm{flex:1;min-width:0}
+.mixleg .nm small{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.mixleg .vl{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mix .pe{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.4;
+  padding-top:8px;border-top:.5px solid var(--line)}
+
+/* v15: o carrossel dos cartões do meio.
+   As margens negativas fazem o cartão sangrar até a borda da tela, para que a
+   folga da rolagem não corte a sombra do cartão. */
+/* gap de 16px e não 9: com 9, a página seguinte começava 7px antes da borda
+   da tela e ficava uma lasca do cartão vizinho aparecendo — meia espiada, que
+   não é o modelo A nem o B. Com 16 (o mesmo respiro lateral da tela) a página
+   seguinte começa exatamente na borda e não sobra nada. */
+.carro{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  margin:9px -16px 0;padding:0 16px;scroll-padding:0 16px;
+  /* trava a rolagem no eixo horizontal: sem isto, arrastar na diagonal dentro
+     do cartão rouba a rolagem vertical da tela */
+  overscroll-behavior-x:contain;touch-action:pan-x}
+.carro::-webkit-scrollbar{display:none}
+/* Cada página estica na vertical (align-items:stretch da pista), e o cartão
+   preenche a página com `height:100%`, NÃO com flex-grow: os dois cartões são
+   <button>, e no Chromium um botão ignora o flex-grow no eixo do bloco — o
+   cartão mais baixo ficava 9px menor que o vizinho e a tela dava um pulo a
+   cada arrasto. Medido, não presumido. */
+.carro>*{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always}
+.carro>*>*{height:100%}
+.cdots{display:flex;gap:5px;justify-content:center;margin-top:9px;align-items:center}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--line2);flex:none;
+  transition:background .15s,width .15s}
+.cdot.on{background:var(--tint);width:16px;border-radius:3px}
+
 /* v13 (item 31): a rosca do Resumo.
    O app tem `svg{width:20px;height:20px}` global para os ícones — a rosca
    precisa de largura e altura próprias ou nasce com 20px. */
@@ -431,7 +554,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .compr .k{font-size:12.5px;color:var(--muted)}
 .compr .v{font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums}
 .compr .s{font-size:12.5px;color:var(--muted);margin-top:2px}
-.compr .cbars{display:flex;gap:6px;margin-top:11px;align-items:flex-end;height:56px}
+/* v15: 70px e não 56. Com o valor acima da barra a coluna passou a medir
+   69px, e a altura declarada de 56 virou mentira — o conteúdo vazava para
+   fora sem ninguém notar, porque não há corte. O mockup prometia "mesma
+   altura"; a medição desmentiu, e o número certo é este. */
+.compr .cbars{display:flex;gap:6px;margin-top:11px;align-items:flex-end;height:70px}
 .compr .cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
 .compr .cbar i{display:block;width:100%;border-radius:4px 4px 2px 2px;background:var(--tint);opacity:.5}
 .compr .cbar em{font-style:normal;font-size:10px;color:var(--muted)}
@@ -681,20 +808,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .hide{display:none!important}
 
 /* ---------- v11: entradas e saídas ---------- */
-/* Bloco de saldo do Resumo. Só existe quando houve entrada no mês — sem entrada,
-   aquela tela fica exatamente como era antes. */
-.saldo{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 15px 13px;margin-bottom:9px}
-.saldo .lin{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0}
-.saldo .lin+.lin{border-top:.5px solid var(--line)}
-.saldo .lin.tot{border-top:1px solid var(--line2);margin-top:3px;padding-top:9px}
-.saldo .lb{font-size:13.5px;color:var(--muted);min-width:0}
-.saldo .lin.tot .lb{font-size:15px;color:var(--ink);font-weight:600}
-.saldo .vv{font-size:17px;font-weight:600;letter-spacing:-.02em;white-space:nowrap}
-.saldo .lin.tot .vv{font-size:23px;letter-spacing:-.03em}
+/* v14 (arrumação a): o bloco `.saldo` saiu. Entradas e Saldo viraram o rodapé
+   do cartão do número grande — ver `.herolin` lá em cima. */
 /* verde = dinheiro que entrou ou voltou; vermelho = saldo negativo */
 .vin{color:var(--ok)}
 .vneg{color:var(--ok)}
-.saldo .vneg{color:var(--danger)}
 .erow .vl.vin,.erow .vl.vneg{color:var(--ok)}
 .erow .t2 b{color:var(--ok);font-weight:600}
 .msk .mr.vin{color:var(--ok)}
@@ -796,7 +914,7 @@ var KEY='despesas.v1';
 var SCHEMA=4;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-23.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-23.3';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1145,6 +1263,156 @@ function pctLabel(v,tot,suf){
 function largBarra(v,max){
   if(!(max>0))return 0;
   return Math.max(0,Math.min(100,v/max*100));
+}
+
+/* ---------------- séries e réguas de comparação (v14) ----------------
+   Tudo aqui lê SAÍDAS por ocorrência, que é a mesma leitura de caixa do número
+   grande: parcela conta no mês em que vence, não no mês da compra. Se algum dia
+   estas funções e o número grande discordarem, é aqui que está o erro. */
+function somaMesSai(todas,mk){
+  return somaDe(saidasDe(todas.filter(function(e){return mkey(e.d)===mk;})));
+}
+/* O mês do primeiro lançamento. É ele que decide quais réguas existem — e é
+   por isso que "mesmo mês do ano passado" fica invisível até haver ano passado. */
+function primeiroMes(){
+  var m=null;
+  for(var i=0;i<DB.exp.length;i++){
+    var k=mkey(DB.exp[i].d);
+    if(!m||k<m)m=k;
+  }
+  return m;
+}
+function mesesAntes(mk){
+  var p=primeiroMes();
+  if(!p)return 0;
+  var a=p.split('-'),b=mk.split('-');
+  return Math.max(0,(+b[0]-+a[0])*12+(+b[1]-+a[1]));
+}
+/* Série de n meses terminando em mk. */
+function serieMeses(mk,n){
+  var todas=ocorrencias(),out=[];
+  for(var i=n-1;i>=0;i--){var m=addMes(mk,-i);out.push({m:m,v:somaMesSai(todas,m)});}
+  return out;
+}
+/* As réguas disponíveis para mk, em ordem de proximidade. Cada uma some quando
+   não tem dado — comparação sem base não é comparação, é número inventado.
+   `meses` é a lista que forma a base: uma só nas pontuais, N na média. É ela
+   que deixa a folha calcular a base POR CATEGORIA sem repetir esta lógica. */
+function reguas(mk){
+  var todas=ocorrencias(),out=[];
+  var ant=addMes(mk,-1),vAnt=somaMesSai(todas,ant);
+  if(vAnt>0)out.push({id:'ant',rot:'Mês anterior',curto:mesCurto(ant),
+                      longo:mesLabel(ant),meses:[ant],base:vAnt});
+  /* A média precisa de pelo menos 4 meses fechados: com 2 ou 3 ela é tão
+     instável quanto o mês anterior e só acrescenta um número a mais. O rótulo
+     diz quantos meses ela usou de verdade — escrever "média de 6 meses" com 4
+     meses na mão seria mentir no rótulo. */
+  var disp=Math.min(6,mesesAntes(mk));
+  if(disp>=4){
+    var ms=[],soma=0,i;
+    for(i=1;i<=disp;i++){var m=addMes(mk,-i);ms.push(m);soma+=somaMesSai(todas,m);}
+    if(soma>0)out.push({id:'media',rot:'Média de '+disp+'m',
+                        curto:'média de '+disp+' meses',
+                        longo:'a média dos '+disp+' meses anteriores',
+                        meses:ms,base:Math.round(soma/disp)});
+  }
+  var ano=addMes(mk,-12),vAno=somaMesSai(todas,ano);
+  if(vAno>0)out.push({id:'ano',rot:mesCurto(ano),curto:mesCurto(ano),
+                      longo:mesLabel(ano),meses:[ano],base:vAno});
+  return out;
+}
+/* O texto e a cor do delta. Mesma regra de sempre: menos de 0,05% é "≈". */
+function deltaDe(tot,base,rot){
+  var p=(tot-base)/base*100;
+  return {cls:p>=0.05?'up':(p<=-0.05?'down':'flat'),
+          arw:p>=0.05?'▲':(p<=-0.05?'▼':'≈'),
+          txt:Math.abs(p).toFixed(1).replace('.',',')+'% vs. '+rot+' (R$ '+brl(base)+')'};
+}
+/* Variação por categoria entre a régua e o mês. A base de uma régua de vários
+   meses é a MÉDIA da categoria naqueles meses, não a soma — senão a variação
+   de um mês contra seis sairia sempre negativa e enorme. */
+function variacaoCats(mk,reg){
+  var todas=ocorrencias(),agora={},antes={},ids={},i;
+  saidasDe(todas.filter(function(e){return mkey(e.d)===mk;})).forEach(function(e){
+    agora[e.cat]=(agora[e.cat]||0)+e.v;ids[e.cat]=1;});
+  for(i=0;i<reg.meses.length;i++){
+    saidasDe(todas.filter(function(e){return mkey(e.d)===reg.meses[i];})).forEach(function(e){
+      antes[e.cat]=(antes[e.cat]||0)+e.v;ids[e.cat]=1;});
+  }
+  var n=reg.meses.length;
+  return Object.keys(ids).map(function(k){
+    var a=Math.round((antes[k]||0)/n),b=agora[k]||0;
+    return {id:k,antes:a,agora:b,v:b-a};
+  }).filter(function(x){return x.v!==0;})
+    .sort(function(x,y){return Math.abs(y.v)-Math.abs(x.v);});
+}
+/* O que falta ao número grande para fechar o mês: os recorrentes PENDENTES
+   daquela competência. Parcela do mês já está no número (ocorrencias() a
+   coloca no mês em que vence) e recorrente confirmado virou lançamento. */
+function pendenteDoMes(mk){
+  var ps=pendentes(),t=0,n=0;
+  for(var i=0;i<ps.length;i++){
+    if(ps[i].comp!==mk||eEntrada(ps[i].cat))continue;
+    t+=ps[i].v;n++;
+  }
+  return {tot:t,n:n};
+}
+
+/* ---------------- como o mês se formou (v15, ideia 5) ----------------
+   Quanto do mês já estava decidido antes do mês começar. É o número que diz
+   onde há alavanca: cortar gasto é sempre conversa sobre a segunda parte.
+
+   Conta como COMPROMETIDO: parcela da segunda em diante — a primeira você
+   decidiu neste mês, e é a mesma régua que `comprometido()` usa — e lançamento
+   vindo de um molde recorrente. Todo o resto é decisão deste mês.
+
+   A ressalva que fica impressa no próprio cartão: só é "recorrente" o que veio
+   de molde. Aluguel digitado na mão todo mês cai em "decidido neste mês" e o
+   número erra para menos. Preferimos errar à vista a esconder o critério. */
+function formacaoMes(noMes){
+  var sai=saidasDe(noMes),c=0,d=0,nc=0,nd=0;
+  for(var i=0;i<sai.length;i++){
+    var e=sai[i];
+    if((e.pi&&e.pi>=2)||e.rec){c+=e.v;nc++;}else{d+=e.v;nd++;}
+  }
+  return {comp:c,dec:d,nc:nc,nd:nd,tot:c+d};
+}
+
+/* A sparkline: 12 meses terminando em mk, sem eixo e sem valores. Ela responde
+   "isto é normal para mim?", que nenhum número da tela responde.
+   O mês corrente é PARCIAL — ele sempre aparece mais baixo do que vai terminar.
+   Desenhar isso como se fosse um número fechado produziria uma queda no fim
+   todo santo mês. Por isso o último trecho sai tracejado e o ponto sai vazado
+   quando mk é o mês de hoje, e o rótulo da ponta diz "parcial". */
+function sparkHTML(mk){
+  var n=Math.min(12,mesesAntes(mk)+1);
+  if(n<3)return '';                       /* dois pontos são um traço, não uma série */
+  var serie=serieMeses(mk,n),vs=serie.map(function(x){return x.v;});
+  var lo=Math.min.apply(null,vs),hi=Math.max.apply(null,vs);
+  if(!(hi>0))return '';
+  /* respiro vertical; também é o que impede divisão por zero quando todos os
+     meses têm o mesmo valor */
+  var pad=(hi-lo)*0.12||hi*0.12||1;
+  lo-=pad;hi+=pad;
+  var pts=serie.map(function(x,i){
+    return [i/(n-1)*100,100-(x.v-lo)/(hi-lo)*100];
+  });
+  var dd=function(a){return 'M'+a.map(function(p){
+    return p[0].toFixed(2)+' '+p[1].toFixed(2);}).join(' L');};
+  var parcial=(mk===mkey(hoje()));
+  var solido=dd(parcial?pts.slice(0,n-1):pts);
+  var trecho=parcial?('<path class="parc" d="'+dd(pts.slice(n-2))+
+                      '" vector-effect="non-scaling-stroke"/>'):'';
+  var area=dd(pts)+' L100 130 L0 130 Z';
+  return '<div class="sparkwrap"><svg class="spark" viewBox="0 0 100 100" '+
+    'preserveAspectRatio="none" aria-hidden="true">'+
+    '<path class="area" d="'+area+'"/>'+
+    '<path d="'+solido+'" vector-effect="non-scaling-stroke"/>'+trecho+'</svg>'+
+    /* o ponto fica FORA do SVG: com preserveAspectRatio="none" um círculo
+       desenhado lá dentro sairia ovalado */
+    '<span class="pt'+(parcial?' parc':'')+'" style="top:'+pts[n-1][1].toFixed(1)+'%"></span>'+
+    '</div><div class="sparkl"><span>'+mesCurto(serie[0].m)+'</span>'+
+    '<span>'+mesCurto(mk)+(parcial?' · parcial':'')+'</span></div>';
 }
 
 /* ---------------- a rosca do Resumo (v13, item 31) ----------------
@@ -2071,24 +2339,17 @@ function telaResumo(){
   }
 
   var sc=el('<div class="scroll"></div>');
-  var br=bannerRecorrentes();
+  var br=bannerRecorrentes(mk,tot);
   if(br){br.style.margin='0 0 12px';sc.appendChild(br);}
   var b=bannerFechamento();
   if(b){b.style.margin='0 0 12px';sc.appendChild(b);}
 
-  /* O bloco de saldo só existe quando houve entrada no mês. Sem entrada, esta
-     tela fica byte a byte como era antes da v11 — que é o combinado. */
-  if(entMes.length){
-    var sal=totEnt-tot;
-    sc.appendChild(el('<div class="saldo">'+
-      '<div class="lin"><span class="lb">Entradas</span><span class="vv vin tnum">'+brlSinRS(totEnt)+'</span></div>'+
-      '<div class="lin"><span class="lb">Saídas</span><span class="vv tnum">'+brlSinRS(-tot)+'</span></div>'+
-      '<div class="lin tot"><span class="lb">Saldo de '+mesLabel(mk).split(' de ')[0]+'</span>'+
-      /* faltava o "R$" aqui, e só aqui: as duas linhas de cima usam brlSinRS e
-         a de baixo saía "6.659,60" no meio delas. Passou despercebido nas duas
-         revisões porque o número está certo — o que falta é a unidade. */
-      '<span class="vv tnum '+(sal<0?'vneg':'vin')+'">'+brlRS(sal)+'</span></div></div>'));
-  }
+  /* v14 (arrumação a): o bloco de saldo separado saiu. Ele e o número grande
+     eram dois números grandes empilhados — R$ 637,20 em verde e 23px, R$
+     8.592,80 em preto e 40px — e a tela não dizia qual dos dois era O número.
+     Ninguém escolheu isso: o bloco nasceu na v11 e o cartão é mais velho.
+     Agora Entradas e Saldo são linhas de apoio DENTRO do cartão, onde a
+     hierarquia é inequívoca. Ver o rodapé do cartão, mais abaixo. */
 
   if(!doMes.length){
     sc.appendChild(vazio('Sem despesas em '+mesLabel(mk).split(' de ')[0],
@@ -2099,17 +2360,40 @@ function telaResumo(){
 
   var eMesAtual=(mk===mkey(hoje()));
   var diasCorridos=eMesAtual?(+hoje().slice(8)):diasNoMes(mk);
-  var cls='flat',arw='',txt='sem mês anterior para comparar';
-  if(totAnt>0){
-    var p=(tot-totAnt)/totAnt*100;
-    cls=p>=0.05?'up':(p<=-0.05?'down':'flat');
-    arw=p>=0.05?'▲':(p<=-0.05?'▼':'≈');
-    txt=Math.abs(p).toFixed(1).replace('.',',')+'% vs. '+mesCurto(ant)+' (R$ '+brl(totAnt)+')';
+  /* v14 (ideias 1, 2 e 4). Três coisas mudam neste cartão.
+     (1) A comparação vira UM controle, não três. Existem até três réguas —
+     mês anterior, média de N meses, mesmo mês do ano passado — e empilhar as
+     três aqui custaria 36px, que são exatamente os 36px que empurram a rosca
+     para fora da primeira tela. Então o cartão mostra a primeira e o toque
+     abre a folha, onde as outras moram num seletor.
+     (2) A sparkline de 12 meses entra logo abaixo.
+     (3) Entradas e Saldo viram linhas de apoio no rodapé do cartão. */
+  var regs=reguas(mk);
+  var linhaCmp;
+  if(regs.length){
+    var d0=deltaDe(tot,regs[0].base,regs[0].curto);
+    linhaCmp='<button class="deltabtn '+d0.cls+'" aria-label="Ver o que mudou">'+
+      '<span class="gp"><span>'+d0.arw+'</span>'+esc(d0.txt)+'</span>'+ICO.chev+'</button>';
+  }else{
+    /* sem base não há botão: abrir uma folha vazia é pior que não abrir */
+    linhaCmp='<div class="delta flat"><span>≈</span>sem mês anterior para comparar</div>';
   }
-  sc.appendChild(el('<div class="hero"><div class="k">Gasto em '+mesLabel(mk).split(' de ')[0]+
+  var rodape='';
+  if(entMes.length){
+    var sal=totEnt-tot;
+    rodape='<div class="herolin">'+
+      '<span class="c"><span class="k">Entradas</span>'+
+      '<span class="v vin tnum">'+brlSinRS(totEnt)+'</span></span>'+
+      '<span class="c dir"><span class="k">Saldo de '+mesLabel(mk).split(' de ')[0]+'</span>'+
+      '<span class="v tnum '+(sal<0?'vneg':'vin')+'">'+brlRS(sal)+'</span></span></div>';
+  }
+  var hero=el('<div class="hero"><div class="k">Gasto em '+mesLabel(mk).split(' de ')[0]+
     (eMesAtual?(' · '+diasCorridos+(diasCorridos===1?' dia':' dias')):'')+'</div>'+
     '<div class="big tnum">R$ '+brl(tot)+'</div>'+
-    '<div class="delta '+cls+'"><span>'+arw+'</span>'+esc(txt)+'</div></div>'));
+    linhaCmp+sparkHTML(mk)+rodape+'</div>');
+  var bcmp=hero.querySelector('.deltabtn');
+  if(bcmp)bcmp.onclick=function(){folhaMudou(mk);};
+  sc.appendChild(hero);
 
   /* v13 (item 31): os quatro tiles saíram — média diária, projeção do mês,
      lançamentos e ticket médio. Três eram derivações sem uso e a quarta, a
@@ -2117,21 +2401,65 @@ function telaResumo(){
      já agendada, ou seja, prometia previsão sem fazer previsão. Previsão de
      verdade é outro assunto (item 14) e não entra escondida num tile. */
 
+  /* v15 (lote B): os cartões do meio viraram um CARROSSEL.
+     Empilhados, eles empurravam a rosca inteira para fora da primeira tela —
+     medido: a rosca terminava em 942px de 693 disponíveis, com zero pixel dela
+     à mostra. Dividindo um espaço só, ela volta a aparecer. São cartões irmãos:
+     mesma altura, mesma importância, uma ideia cada. */
+  var cartoes=[];
+
   /* Sem este bloco o parcelamento faria o mês parecer menor sem dizer para
      onde o resto foi. Só aparece quando existe parcela futura. */
   var cmp=comprometido(mk);
   if(cmp.tot>0){
     var mx=cmp.meses.reduce(function(a,m){return Math.max(a,m.v);},1);
+    /* v15 (arrumação b): o valor entra ACIMA da barra e a barra encolhe 6px —
+       mesma altura total. Era o único gráfico decorativo da tela, contra a
+       regra que a v13 estabeleceu: gráfico aqui ou é tocável, ou vem com os
+       números. Agora é as duas coisas. */
     var sp=cmp.meses.slice(0,6).map(function(m){
-      return '<span class="cbar"><i style="height:'+Math.round(6+m.v/mx*30)+'px"></i>'+
+      /* só a parte inteira: "480", não "480,00" — a coluna tem 55px e o
+         centavo não muda a leitura de um mês de parcela */
+      return '<span class="cbar"><em class="vv">'+brl(m.v).split(',')[0]+'</em>'+
+             '<i style="height:'+Math.round(5+m.v/mx*25)+'px"></i>'+
              '<em>'+MESC[+m.m.slice(5,7)-1]+'</em></span>';
     }).join('');
-    sc.appendChild(el('<div class="compr"><div class="k">Comprometido à frente</div>'+
+    var cc=el('<button class="compr"><div class="comprhd">'+
+      '<span class="k">Comprometido à frente</span>'+ICO.chev+'</div>'+
       '<div class="v tnum">R$ '+brl(cmp.tot)+'</div>'+
       '<div class="s">'+cmp.n+(cmp.n===1?' parcela':' parcelas')+' de '+cmp.compras+
         (cmp.compras===1?' compra':' compras')+' · até '+mesCurto(cmp.ate)+'</div>'+
-      '<div class="cbars">'+sp+'</div></div>'));
+      '<div class="cbars">'+sp+'</div></button>');
+    cc.onclick=function(){folhaComprometido(mk);};
+    cartoes.push(cc);
   }
+
+  /* v15 (ideia 5). Só existe quando há o que dizer: sem nada comprometido, o
+     cartão diria "100% decidido neste mês", que é verdade e não informa. E se
+     algum dos dois lados ficar negativo por estorno, a barra de duas partes
+     deixa de ter sentido — mesma recusa da rosca. */
+  var fm=formacaoMes(noMes);
+  if(fm.tot>0&&fm.comp>0&&fm.dec>=0){
+    var pc=Math.round(fm.comp/fm.tot*100),pd=100-pc;
+    var cf=el('<button class="mix"><div class="mixhd">'+
+      '<span class="k">Como o mês se formou</span>'+ICO.chev+'</div>'+
+      '<div class="mixbar"><i class="a" style="width:'+pc+'%"></i>'+
+      '<i class="b" style="width:'+pd+'%"></i></div>'+
+      '<div class="mixleg">'+
+      '<div class="ln"><span class="sw a"></span><span class="nm">Já comprometido'+
+      '<small>'+fm.nc+(fm.nc===1?' lançamento':' lançamentos')+' de recorrente ou parcela</small>'+
+      '</span><span class="vl tnum">R$ '+brl(fm.comp)+'</span></div>'+
+      '<div class="ln"><span class="sw b"></span><span class="nm">Decidido neste mês'+
+      '<small>'+pd+'% do total</small></span>'+
+      '<span class="vl tnum">R$ '+brl(fm.dec)+'</span></div></div>'+
+      '<div class="pe">Conta como comprometido o que veio de um molde recorrente e a '+
+      'parcela da segunda em diante. Despesa fixa digitada na mão não entra.</div></button>');
+    cf.onclick=function(){folhaFormacao(noMes,mk);};
+    cartoes.push(cf);
+  }
+
+  var carr=carrossel(cartoes);
+  if(carr)sc.appendChild(carr);
 
   /* v13 (item 31): onde antes vinham dois rankings empilhados, agora vem UM
      bloco — rosca em cima, ranking embaixo — e um seletor que escolhe o lado.
@@ -2154,6 +2482,43 @@ function telaResumo(){
 
   s.appendChild(sc);
   return s;
+}
+
+/* v15 (lote B): o carrossel dos cartões do meio.
+   Escopo estreito de propósito: só estes cartões, nunca a tela. O cartão do
+   topo é a identidade da tela e o ranking é lista longa que rola na vertical —
+   nem um nem outro entram aqui.
+
+   Com UM cartão não há carrossel: uma página só com um pontinho embaixo é um
+   controle que não controla nada. */
+function carrossel(cards){
+  if(!cards.length)return null;
+  if(cards.length===1){
+    var unico=el('<div style="margin-top:9px"></div>');
+    unico.appendChild(cards[0]);
+    return unico;
+  }
+  var wrap=el('<div></div>');
+  var tr=el('<div class="carro" role="group" aria-label="Cartões do mês"></div>');
+  cards.forEach(function(c){
+    var pag=el('<div></div>');pag.appendChild(c);tr.appendChild(pag);
+  });
+  var dots=el('<div class="cdots" aria-hidden="true"></div>');
+  cards.forEach(function(_,i){
+    dots.appendChild(el('<span class="cdot'+(i?'':' on')+'"></span>'));
+  });
+  /* O pontinho segue a página. Arredonda pela largura de UMA página, não pela
+     pista inteira: com espaçamento entre cartões, dividir pela pista erra o
+     último. */
+  var pinta=function(){
+    var larg=tr.firstChild?tr.firstChild.getBoundingClientRect().width+16:1;
+    var i=Math.min(cards.length-1,Math.max(0,Math.round(tr.scrollLeft/larg)));
+    for(var j=0;j<dots.children.length;j++)
+      dots.children[j].classList.toggle('on',j===i);
+  };
+  tr.addEventListener('scroll',pinta,{passive:true});
+  wrap.appendChild(tr);wrap.appendChild(dots);
+  return wrap;
 }
 
 /* Rosca + ranking de um lado só. Saídas e entradas usam o MESMO desenho, com
@@ -2520,7 +2885,7 @@ function txtPend(lista){
   if(!t.misto)return 'R$ '+brl(t.ent||t.sai);
   return '− R$ '+brl(t.sai)+' · + R$ '+brl(t.ent);
 }
-function bannerRecorrentes(){
+function bannerRecorrentes(mk,totMes){
   var ps=pendentes();
   if(!ps.length)return null;
   var nomes=[];
@@ -2530,11 +2895,31 @@ function bannerRecorrentes(){
   var meses=[];ps.forEach(function(x){if(meses.indexOf(x.comp)<0)meses.push(x.comp);});
   var quando=meses.length===1?mesLabel(meses[0]).split(' de ')[0]
             :(meses.length+' meses');
-  var b=el('<div class="banner"><div><div class="bt">'+ps.length+
+  var b=el('<div class="banner"><div class="bw"><div class="bt">'+ps.length+
     (ps.length===1?' recorrente a confirmar':' recorrentes a confirmar')+'</div>'+
     '<div class="bs">'+esc(lista)+' · '+esc(quando)+' · '+txtPend(ps)+'</div></div>'+
     '<button class="ba">Revisar</button></div>');
   b.querySelector('.ba').onclick=folhaRevisao;
+  /* v14 (ideia 3): o fechamento do mês.
+     A ideia nasceu como cartão novo e encolheu para esta linha depois de uma
+     pergunta certeira: o que exatamente falta ao número grande? Resposta: só
+     isto. Parcela do mês JÁ está lá (ocorrencias() põe a parcela no mês em que
+     vence, e o "Comprometido à frente" só olha o que vence depois) e recorrente
+     confirmado virou lançamento no instante da confirmação. Sobram os
+     pendentes — e o valor deles já estava nesta faixa. Então não é bloco novo:
+     é a leitura de fechamento dentro do bloco que já existe.
+     Só conta os pendentes DESTA competência: a faixa pode listar pendências de
+     vários meses e somar todas daria um "fecha em" falso. */
+  if(mk!=null){
+    var pd=pendenteDoMes(mk);
+    if(pd.tot>0){
+      b.classList.add('fech');
+      b.querySelector('.bw').appendChild(
+        el('<div class="bf">Confirmando '+(pd.n===1?'o de ':'os '+pd.n+' de ')+
+           esc(mesLabel(mk).split(' de ')[0])+', o mês fecha em '+
+           '<b class="tnum">R$ '+brl((totMes||0)+pd.tot)+'</b></div>'));
+    }
+  }
   return b;
 }
 
@@ -3152,6 +3537,159 @@ function lerValor(s){
   s=s.replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
   var n=parseFloat(s);if(isNaN(n))return null;
   return Math.round(n*100);
+}
+/* v15 (arrumação b): o "Comprometido à frente" passou a abrir.
+   Antes ele era um número grande e seis barras mudas. As barras mostram seis
+   meses; aqui estão TODOS, e também as compras que os produzem — que é a
+   pergunta seguinte de quem olha o número. */
+function folhaComprometido(mk){
+  var cmp=comprometido(mk);
+  if(!cmp.tot)return;
+  /* as compras por trás: agrupa as ocorrências futuras pelo id da COMPRA */
+  var porC={};
+  ocorrencias().forEach(function(o){
+    if(o.pn<2||eEntrada(o.cat)||mkey(o.d)<=mk)return;
+    var c=porC[o.oid]||(porC[o.oid]={oid:o.oid,cat:o.cat,desc:o.desc,pn:o.pn,
+                                     v:0,n:0,ult:null,prox:null});
+    c.v+=o.v;c.n++;
+    if(!c.ult||o.d>c.ult)c.ult=o.d;
+    if(!c.prox||o.d<c.prox)c.prox=o.d;
+  });
+  var compras=Object.keys(porC).map(function(k){return porC[k];})
+    .sort(function(a,b){return b.v-a.v;});
+  folha('Comprometido à frente',function(b){
+    b.appendChild(el('<div class="hero" style="margin-bottom:4px">'+
+      '<div class="k">A vencer depois de '+esc(mesLabel(mk).split(' de ')[0])+'</div>'+
+      '<div class="big tnum" style="font-size:32px">R$ '+brl(cmp.tot)+'</div>'+
+      '<div class="delta flat"><span>·</span>'+cmp.n+(cmp.n===1?' parcela':' parcelas')+
+      ' de '+cmp.compras+(cmp.compras===1?' compra':' compras')+'</div></div>'));
+    b.appendChild(el('<div class="glabel">Mês a mês</div>'));
+    var mxm=cmp.meses.reduce(function(a,m){return Math.max(a,m.v);},1);
+    var lm=el('<div class="bars"></div>');
+    cmp.meses.forEach(function(m){
+      lm.appendChild(el('<div class="barrow" style="--c:var(--tint)">'+
+        '<span class="bn"><em>'+esc(mesLabel(m.m))+'</em></span>'+
+        '<span class="bv tnum">R$ '+brl(m.v)+'</span>'+
+        '<span class="track"><span class="fill" style="width:'+
+        largBarra(m.v,mxm).toFixed(2)+'%"></span></span></div>'));
+    });
+    b.appendChild(lm);
+    b.appendChild(el('<div class="glabel">Por compra</div>'));
+    var lc=el('<div class="optwrap"></div>');
+    compras.forEach(function(c){
+      var ct=cat(c.cat)||{e:'❓',n:'—'};
+      var nm=c.desc||ct.n;
+      lc.appendChild(el('<div class="opt"><span class="ic">'+ct.e+'</span>'+
+        '<span class="nm">'+esc(nm)+'<small>'+c.n+' de '+c.pn+
+        (c.n===1?' parcela a vencer':' parcelas a vencer')+' · '+
+        esc(mesCurto(mkey(c.prox)))+' a '+esc(mesCurto(mkey(c.ult)))+'</small></span>'+
+        '<span class="tag tnum">R$ '+brl(c.v)+'</span></div>'));
+    });
+    b.appendChild(lc);
+  });
+}
+
+/* v15 (ideia 5): o que entrou em cada lado de "Como o mês se formou".
+   O cartão diz o critério numa linha; esta folha mostra os lançamentos, que é
+   a única forma de você conferir se o critério pegou o que devia. */
+function folhaFormacao(noMes,mk){
+  var sai=saidasDe(noMes),comp=[],dec=[];
+  sai.forEach(function(e){
+    if((e.pi&&e.pi>=2)||e.rec)comp.push(e);else dec.push(e);
+  });
+  var soma=function(l){return l.reduce(function(a,x){return a+x.v;},0);};
+  folha('Como o mês se formou',function(b){
+    var lado=function(titulo,lista,cls){
+      if(!lista.length)return;
+      b.appendChild(el('<div class="glabel">'+titulo+' · R$ '+brl(soma(lista))+'</div>'));
+      var w=el('<div class="optwrap"></div>');
+      lista.sort(function(a,x){return x.v-a.v;}).forEach(function(e){
+        var c=cat(e.cat)||{e:'❓',n:'—'};
+        var porq=e.rec?'recorrente':(e.pi>=2?('parcela '+e.pi+'/'+e.pn):'à vista');
+        w.appendChild(el('<div class="opt"><span class="ic">'+c.e+'</span>'+
+          '<span class="nm">'+esc(e.desc||c.n)+
+          '<small>'+esc(c.n)+' · '+porq+' · '+esc(diaCurto(e.d))+'</small></span>'+
+          '<span class="tag tnum">R$ '+brl(e.v)+'</span></div>'));
+      });
+      b.appendChild(w);
+    };
+    lado('Já comprometido',comp,'a');
+    lado('Decidido neste mês',dec,'b');
+    b.appendChild(el('<div class="hint" style="margin-top:14px">Só é "recorrente" o que veio '+
+      'de um <b>molde</b>. Uma despesa fixa digitada na mão todo mês aparece aqui como '+
+      'decidida neste mês — e o número do cartão erra para menos.</div>'));
+  });
+}
+
+/* v14 (ideia 1): "O que mudou".
+   A pergunta que o delta provoca e que a tela nunca respondeu. A lista sai
+   ordenada pela VARIAÇÃO em reais, não pelo tamanho — é o que a folha tem de
+   diferente do ranking: Moradia é sempre a maior categoria e por isso nunca
+   chama atenção no ranking; aqui ela aparece quando SAI DO LUGAR dela.
+   O seletor no topo escolhe a régua, e só existe quando há mais de uma. */
+function folhaMudou(mk){
+  var regs=reguas(mk);
+  if(!regs.length)return;
+  var i=0;
+  folha('O que mudou',function(b){
+    var corpo=el('<div></div>');
+    if(regs.length>1){
+      var sg=el('<div class="seg" style="margin:2px 0 12px"></div>');
+      regs.forEach(function(r,j){
+        var bt=el('<button aria-selected="'+(j===i)+'">'+esc(r.rot)+'</button>');
+        bt.onclick=function(){
+          if(j===i)return;
+          i=j;
+          sg.querySelectorAll('button').forEach(function(x,k){
+            x.setAttribute('aria-selected',k===i);});
+          pinta(corpo,mk,regs[i]);
+        };
+        sg.appendChild(bt);
+      });
+      b.appendChild(sg);
+    }
+    b.appendChild(corpo);
+    pinta(corpo,mk,regs[i]);
+  });
+}
+function pinta(corpo,mk,reg){
+  corpo.innerHTML='';
+  var todas=ocorrencias();
+  var tot=somaMesSai(todas,mk),dif=tot-reg.base;
+  var d=deltaDe(tot,reg.base,reg.curto);
+  corpo.appendChild(el('<div class="hero"><div class="k">'+
+    esc(mesLabel(mk).split(' de ')[0])+' contra '+esc(reg.longo)+'</div>'+
+    '<div class="big tnum" style="font-size:30px">'+brlSinRS(dif)+'</div>'+
+    '<div class="delta '+d.cls+'"><span>'+d.arw+'</span>'+
+    'R$ '+brl(reg.base)+' → R$ '+brl(tot)+'</div></div>'));
+  var lin=variacaoCats(mk,reg);
+  if(!lin.length){
+    corpo.appendChild(el('<div class="hint" style="margin-top:14px">'+
+      'Nenhuma categoria mudou de valor.</div>'));
+    return;
+  }
+  corpo.appendChild(el('<div class="glabel">Quem puxou, quem segurou</div>'));
+  var mx=Math.abs(lin[0].v)||1;
+  var box=el('<div class="vars"></div>');
+  lin.forEach(function(x){
+    var c=cat(x.id)||{e:'❓',n:'—',c:'#78716C'};
+    /* 47 e não 50: a barra encosta na borda do eixo antes de encostar na
+       borda da tela, senão a maior variação fica sem respiro */
+    var larg=Math.abs(x.v)/mx*47;
+    var barra=x.v>0
+      ? '<i style="left:50%;width:'+larg.toFixed(1)+'%;background:var(--warn)"></i>'
+      : '<i style="right:50%;width:'+larg.toFixed(1)+'%;background:var(--ok)"></i>';
+    var de=x.antes>0?('R$ '+brl(x.antes)):'sem gasto';
+    var pa=x.agora>0?('R$ '+brl(x.agora)):'sem gasto';
+    var r=el('<button class="varrow">'+
+      '<span class="bn"><span>'+c.e+'</span><em>'+esc(c.n)+'</em></span>'+
+      '<span class="bv tnum '+(x.v>0?'up':'down')+'">'+brlSinRS(x.v)+'</span>'+
+      '<span class="eixo">'+barra+'</span>'+
+      '<span class="vsub tnum">'+de+' → '+pa+'</span></button>');
+    r.onclick=function(){folhaDetalheCat(x.id,mk);};
+    box.appendChild(r);
+  });
+  corpo.appendChild(box);
 }
 function folhaDetalheCat(catId,mk){
   var c=cat(catId);
@@ -4054,6 +4592,14 @@ try{
     /* v13 (item 31): as funções puras da rosca e o lado do bloco de gráficos.
        fatiasRosca é onde mora a regra dos 90%/6 fatias; roscaHTML é onde mora
        a decisão de NÃO desenhar quando o total é zero, negativo ou tem estorno. */
+    /* v14: as funções puras das séries, das réguas e do fechamento do mês. */
+    window.__v14={reguas:reguas,serieMeses:serieMeses,mesesAntes:mesesAntes,
+                  primeiroMes:primeiroMes,somaMesSai:somaMesSai,deltaDe:deltaDe,
+                  variacaoCats:variacaoCats,pendenteDoMes:pendenteDoMes,
+                  sparkHTML:sparkHTML,folhaMudou:folhaMudou};
+    /* v15: as funções puras do lote B. */
+    window.__v15={formacaoMes:formacaoMes,carrossel:carrossel,
+                  folhaComprometido:folhaComprometido,folhaFormacao:folhaFormacao};
     window.__v13={S:S,fatiasRosca:fatiasRosca,roscaHTML:roscaHTML,
                   resumoLista:resumoLista,RO_CIRC:RO_CIRC,
                   get ladoSum(){return S.ladoSum;}};
