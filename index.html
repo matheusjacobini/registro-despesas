@@ -285,6 +285,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   border-top:.5px solid var(--line);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 .amount .parc b{color:var(--ink2);font-weight:600}
 .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+/* v27: com etiqueta no app, a fila vira quatro. Medido a 393px: 86px por chip,
+   nada estoura. O gap cai de 8 para 6 para devolver 6px à largura de cada um. */
+.chips.q4{grid-template-columns:repeat(4,1fr);gap:6px}
+.chips.q4 .chip{padding:9px 9px}
+/* v27: o separador entre as categorias e as etiquetas, na faixa de filtros */
+.fsep{flex:0 0 1px;width:1px;align-self:center;height:20px;background:var(--line2);margin:0 3px}
+.fchip.etq[aria-pressed="true"]{background:var(--tint);color:#fff}
+/* v27 (item 51): a marca de novidade, para a linha que destrava sozinha deixar
+   de aparecer sem avisar. Mesmo desenho do aviso de pendência da aba Planejar. */
+.novo{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;
+  background:var(--tint);color:#fff;border-radius:6px;padding:2px 5px;
+  vertical-align:2px;margin-left:6px}
 .chip{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:9px 12px;min-width:0}
 .chip .k{display:block;font-size:11px;color:var(--muted)}
 .chip .v{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1062,10 +1074,10 @@ var SEED=[{"id":"ali","n":"Alimentação","e":"🍽️","c":"#EA580C","subs":[{"
 
 /* ---------------- utilidades ---------------- */
 var KEY='despesas.v1';
-var SCHEMA=6;
+var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-25.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-28.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1153,6 +1165,66 @@ function estornosDe(e){
     .slice().sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);});
 }
 function temEstorno(e){return estornosDe(e).length>0;}
+
+/* ============================================================
+   ETIQUETAS (item 9, formato 7)
+   A régua, decidida com você em 28/09 e impressa na tela:
+   ETIQUETA É PARA CORTE QUE CRUZA CATEGORIA. O que só faz sentido dentro de
+   uma categoria é sub-categoria. Sem essa fronteira, o app ganharia um
+   terceiro vocabulário para nomear a mesma coisa — e com 15 categorias e 89
+   sub-categorias, decidir onde algo mora já é trabalho demais.
+
+   Por isso etiqueta não tem cor nem emoji: ser visualmente mais leve que a
+   categoria é FEATURE, deixa claro quem manda no app.
+   ============================================================ */
+function etq(id){
+  var L=DB.etq||[];
+  for(var i=0;i<L.length;i++)if(L[i].id===id)return L[i];
+  return null;
+}
+function nomeEtq(id){var e=etq(id);return e?e.n:'—';}
+/* As etiquetas de um lançamento, na ordem da coleção — para que a mesma
+   dupla apareça sempre na mesma ordem, em qualquer linha. */
+function etqsDe(e){
+  var ids=(e&&e.etq)||[];
+  return (DB.etq||[]).filter(function(t){return ids.indexOf(t.id)>=0;});
+}
+/* Chave de comparação: sem acento, sem caixa, sem espaço e sem pontuação.
+   É o que impede "Reembolsável", "reembolsavel" e "reembolsável " de virarem
+   três etiquetas — e com elas o filtro deixaria de funcionar. */
+function normEtq(n){
+  return String(n||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]/g,'');
+}
+function acharEtq(nome){
+  var k=normEtq(nome);
+  if(!k)return null;
+  var L=DB.etq||[];
+  for(var i=0;i<L.length;i++)if(normEtq(L[i].n)===k)return L[i];
+  return null;
+}
+/* Devolve {etq, jaExistia}. Nunca cria duplicata: quem já existe volta. */
+function criarEtq(nome){
+  nome=String(nome||'').trim().replace(/\s+/g,' ');
+  if(!nome)return null;
+  var ja=acharEtq(nome);
+  if(ja)return {etq:ja,jaExistia:true};
+  var t={id:uid('q'),n:nome};
+  DB.etq=DB.etq||[];DB.etq.push(t);
+  return {etq:t,jaExistia:false};
+}
+/* Quantos LANÇAMENTOS usam a etiqueta. Conta o lançamento, não a ocorrência:
+   uma compra em 6× com a etiqueta é uma coisa etiquetada, não seis. */
+function usosEtq(id){
+  var n=0;
+  for(var i=0;i<DB.exp.length;i++){
+    var t=DB.exp[i].etq;
+    if(t&&t.indexOf(id)>=0)n++;
+  }
+  return n;
+}
+function temEtq(e,id){return !!(e&&e.etq&&e.etq.indexOf(id)>=0);}
 function totalEstornado(e){
   return estornosDe(e).reduce(function(a,x){return a+x.v;},0);
 }
@@ -1164,8 +1236,11 @@ function ocorrenciasDe(e){
   var n=nParc(e),ests=estornosDe(e);
   /* `rec`/`comp` viajam junto: sem eles a tela não sabe que aquele lançamento
      veio de uma recorrência, e passa a oferecer "Tornar recorrente" de novo. */
+  /* `etq` viaja junto como `rec`/`comp`: a etiqueta é da COMPRA, então todas
+     as parcelas herdam. Filtrar por "reembolsável" mostra as seis parcelas,
+     exatamente como filtrar por categoria já mostra. */
   var meta={cat:e.cat,sub:e.sub,pay:e.pay,desc:e.desc,ts:e.ts,
-            rec:e.rec||null,comp:e.comp||null,dc:e.d,vt:e.v};
+            rec:e.rec||null,comp:e.comp||null,dc:e.d,vt:e.v,etq:e.etq||null};
   var vs,ds,i;
   if(n<2){vs=[e.v];ds=[e.d];}
   else{vs=fatiar(e.v,n);ds=[];for(i=0;i<n;i++)ds.push(addMesData(e.d,i));}
@@ -1228,7 +1303,7 @@ function ocorrenciasDe(e){
 function ocorr(e,meta,id,d,v,pi,pn){
   return {id:id,oid:e.id,d:d,cat:meta.cat,sub:meta.sub,v:v,pay:meta.pay,
           desc:meta.desc,ts:meta.ts,pi:pi,pn:pn,dc:meta.dc,vt:meta.vt,
-          rec:meta.rec,comp:meta.comp};
+          rec:meta.rec,comp:meta.comp,etq:meta.etq};
 }
 function ocorrencias(){
   var out=[];
@@ -1324,7 +1399,10 @@ function pendentes(){
       var c=cs[j];
       if(feitos[c]||pul.indexOf(c)>=0)continue;
       out.push({rec:r.id,comp:c,d:dataComp(r,c),n:r.n,cat:r.cat,sub:r.sub,
-                fixo:r.fixo!==false,v:valorSugerido(r),pay:r.pay||null,desc:r.desc||''});
+                fixo:r.fixo!==false,v:valorSugerido(r),pay:r.pay||null,desc:r.desc||'',
+                /* v27 (item 9): a etiqueta do molde viaja na pendência e
+                   chega no lançamento confirmado. */
+                etq:(r.etq||[]).slice()});
     }
   }
   out.sort(function(a,b){return a.comp<b.comp?-1:(a.comp>b.comp?1:(a.n<b.n?-1:1));});
@@ -1406,6 +1484,7 @@ function novoDB(){
     ordem:SEED.map(function(c){return c.id;}),
     exp:[],
     rec:[],
+    etq:[],
     prefs:{tema:'auto',dens:'auto',ultBackup:null,inicio:hoje(),topSubs:{},bannerOff:null}
   };
 }
@@ -1452,6 +1531,12 @@ function migrar(d){
      lido e nenhuma categoria é tocada — quem nunca definir meta tem um app
      byte a byte igual ao de antes. */
   d.metas=d.metas||[];
+  /* formato 6 -> 7: etiquetas. Só cria a coleção vazia. Lançamento sem `etq`
+     é lançamento sem etiqueta, que é o que todos os lançamentos gravados até
+     aqui significam — nada é lido e nada é reescrito. O formato sobe porque a
+     volta não é inofensiva: um app na versão 6 leria a base sem enxergar as
+     etiquetas e o filtro simplesmente não existiria, em silêncio. */
+  d.etq=d.etq||[];
   /* formato 5 -> 6: estorno vinculado. Nada a converter — compra sem `est` é
      compra sem estorno, que é exatamente o que toda compra gravada até aqui
      significa. Nenhum lançamento é lido e nenhum valor é reescrito. O formato
@@ -1884,9 +1969,11 @@ var S={
   aba:'reg',passo:'cat',
   cat:null,sub:null,
   intD:'',centD:'',modo:'reais',sinal:1,
-  data:null,pay:null,desc:'',parc:1,
+  data:null,pay:null,desc:'',parc:1,etq:[],
   mesLista:mkey(hoje()),mesSum:mkey(hoje()),
   fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',ordena:'data',periodo:'mes',
+  /* v27 (item 9): o filtro por etiqueta. Um por vez, como o de categoria. */
+  fEtq:null,
   /* v12: dois recortes novos de período. `dia` usa S.dia; `faixa` usa S.de e S.ate,
      sempre normalizados com de<=ate antes de serem gravados aqui. Nada disso é
      persistido — é estado de tela, como o resto de S. */
@@ -1898,7 +1985,7 @@ var S={
 };
 function limparRascunho(){
   S.cat=null;S.sub=null;S.intD='';S.centD='';S.modo='reais';S.sinal=1;
-  S.data=null;S.pay=null;S.desc='';S.parc=1;S.passo='cat';
+  S.data=null;S.pay=null;S.desc='';S.parc=1;S.etq=[];S.passo='cat';
 }
 
 /* ---------------- valor: reais primeiro ----------------
@@ -2280,6 +2367,25 @@ function telaValor(){
   var cxv=cx.querySelector('.v');
   cx.onclick=folhaParcelas;
   chips.appendChild(cd);chips.appendChild(cp);chips.appendChild(cx);
+  /* v27 (item 9, opção A): o quarto chip só existe DEPOIS da primeira etiqueta
+     criada. Enquanto não houver nenhuma, esta tela é byte a byte a de antes —
+     custo zero para quem não usa. Medido a 393px: com quatro chips cada um
+     fica com 86px e nada estoura. Num aparelho de 320px estouraria, mas ali
+     "Pagamento" já estoura hoje com três. */
+  if((DB.etq||[]).length){
+    var ret=rotuloEtq(S.etq);
+    var ce=el('<button class="chip"><span class="k">Etiquetas</span>'+
+      '<span class="v'+(ret?'':' sem')+'">'+(ret?esc(ret):'nenhuma')+'</span></button>');
+    ce.onclick=function(){
+      folhaEtiquetas(S.etq||[],function(ids){
+        S.etq=ids;
+        var r=rotuloEtq(ids),v=ce.querySelector('.v');
+        v.textContent=r||'nenhuma';v.classList.toggle('sem',!r);
+      });
+    };
+    chips.appendChild(ce);
+    chips.classList.add('q4');
+  }
   w.appendChild(chips);
 
   var db=el('<div class="descbox"><input type="text" inputmode="text" placeholder="Descrição (opcional)" maxlength="80"></div>');
@@ -2298,6 +2404,7 @@ function confirmar(){
   var reg={id:uid('e'),d:S.data||hoje(),cat:S.cat,sub:S.sub||null,v:v,
            pay:S.pay||null,desc:S.desc||'',ts:Date.now()};
   if(S.parc>1&&S.parc<=MAXPARC&&v>0)reg.par=S.parc;
+  if(S.etq&&S.etq.length)reg.etq=S.etq.slice();
   DB.exp.unshift(reg);
   if(!salvar()){DB.exp.shift();return;}
   /* v20 (2.8): o valor do estorno sai COM sinal. O título já dizia "Estorno",
@@ -2328,6 +2435,9 @@ function filtrados(){
   if(S.fLado==='saida')out=saidasDe(out);
   else if(S.fLado==='entrada')out=entradasDe(out);
   if(S.fCat)out=out.filter(function(e){return e.cat===S.fCat;});
+  /* v27 (item 9): o filtro por etiqueta. Fica junto do de categoria porque é o
+     mesmo tipo de corte — só que transversal. */
+  if(S.fEtq)out=out.filter(function(e){return temEtq(e,S.fEtq);});
   if(S.fSub)out=out.filter(function(e){return e.sub===S.fSub;});
   if(S.fPay)out=out.filter(function(e){return e.pay===S.fPay;});
   if(S.fMin!=null)out=out.filter(function(e){return e.v>=S.fMin;});
@@ -2370,12 +2480,12 @@ function nFiltros(){
 /* Já aqui a pergunta é outra: existe QUALQUER coisa para limpar? Por isso
    categoria, lado, período e busca entram. */
 function temFiltro(){
-  return !!(S.fCat||S.fBusca||filtrosAtivos()||S.fLado!=='tudo'||S.periodo!=='mes');
+  return !!(S.fCat||S.fEtq||S.fBusca||filtrosAtivos()||S.fLado!=='tudo'||S.periodo!=='mes');
 }
 /* Um lugar só para o "volta tudo ao normal" — usado pelo chip Limpar, pelo
    botão da folha de filtros e pelo estado vazio. */
 function limparTudo(){
-  S.fCat=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
+  S.fCat=null;S.fEtq=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
   S.fLado='tudo';S.periodo='mes';
 }
 
@@ -2525,11 +2635,30 @@ function telaLista(){
     b.onclick=function(){S.fCat=(S.fCat===c.id?null:c.id);S.fSub=null;render();};
     rola.appendChild(b);
   });
+  /* v27 (item 9): as etiquetas em uso entram na MESMA faixa, depois das
+     categorias e com um separador. Faixa própria custaria mais uma linha numa
+     tela que já tem busca, período, lado e filtros; e as duas são o mesmo
+     gesto — tocar num chip para recortar a lista. */
+  var etqUsadas={};DB.exp.forEach(function(e){(e.etq||[]).forEach(function(i){etqUsadas[i]=1;});});
+  var temEtqUso=(DB.etq||[]).some(function(t){return etqUsadas[t.id];});
+  if(temEtqUso){
+    rola.appendChild(el('<span class="fsep" aria-hidden="true"></span>'));
+    (DB.etq||[]).forEach(function(t){
+      if(!etqUsadas[t.id])return;
+      var b=el('<button class="fchip etq" aria-pressed="'+(S.fEtq===t.id)+'">🏷️ '+esc(t.n)+'</button>');
+      b.onclick=function(){S.fEtq=(S.fEtq===t.id?null:t.id);render();};
+      rola.appendChild(b);
+    });
+  }
   fc.appendChild(rola);
   /* A categoria escolhida pode nascer fora da parte visível da faixa: sem isto,
      filtrar por "Férias e viagens" mostra uma lista filtrada sem nenhum chip
      aceso à vista. */
-  if(S.fCat){
+  /* v27: vale para etiqueta pelo mesmo motivo que vale para categoria — e a
+     etiqueta é PIOR, porque ela vem depois de todas as categorias na faixa e
+     portanto está sempre fora da parte visível. Visto na captura da build:
+     a lista filtrada, e nenhum chip aceso à vista. */
+  if(S.fCat||S.fEtq){
     var ativo=rola.querySelector('.fchip[aria-pressed="true"]');
     if(ativo)setTimeout(function(){
       /* 'nearest' e não 'center': centralizar rolava a faixa mesmo quando o chip
@@ -2590,7 +2719,7 @@ function chipZero(){
     return bl;
   }
   var t=el('<button class="fchip" aria-pressed="true">Todas</button>');
-  t.onclick=function(){S.fCat=null;S.fSub=null;render();};
+  t.onclick=function(){S.fCat=null;S.fEtq=null;S.fSub=null;render();};
   return t;
 }
 /* Digitar na busca é um filtro, e a busca NÃO redesenha a tela inteira (isso
@@ -2669,6 +2798,11 @@ function linhas(itens,comData){
        entrada, o dinheiro entrou e voltou — é devolução. */
     /* na devolução de compra a palavra já foi dita acima, com o dono junto */
     if(e.v<0&&!e.dev)meta.push(ent?'devolução':'estorno');
+    /* v27 (item 9): a etiqueta entra como mais um segmento, e só quando existe.
+       Com duas ou mais vira "reembolsável +1" — a maioria esmagadora dos
+       lançamentos não tem nenhuma e não paga nada por isto. */
+    var ret=rotuloEtq(e.etq);
+    if(ret)meta.push(ret);
     if(e.desc)meta.push(e.desc);
     var selo=seloParc(e);
     var box=el('<div class="swipe"><div class="del">Excluir</div></div>');
@@ -3429,6 +3563,88 @@ function folhaPagto(cfg){
     b.appendChild(el('<div class="hint">Campo opcional. Toque de novo na opção marcada para limpar.</div>'));
   },cfg.sobre?{cancelar:'Cancelar'}:undefined);
 }
+/* ---------------- etiquetas (item 9) ----------------
+   Escolher e criar. Só ação ADITIVA aqui: renomear e excluir moram em Ajustes,
+   porque no meio de um lançamento ninguém deve tropeçar no destrutivo.
+
+   Criar aqui é deliberado, e é a primeira coisa do app que nasce fora de
+   Ajustes. O motivo é a natureza da coisa: as 15 categorias cobrem tudo e
+   ninguém precisa inventar uma na correria; etiqueta existe justamente para o
+   corte que a vida inventou ontem. Bloquear a criação aqui não evitaria
+   bagunça — evitaria a etiqueta. */
+function folhaEtiquetas(sel,aoMudar,opts){
+  opts=opts||{};
+  sel=(sel||[]).slice();
+  folhaSobre('Etiquetas',function(b,fechar){
+    b.appendChild(el('<div class="hint" style="padding:2px 4px 10px">Etiqueta é para o que '+
+      '<b>cruza categoria</b>. O que só existe dentro de uma categoria é sub-categoria.</div>'));
+    var w=el('<div class="optwrap"></div>');
+    function pinta(){
+      w.innerHTML='';
+      (DB.etq||[]).forEach(function(t){
+        var on=sel.indexOf(t.id)>=0;
+        var o=el('<button class="opt"><span class="ic">🏷️</span><span class="nm">'+esc(t.n)+'</span>'+
+          (on?'<span class="tag">✓</span>':'<span></span>')+'</button>');
+        o.setAttribute('aria-pressed',String(on));
+        o.onclick=function(){
+          var i=sel.indexOf(t.id);
+          if(i>=0)sel.splice(i,1);else sel.push(t.id);
+          pinta();aoMudar(sel.slice());
+        };
+        w.appendChild(o);
+      });
+      var nova=el('<button class="opt"><span class="ic">＋</span>'+
+        '<span class="nm">Nova etiqueta</span><span></span></button>');
+      nova.onclick=function(){
+        folhaNovaEtiqueta(function(t,jaExistia){
+          if(sel.indexOf(t.id)<0)sel.push(t.id);
+          pinta();aoMudar(sel.slice());
+          if(jaExistia)toast('Esta etiqueta já existe',esc(t.n)+' foi marcada.','',null);
+        });
+      };
+      w.appendChild(nova);
+    }
+    pinta();
+    b.appendChild(w);
+    if(!(DB.etq||[]).length)
+      b.appendChild(el('<div class="hint">Você ainda não tem etiquetas. '+
+        'Exemplos que cruzam categoria: <b>reembolsável</b>, <b>presente de Natal</b>, '+
+        '<b>viagem SP</b>.</div>'));
+  },{cancelar:opts.cancelar||'Pronto'});
+}
+/* O campo de texto de criar. A lista fica visível logo acima, na folha de
+   baixo — e é ISSO que impede o "reemb": você vê "reembolsável" três linhas
+   acima no momento de digitar. A normalização é a segunda rede, para a
+   família acento/caixa/espaço. */
+function folhaNovaEtiqueta(cb){
+  folhaSobre('Nova etiqueta',function(b,fechar){
+    var f=el('<div class="field"><div class="k">Nome</div>'+
+      '<input type="text" maxlength="28" placeholder="Ex.: reembolsável"></div>');
+    b.appendChild(f);
+    b.appendChild(el('<div class="hint">Vale para o que <b>cruza categoria</b>. '+
+      'Se já existir uma com este nome, o app usa a que existe.</div>'));
+    var ok=el('<button class="btnfull">Criar</button>');
+    ok.onclick=function(){
+      var n=f.querySelector('input').value.trim();
+      if(!n){alerta('Nome obrigatório','Toda etiqueta precisa de um nome.');return;}
+      var r=criarEtq(n);
+      if(!r)return;
+      if(!r.jaExistia&&!salvar()){
+        DB.etq=DB.etq.filter(function(x){return x.id!==r.etq.id;});return;
+      }
+      fechar();cb(r.etq,r.jaExistia);
+    };
+    b.appendChild(ok);
+    setTimeout(function(){var i=f.querySelector('input');if(i)i.focus();},60);
+  },{cancelar:'Cancelar'});
+}
+/* Rótulo curto para o chip e para a linha da lista. */
+function rotuloEtq(ids){
+  var ts=(DB.etq||[]).filter(function(t){return (ids||[]).indexOf(t.id)>=0;});
+  if(!ts.length)return '';
+  return ts[0].n+(ts.length>1?(' +'+(ts.length-1)):'');
+}
+
 /* Escolha das parcelas. Cada botão já mostra o valor da parcela, para a decisão
    ser tomada olhando o número que importa e não o multiplicador. */
 /* v26 (item 50): serve o registro e a edição. Na edição era um <select>. */
@@ -3613,8 +3829,10 @@ function folhaRevisao(){
       var sel=estado.filter(function(x){return x.on&&x.v>0;});
       if(!sel.length)return;
       var criados=sel.map(function(st){
-        return {id:uid('e'),d:st.p.d,cat:st.p.cat,sub:st.p.sub,v:st.v,
+        var novo={id:uid('e'),d:st.p.d,cat:st.p.cat,sub:st.p.sub,v:st.v,
                 pay:st.p.pay,desc:st.p.desc,ts:Date.now(),rec:st.p.rec,comp:st.p.comp};
+        if(st.p.etq&&st.p.etq.length)novo.etq=st.p.etq.slice();
+        return novo;
       });
       criados.forEach(function(e){DB.exp.unshift(e);});
       if(!salvar()){
@@ -3759,6 +3977,15 @@ function folhaMolde(r,base){
     };
     var resumo=el('<div class="hint" style="margin:2px 0 12px"></div>');
     var payAtual=((base&&base.pay)||(r&&r.pay))||null;
+    /* v27 (item 9): o molde carrega etiquetas e elas passam para cada
+       lançamento confirmado. Se "assinatura" é etiqueta, não faz sentido
+       re-etiquetar todo mês. */
+    var etqAtual=(((base&&base.etq)||(r&&r.etq))||[]).slice();
+    var fq=el('<button class="field row"><span><span class="k">Etiquetas</span>'+
+      '<span class="v"></span></span>'+ICO.chev+'</button>');
+    fq.onclick=function(){
+      folhaEtiquetas(etqAtual,function(ids){etqAtual=ids;pinta();});
+    };
     var fp=el('<button class="field row"><span><span class="k">Pagamento</span>'+
       '<span class="v"></span></span>'+ICO.chev+'</button>');
     fp.onclick=function(){
@@ -3797,6 +4024,7 @@ function folhaMolde(r,base){
       fd.querySelector('.v').textContent='dia '+t.dia;
       var pgm=null;PAGTOS.forEach(function(x){if(x[0]===payAtual)pgm=x;});
       fp.querySelector('.v').textContent=pgm?(pgm[1]+' '+pgm[0]):'opcional';
+      fq.querySelector('.v').textContent=rotuloEtq(etqAtual)||'nenhuma';
       var ini=(r&&r.inicio)||mkey(hoje());
       var quando=t.freq==='anual'
         ? ('Todo ano em '+MES[t.mes-1]+', dia '+t.dia)
@@ -3806,7 +4034,7 @@ function folhaMolde(r,base){
                :'A cada mês o app sugere o valor do mês anterior para você ajustar.');
     }
     pinta();
-    [fn,fc,fs,sub2,fv,fx,ff,fm,fd,resumo,fp,ft].forEach(function(n){b.appendChild(n);});
+    [fn,fc,fs,sub2,fv,fx,ff,fm,fd,resumo,fp,fq,ft].forEach(function(n){b.appendChild(n);});
 
     var ok=el('<button class="btnfull">Salvar</button>');
     ok.onclick=function(){
@@ -3826,7 +4054,7 @@ function folhaMolde(r,base){
         var ini=orig?mkey(orig.d):mkey(hoje());
         var r2={id:uid('r'),n:nome,cat:t.cat,sub:t.sub,v:v,fixo:t.fixo,freq:t.freq,
                 dia:t.dia,mes:t.mes,inicio:ini,ate:null,
-                pay:payAtual||null,
+                pay:payAtual||null,etq:etqAtual.length?etqAtual.slice():undefined,
                 desc:ft.querySelector('input').value||'',pulados:[],ts:Date.now()};
         DB.rec=DB.rec||[];DB.rec.push(r2);
         var antesOrig=orig?{rec:orig.rec,comp:orig.comp}:null;
@@ -3850,6 +4078,7 @@ function folhaMolde(r,base){
         var antes=JSON.parse(JSON.stringify(r));
         r.n=nome;r.cat=t.cat;r.sub=t.sub;r.v=v;r.fixo=t.fixo;r.freq=t.freq;
         r.dia=t.dia;r.mes=t.mes;r.pay=payAtual||null;
+        if(etqAtual.length)r.etq=etqAtual.slice();else delete r.etq;
         r.desc=ft.querySelector('input').value||'';
         if(!salvar()){for(var k in antes)r[k]=antes[k];return;}
         fecharFolhas();render();
@@ -4495,6 +4724,14 @@ function acoesLancamento(e){
           'A loja devolveu o dinheiro desta compra.']);
       }
     }
+    /* v27 (item 9): etiquetar depois também tem que ser possível — o chip da
+       tela de registro não é o único caminho, só o mais direto. */
+    acoes.push(['🏷️','Etiquetas',function(){
+      folhaEtiquetas(cp.etq||[],function(ids){
+        if(ids.length)cp.etq=ids;else delete cp.etq;
+        salvar();
+      },{cancelar:'Pronto'});
+    },rotuloEtq(cp.etq)||'nenhuma']);
     acoes.push(['🔁','Repetir hoje',function(){fecharFolhas();repetir(e);}]);
     if(!e.rec)acoes.push(['🔄','Tornar recorrente',function(){fecharFolhas();tornarRecorrente(e);}]);
     acoes.push(['🗑️',e.pn>1?(eEntrada(e.cat)?'Excluir a venda inteira':'Excluir a compra inteira'):'Excluir',
@@ -5013,10 +5250,39 @@ function telaCfg(){
     '<div class="r2">'+DB.cats.filter(function(c){return !c.arq;}).length+' categorias · '+
     DB.cats.reduce(function(a,c){return a+c.subs.filter(function(s){return !s.arq;}).length;},0)+' sub-categorias</div></div>'+ICO.chev+'</button>');
   rc.onclick=folhaCategorias;g2.appendChild(rc);
-  if(diasEntre(DB.prefs.inicio,hoje())>=60){
-    var rf=el('<button class="grow tap"><div><div class="r1">Suas mais lançadas</div>'+
-      '<div class="r2">Frequência real dos últimos 60 dias.</div></div>'+ICO.chev+'</button>');
-    rf.onclick=folhaFrequencia;g2.appendChild(rf);
+  /* v27 (item 9): Etiquetas entra em Estrutura, logo abaixo das categorias —
+     etiqueta é vocabulário, como a taxonomia, e não compromisso em reais
+     (a fronteira escrita no item 43). Fica ANTES da linha de frequência,
+     que não é taxonomia: é atalho de uso, e continua por último. */
+  var nq=(DB.etq||[]).length;
+  var usoQ=DB.exp.filter(function(e){return e.etq&&e.etq.length;}).length;
+  var rq=el('<button class="grow tap"><div><div class="r1">Etiquetas</div>'+
+    '<div class="r2">Cortes que cruzam categoria — "reembolsável", "viagem SP".</div></div>'+
+    '<div class="right"><span>'+(nq?(nq+(nq===1?' etiqueta':' etiquetas')+
+      ' · '+usoQ+(usoQ===1?' lançamento':' lançamentos')):'nenhuma')+'</span>'+ICO.chev+
+    '</div></button>');
+  rq.onclick=folhaGerirEtiquetas;g2.appendChild(rq);
+  /* v27 (item 51): a trava era `diasEntre(prefs.inicio, hoje) >= 60`, ou seja,
+     media a idade da INSTALAÇÃO e não se há dado para ranquear. Quem importasse
+     dois anos de CSV continuaria 60 dias sem ver. Agora olha o dado: lançamentos
+     bastantes, espalhados por categorias bastantes. E o nome passou a dizer o
+     que a linha FAZ — ela reordena as categorias, e as 7 primeiras são os
+     botões da tela 1. */
+  var freq=baseFrequencia();
+  if(freq.n>=30&&freq.cats>=6){
+    var rf=el('<button class="grow tap"><div><div class="r1">Ordenar pela frequência real'+
+      (DB.prefs.viuFreq?'':' <span class="novo">novo</span>')+'</div>'+
+      '<div class="r2">Põe as categorias que você mais lança na frente — e as 7 primeiras '+
+      'são os botões da tela de registro.</div></div>'+ICO.chev+'</button>');
+    rf.onclick=function(){
+      /* A marca de novidade tem que sumir NA HORA. Gravar a preferência sem
+         redesenhar deixava o selo na tela até a pessoa sair da aba e voltar —
+         e um "novo" que continua depois de visto é ruído. `render()` antes de
+         abrir a folha: a folha vive em #layers e não é afetada. */
+      if(!DB.prefs.viuFreq){DB.prefs.viuFreq=1;salvar();render();}
+      folhaFrequencia();
+    };
+    g2.appendChild(rf);
   }
   b.appendChild(g2);
 
@@ -5136,6 +5402,98 @@ function arrastarOrdem(row,host,corte){
     hnd.addEventListener('pointercancel',up);
   });
 }
+/* v27 (item 51): o critério da linha de frequência, medido sobre o DADO.
+   Devolve quantos lançamentos e por quantas categoriasexistem nos últimos 60
+   dias — é isso que diz se um ranking significa alguma coisa. */
+function baseFrequencia(){
+  var lim=new Date();lim.setDate(lim.getDate()-60);var limS=ymd(lim);
+  var n=0,cs={};
+  DB.exp.forEach(function(e){if(e.d>=limS){n++;cs[e.cat]=1;}});
+  return {n:n,cats:Object.keys(cs).length};
+}
+
+/* Manutenção das etiquetas: renomear, excluir e ver quantos usam. É aqui, e
+   não na folha do lançamento, porque no meio de um registro ninguém deve
+   tropeçar no destrutivo. */
+function folhaGerirEtiquetas(){
+  folha('Etiquetas',function(b){
+    b.appendChild(el('<div class="hint" style="padding:2px 4px 10px">Etiqueta é para o que '+
+      '<b>cruza categoria</b> — um almoço e um táxi reembolsáveis moram em categorias '+
+      'diferentes. O que só existe dentro de uma categoria é sub-categoria.</div>'));
+    var w=el('<div class="optwrap"></div>');
+    (DB.etq||[]).forEach(function(t){
+      var u=usosEtq(t.id);
+      var o=el('<button class="opt"><span class="ic">🏷️</span>'+
+        '<span class="nm">'+esc(t.n)+'<small>'+(u?('em '+u+(u===1?' lançamento':' lançamentos')):
+        'sem uso')+'</small></span>'+ICO.chev+'</button>');
+      o.onclick=function(){folhaEditarEtiqueta(t);};
+      w.appendChild(o);
+    });
+    var nova=el('<button class="opt"><span class="ic">＋</span>'+
+      '<span class="nm">Nova etiqueta</span><span></span></button>');
+    nova.onclick=function(){folhaNovaEtiqueta(function(){salvar();fecharFolhas();render();folhaGerirEtiquetas();});};
+    w.appendChild(nova);
+    b.appendChild(w);
+    if(!(DB.etq||[]).length)
+      b.appendChild(el('<div class="hint">Ainda não há nenhuma. Depois da primeira, '+
+        'um quarto botão aparece na tela de registro para etiquetar na hora.</div>'));
+  },{cancelar:'Fechar'});
+}
+function folhaEditarEtiqueta(t){
+  var u=usosEtq(t.id);
+  folhaSobre(t.n,function(b,fechar){
+    var f=el('<div class="field"><div class="k">Nome</div>'+
+      '<input type="text" maxlength="28" value="'+esc(t.n)+'"></div>');
+    b.appendChild(f);
+    b.appendChild(el('<div class="hint">'+(u?('Usada em <b>'+u+
+      (u===1?' lançamento':' lançamentos')+'</b>. Renomear alcança todos.'):
+      'Nenhum lançamento usa esta etiqueta.')+'</div>'));
+    var ok=el('<button class="btnfull">Salvar</button>');
+    ok.onclick=function(){
+      var n=f.querySelector('input').value.trim().replace(/\s+/g,' ');
+      if(!n){alerta('Nome obrigatório','Toda etiqueta precisa de um nome.');return;}
+      var ja=acharEtq(n);
+      if(ja&&ja.id!==t.id){
+        alerta('Já existe','Outra etiqueta já se chama "'+ja.n+'". Dois nomes iguais '+
+          'quebrariam o filtro.');return;}
+      var antes=t.n;t.n=n;
+      if(!salvar()){t.n=antes;return;}
+      fechar();fecharFolhas();render();folhaGerirEtiquetas();
+    };
+    b.appendChild(ok);
+    /* Excluir NÃO é bloqueado quando há uso, como acontece com categoria —
+       tirar a etiqueta de três lançamentos é inofensivo: o lançamento continua
+       inteiro, só perde um rótulo. O que ela precisa é dizer o número e ter
+       volta. */
+    var del=el('<button class="btnfull dan">Excluir etiqueta</button>');
+    del.onclick=function(){
+      confirmar2('Excluir "'+t.n+'"?',
+        u?('Ela sai de '+u+(u===1?' lançamento':' lançamentos')+
+           '. Os lançamentos continuam inteiros — só perdem este rótulo.')
+         :'Nenhum lançamento usa esta etiqueta.','Excluir',true,function(){
+        var antesL=(DB.etq||[]).slice();
+        var antesE=DB.exp.map(function(e){return e.etq?e.etq.slice():null;});
+        DB.etq=DB.etq.filter(function(x){return x.id!==t.id;});
+        DB.exp.forEach(function(e){
+          if(!e.etq)return;
+          e.etq=e.etq.filter(function(i){return i!==t.id;});
+          if(!e.etq.length)delete e.etq;
+        });
+        if(S.fEtq===t.id)S.fEtq=null;
+        if(!salvar()){DB.etq=antesL;return;}
+        fechar();fecharFolhas();render();
+        toast('Etiqueta excluída',t.n+(u?(' · saiu de '+u+(u===1?' lançamento':' lançamentos')):''),
+          'Desfazer',function(){
+            DB.etq=antesL;
+            DB.exp.forEach(function(e,i){
+              if(antesE[i])e.etq=antesE[i].slice();else delete e.etq;});
+            salvar();render();});
+      });
+    };
+    b.appendChild(del);
+  },{cancelar:'Cancelar'});
+}
+
 function folhaFrequencia(){
   var lim=new Date();lim.setDate(lim.getDate()-60);var limS=ymd(lim);
   var cnt={};DB.exp.forEach(function(e){if(e.d>=limS)cnt[e.cat]=(cnt[e.cat]||0)+1;});
@@ -5423,7 +5781,10 @@ function pacoteJSON(){
        o objeto campo a campo, então coleção nova não entra sozinha — sem esta
        linha, exportar e restaurar apagaria as metas em silêncio: lançamentos
        voltam, categorias voltam, metas não. */
-    cats:DB.cats,ordem:DB.ordem,exp:DB.exp,rec:DB.rec||[],metas:DB.metas||[],prefs:DB.prefs
+    cats:DB.cats,ordem:DB.ordem,exp:DB.exp,rec:DB.rec||[],metas:DB.metas||[],
+    /* v27: `etq` entra AQUI e em restaurarJSON(), pelo mesmo motivo escrito
+       acima para `metas`. É a terceira coleção a passar por esta armadilha. */
+    etq:DB.etq||[],prefs:DB.prefs
   },null,1);
 }
 function compartilharJSON(){
@@ -5452,12 +5813,17 @@ function exportarCSV(){
   /* As duas últimas colunas existem para a volta: sem elas, reimportar apaga o
      vínculo com a recorrência e o app recobra meses já confirmados. Entram no
      FIM para não quebrar planilha de quem já usa as anteriores. */
-  var l=['id;id_compra;data;tipo;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao;recorrencia;competencia'];
+  var l=['id;id_compra;data;tipo;categoria;subcategoria;valor;parcela;parcelas;valor_compra;data_compra;pagamento;descricao;recorrencia;competencia;etiquetas'];
   ocorrencias().sort(function(a,b){return a.d<b.d?-1:(a.d>b.d?1:0);}).forEach(function(e){
     l.push([e.id,e.oid,e.d,(eEntrada(e.cat)?'entrada':'saida'),
             nomeCat(e.cat),nomeSub(e.cat,e.sub),brl(e.v),
             e.pi,e.pn,brl(e.vt),e.dc,e.pay||'',e.desc||'',
-            e.rec||'',e.comp||'']
+            e.rec||'',e.comp||'',
+            /* v27: pelos NOMES, separados por vírgula. O id não serve a
+               ninguém fora do app, e é o nome que faz a coluna ser útil numa
+               planilha — que é para isso que o CSV existe. A volta recria a
+               etiqueta pelo nome, com a mesma normalização da criação. */
+            etqsDe(e).map(function(t){return t.n;}).join(', ')]
       .map(csvCampo).join(';'));
   });
   partilhar(nomeArquivo('csv'),'﻿'+l.join('\r\n'),'text/csv');
@@ -5491,7 +5857,7 @@ function restaurarJSON(){
       ' categorias'+(nRec?(' e '+nRec+(nRec===1?' recorrente':' recorrentes')):'')+
       '. Saem os '+DB.exp.length+' lançamentos atuais deste aparelho. A substituição é total.','Restaurar',true,function(){
       DB=migrar({v:SCHEMA,cats:d.cats,ordem:d.ordem,exp:d.exp,rec:d.rec||[],
-                 metas:d.metas||[],prefs:d.prefs||{}});
+                 metas:d.metas||[],etq:d.etq||[],prefs:d.prefs||{}});
       salvar();S.aba='list';S.periodo='tudo';render();
       toast('Backup restaurado',d.exp.length+' lançamentos carregados.','',null);
     });
@@ -5529,10 +5895,31 @@ function importarCSV(){
        seis à vista e o "Comprometido à frente" sumia. Aqui elas são colapsadas
        de volta numa compra só, usando as colunas que o export sempre trouxe. */
     var iOid=col('id_compra'),iNP=col('parcelas'),iVT=col('valor_compra'),
-        iDC=col('data_compra'),iRec=col('recorrencia'),iComp=col('competencia');
+        iDC=col('data_compra'),iRec=col('recorrencia'),iComp=col('competencia'),
+        iEtq=col('etiquetas');
     var porNome={};DB.cats.forEach(function(c){porNome[c.n.toLowerCase()]={c:c,subs:{}};
       c.subs.forEach(function(s){porNome[c.n.toLowerCase()].subs[s.n.toLowerCase()]=s;});});
     var novos=[],faltando={},invalidas=0,vistos={},colapsadas=0,vinculadas=0;
+    /* v27: as etiquetas voltam pelo NOME. A coluna é opcional — planilha de
+       outra origem simplesmente não a tem. Nome que não existe vira etiqueta
+       nova; nome que já existe (sem acento, sem caixa) reaproveita a que há,
+       pela mesma normalização que a criação usa. Nada é criado antes de a
+       importação ser confirmada. */
+    var etqNovas=[],etqPorNome={};
+    function etqDaPlanilha(txt){
+      var out=[];
+      String(txt||'').split(',').forEach(function(n){
+        n=n.trim().replace(/\s+/g,' ');
+        if(!n)return;
+        var k=normEtq(n);
+        if(!k)return;
+        var ja=acharEtq(n);
+        if(ja){if(out.indexOf(ja.id)<0)out.push(ja.id);return;}
+        if(!etqPorNome[k]){etqPorNome[k]={id:uid('q'),n:n};etqNovas.push(etqPorNome[k]);}
+        if(out.indexOf(etqPorNome[k].id)<0)out.push(etqPorNome[k].id);
+      });
+      return out;
+    }
     for(var i=1;i<linhas.length;i++){
       var L=linhas[i];
       var data=(L[iD]||'').trim();
@@ -5552,9 +5939,12 @@ function importarCSV(){
       if(ehParcela){
         if(vistos[oid]){continue;}       /* as outras parcelas são derivadas */
         vistos[oid]=1;
-        novos.push({id:oid,d:dc,cat:ref.c.id,sub:s?s.id:null,v:vt,par:np,
+        var reP={id:oid,d:dc,cat:ref.c.id,sub:s?s.id:null,v:vt,par:np,
           pay:(iP>=0?(L[iP]||'').trim():'')||null,desc:(iT>=0?(L[iT]||'').trim():''),
-          ts:Date.now(),_oid:oid});
+          ts:Date.now(),_oid:oid};
+        var tP=(iEtq>=0)?etqDaPlanilha(L[iEtq]):[];
+        if(tP.length)reP.etq=tP;
+        novos.push(reP);
         colapsadas+=np;
         continue;
       }
@@ -5566,6 +5956,8 @@ function importarCSV(){
       var rid=(iRec>=0)?String(L[iRec]||'').trim():'';
       var cp=(iComp>=0)?String(L[iComp]||'').trim():'';
       if(rid&&/^\d{4}-\d{2}$/.test(cp)&&rec(rid)){reg.rec=rid;reg.comp=cp;vinculadas++;}
+      var tg=(iEtq>=0)?etqDaPlanilha(L[iEtq]):[];
+      if(tg.length)reg.etq=tg;
       novos.push(reg);
     }
     var faltaNomes=Object.keys(faltando);
@@ -5601,6 +5993,7 @@ function importarCSV(){
            de uma compra que já está aqui (o caso das parcelas) */
         var add=novos.filter(function(e){return !tem[e.id]&&!(e._oid&&tem[e._oid]);});
         add.forEach(function(e){delete e._oid;});
+        gravarEtqNovas(etqNovas,add);
         DB.exp=add.concat(DB.exp);
         ordenarExp();salvar();fecharFolhas();S.aba='list';S.periodo='tudo';render();
         toast('Importação concluída',add.length+' novos · '+(novos.length-add.length)+' já existiam','',null);
@@ -5612,6 +6005,7 @@ function importarCSV(){
           novos.length+' da planilha. As categorias não mudam.',
           'Substituir',true,function(){
           novos.forEach(function(e){delete e._oid;});
+          gravarEtqNovas(etqNovas,novos);
           DB.exp=novos.slice();ordenarExp();salvar();S.aba='list';S.periodo='tudo';render();
           toast('Lançamentos substituídos',novos.length+' importados.','',null);
         });
@@ -5619,6 +6013,17 @@ function importarCSV(){
       b.appendChild(r);
     });
   });
+}
+/* v27: as etiquetas que a planilha trouxe só passam a existir quando a
+   importação é confirmada — e só as que ficaram em pelo menos uma linha
+   realmente importada. Criar antes deixaria etiqueta órfã na base de quem
+   olhou a prévia e desistiu. */
+function gravarEtqNovas(novas,entrando){
+  if(!novas||!novas.length)return;
+  var usados={};
+  entrando.forEach(function(e){(e.etq||[]).forEach(function(id){usados[id]=1;});});
+  DB.etq=DB.etq||[];
+  novas.forEach(function(t){if(usados[t.id])DB.etq.push(t);});
 }
 function ordenarExp(){DB.exp.sort(function(a,b){return a.d<b.d?1:(a.d>b.d?-1:(b.ts||0)-(a.ts||0));});}
 
@@ -5699,6 +6104,13 @@ try{
     /* v25: estorno vinculado. `ocorrenciasDe` entra aqui porque é ela que
        carrega a regra inteira — a verificação chama a função de verdade com
        uma compra montada à mão, em vez de acreditar no que a tela mostra. */
+    /* v27: etiquetas e a trava da frequência. */
+    window.__v27={etq:etq,nomeEtq:nomeEtq,etqsDe:etqsDe,normEtq:normEtq,
+                  acharEtq:acharEtq,criarEtq:criarEtq,usosEtq:usosEtq,
+                  temEtq:temEtq,rotuloEtq:rotuloEtq,baseFrequencia:baseFrequencia,
+                  pacoteJSON:pacoteJSON,SCHEMA:SCHEMA,
+                  get fEtq(){return S.fEtq;},set fEtq(v){S.fEtq=v;},
+                  get etqSel(){return S.etq;}};
     window.__v25={ocorrenciasDe:ocorrenciasDe,estornosDe:estornosDe,
                   totalEstornado:totalEstornado,temEstorno:temEstorno,
                   previaEstorno:previaEstorno,comprometido:comprometido,
