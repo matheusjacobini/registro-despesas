@@ -292,13 +292,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 /* v27: o separador entre as categorias e as etiquetas, na faixa de filtros */
 .fsep{flex:0 0 1px;width:1px;align-self:center;height:20px;background:var(--line2);margin:0 3px}
 .fchip.etq[aria-pressed="true"]{background:var(--tint);color:#fff}
-/* v27 (item 51): a marca de novidade, para a linha que destrava sozinha deixar
-   de aparecer sem avisar. Mesmo desenho do aviso de pendência da aba Planejar. */
-.novo{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;
-  background:var(--tint);color:#fff;border-radius:6px;padding:2px 5px;
-  vertical-align:2px;margin-left:6px}
+
 .chip{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:9px 12px;min-width:0}
-.chip .k{display:block;font-size:11px;color:var(--muted)}
+.chip .k{display:block;font-size:11px;color:var(--muted);
+  /* v28: o rótulo passa a cortar com reticências em vez de quebrar ou vazar.
+     Num aparelho de 320px "Pagamento" e "Etiquetas" não cabem em 70px — e ali
+     "Pagamento" já não cabia com TRÊS chips, antes das etiquetas existirem.
+     Cortar é o pior caso honesto; empurrar o layout seria pior. */
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .v{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .v.sem{font-weight:400;color:var(--muted)}
 .chip:active{background:var(--fill2)}
@@ -523,6 +524,73 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .spark .parc{stroke-dasharray:3 3}
 .sparkl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);
   margin-top:3px}
+/* v29 (item 4): a sparkline virou a porta da folha de evolução.
+   O <button> de fora não tem desenho nenhum — quem desenha continuam sendo o
+   rótulo (.deltabtn, o mesmo do botão de comparação logo acima) e a sparkline. */
+.evoport{display:block;width:100%;background:none;border:0;padding:0;margin:0;
+  text-align:left;color:inherit;font:inherit}
+/* O rótulo da porta tem o desenho do botão de comparação — mesma função, no
+   mesmo cartão — mas CLASSE PRÓPRIA. Compartilhar `.deltabtn` fez a classe
+   significar duas coisas, e seis verificações que diziam "o botão de
+   comparação" passaram a encontrar dois elementos. Nome que serve a dois donos
+   é nome que mente para os dois. */
+.evolbl{display:flex;align-items:center;gap:6px;margin-top:9px;padding:8px 10px;
+  border-radius:9px;background:var(--fill2);font-size:13.5px;font-weight:500;
+  width:100%;min-height:38px;color:var(--muted)}
+.evolbl .gp{flex:1;text-align:left;display:flex;align-items:center;gap:5px;min-width:0}
+.evolbl .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.evoport .sparkwrap{display:block}
+.evoport:active{opacity:.6}
+/* o gráfico da folha: doze barras, régua de média e rótulos alternados */
+.evosel{background:var(--fill);border-radius:12px;padding:10px 12px;margin-top:11px}
+.evosel .q{font-size:11.5px;color:var(--muted2)}
+.evosel .v{font-size:21px;font-weight:600;letter-spacing:-.02em;margin-top:1px}
+.evosel .d{font-size:12.5px;margin-top:2px;font-variant-numeric:tabular-nums}
+.evosel .d.up{color:var(--warn)}
+.evosel .d.down{color:var(--ok)}
+.evosel .d.flat{color:var(--muted)}
+.evoplot{position:relative;height:126px;margin-top:14px}
+.evobars{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;
+  height:126px;position:relative;z-index:1}
+/* o alvo de toque é a COLUNA inteira, não a barra: uma barra de 3px seria um
+   alvo de 3px, contra os 44px que o resto do app respeita */
+.evobar{display:flex;align-items:flex-end;height:126px;background:none;border:0;padding:0}
+.evobar i{display:block;width:100%;background:var(--bar,#C2410C);border-radius:4px 4px 0 0;
+  opacity:.34}
+.evobar.on i{opacity:1}
+.evobar.parc i{background:repeating-linear-gradient(135deg,var(--bar,#C2410C) 0 3px,
+  transparent 3px 6px);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bar,#C2410C) 55%,transparent)}
+.evobar.parc.on i{opacity:.85}
+.evomed{position:absolute;left:0;right:0;border-top:1px dashed var(--muted);z-index:2}
+.evolab{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:5px}
+.evolab span{font-size:9.5px;color:var(--muted2);text-align:center;letter-spacing:-.02em}
+.evolab span.on{color:var(--ink2);font-weight:600}
+.evofoot{font-size:11.5px;color:var(--muted2);line-height:1.55;margin-top:12px}
+.btnghost{width:100%;background:var(--fill);color:var(--tint);border:0;border-radius:12px;
+  padding:12px;font-size:14.5px;font-weight:600;margin-top:10px;min-height:44px}
+.btnghost:active{opacity:.6}
+.picker{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--fill);border-radius:12px;padding:11px 13px;margin-top:11px;
+  font-size:15px;width:100%;border:0;color:var(--ink);text-align:left;min-height:44px}
+.picker .esq{display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.picker .pt{width:9px;height:9px;border-radius:50%;flex:none}
+.picker .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round;flex:none}
+.picker:active{opacity:.6}
+/* v29: a resposta do "Buscar atualização", colada na linha que a pediu */
+.estado{background:var(--fill);border-radius:12px;padding:13px 14px;margin-top:9px;
+  display:grid;grid-template-columns:22px minmax(0,1fr);gap:11px;align-items:start}
+.estado .ic{font-size:17px;line-height:1.25}
+.estado .t{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.estado .s{display:block;font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:2px}
+.estado.ok{background:color-mix(in srgb,var(--ok) 10%,var(--card))}
+.estado.ok .t{color:var(--ok)}
+.estado.err{background:color-mix(in srgb,var(--danger) 9%,var(--card))}
+.estado.err .t{color:var(--danger)}
+.grow[disabled]{opacity:.5}
 /* v14 (arrumação a): Entradas e Saldo como rodapé do cartão, não como bloco
    próprio. Um cartão, um número grande, hierarquia inequívoca. */
 .herolin{display:flex;justify-content:space-between;gap:10px;margin-top:12px;
@@ -1077,7 +1145,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-28.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-28.3';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1711,12 +1779,25 @@ function mesesAntes(mk){
   var a=p.split('-'),b=mk.split('-');
   return Math.max(0,(+b[0]-+a[0])*12+(+b[1]-+a[1]));
 }
-/* Série de n meses terminando em mk. */
-function serieMeses(mk,n,ent){
+/* Série de n meses terminando em mk, com um recorte opcional.
+   `f` é {tipo:'cat'|'etq', id}; sem ele, é o total do lado.
+
+   v29 (item 4): a janela é a MESMA para qualquer recorte — 12 meses até mk,
+   com zero onde não houve nada. Encolher a janela para "os meses em que essa
+   categoria teve algo" faria dois gráficos lado a lado terem eixos diferentes,
+   e um mês vazio vale como informação: é um mês em que você não gastou ali. */
+function serieEvo(mk,n,ent,f){
   var todas=ocorrencias(),out=[];
+  if(f&&f.tipo==='cat')todas=todas.filter(function(o){return o.cat===f.id;});
+  if(f&&f.tipo==='etq')todas=todas.filter(function(o){return temEtq(o,f.id);});
   for(var i=n-1;i>=0;i--){var m=addMes(mk,-i);out.push({m:m,v:somaMesSai(todas,m,ent)});}
   return out;
 }
+function serieMeses(mk,n,ent){return serieEvo(mk,n,ent,null);}
+/* Quantos meses a janela tem de fato. Menos de 3 não é série: dois pontos são
+   um traço. É a mesma regra que a sparkline já usava, e é ela que decide se a
+   porta da folha existe. */
+function janelaEvo(mk){return Math.min(12,mesesAntes(mk)+1);}
 /* As réguas disponíveis para mk, em ordem de proximidade. Cada uma some quando
    não tem dado — comparação sem base não é comparação, é número inventado.
    `meses` é a lista que forma a base: uma só nas pontuais, N na média. É ela
@@ -1841,15 +1922,33 @@ function sparkHTML(mk,ent){
   var trecho=parcial?('<path class="parc" d="'+dd(pts.slice(n-2))+
                       '" vector-effect="non-scaling-stroke"/>'):'';
   var area=dd(pts)+' L100 130 L0 130 Z';
-  return '<div class="sparkwrap"><svg class="spark" viewBox="0 0 100 100" '+
+  return '<span class="sparkwrap"><svg class="spark" viewBox="0 0 100 100" '+
     'preserveAspectRatio="none" aria-hidden="true">'+
     '<path class="area" d="'+area+'"/>'+
     '<path d="'+solido+'" vector-effect="non-scaling-stroke"/>'+trecho+'</svg>'+
     /* o ponto fica FORA do SVG: com preserveAspectRatio="none" um círculo
        desenhado lá dentro sairia ovalado */
     '<span class="pt'+(parcial?' parc':'')+'" style="top:'+pts[n-1][1].toFixed(1)+'%"></span>'+
-    '</div><div class="sparkl"><span>'+mesCurto(serie[0].m)+'</span>'+
-    '<span>'+mesCurto(mk)+(parcial?' · parcial':'')+'</span></div>';
+    '</span><span class="sparkl"><span>'+mesCurto(serie[0].m)+'</span>'+
+    '<span>'+mesCurto(mk)+(parcial?' · parcial':'')+'</span></span>';
+}
+/* v29 (item 4): a sparkline deixou de ser enfeite.
+
+   Ela desenhava doze meses sem um número e sem um toque — o único gráfico
+   decorativo que tinha sobrado nesta tela, contra a regra que a v13 fixou:
+   gráfico aqui ou é tocável, ou vem com os números. Agora ela é a PORTA da
+   folha de evolução.
+
+   E a porta vem ROTULADA. Uma sparkline que por acaso é clicável é uma porta
+   que depende de você tentar: os 28px do rótulo são o preço de ela ser lida em
+   vez de descoberta. O rótulo usa o mesmo desenho do botão de comparação que
+   está logo acima, porque os dois fazem a mesma coisa — abrem uma folha que
+   explica o número grande. */
+function portaEvo(mk,ent){
+  var sp=sparkHTML(mk,ent);
+  if(!sp)return '';
+  return '<button class="evoport"><span class="evolbl">'+
+    '<span class="gp"><span>📈</span>Últimos 12 meses</span>'+ICO.chev+'</span>'+sp+'</button>';
 }
 
 /* ---------------- a rosca do Resumo (v13, item 31) ----------------
@@ -1981,7 +2080,12 @@ var S={
   fLado:'tudo',
   /* v13 (item 31): qual lado o bloco de gráficos do Resumo está mostrando.
      Só o bloco — o número grande continua sendo o gasto do mês, sempre. */
-  ladoSum:'s'
+  ladoSum:'s',
+  /* v29 (item 4): o recorte da folha de evolução. Vive em S como todo o resto
+     do estado de tela — abrir de novo mantém onde você estava, fechar o app
+     esquece. O mês selecionado NÃO mora aqui: ele nasce sempre no mês do
+     Resumo, porque a folha é uma lupa sobre o mês que está atrás dela. */
+  evoModo:'tudo',evoCat:null,evoEtq:null
 };
 function limparRascunho(){
   S.cat=null;S.sub=null;S.intD='';S.centD='';S.modo='reais';S.sinal=1;
@@ -2171,6 +2275,9 @@ function abas(){
     if(av)b.setAttribute('aria-label',x[1]+', '+np+' a confirmar');
     b.onclick=function(){
       fecharFolhas();
+      /* v29: a resposta do "Buscar atualização" é sobre um toque seu, não um
+         estado do app. Sair da aba encerra o assunto. */
+      if(x[0]!=='cfg')ATU=null;
       if(x[0]==='reg')limparRascunho();
       S.aba=x[0];render();
     };
@@ -2367,25 +2474,33 @@ function telaValor(){
   var cxv=cx.querySelector('.v');
   cx.onclick=folhaParcelas;
   chips.appendChild(cd);chips.appendChild(cp);chips.appendChild(cx);
-  /* v27 (item 9, opção A): o quarto chip só existe DEPOIS da primeira etiqueta
-     criada. Enquanto não houver nenhuma, esta tela é byte a byte a de antes —
-     custo zero para quem não usa. Medido a 393px: com quatro chips cada um
-     fica com 86px e nada estoura. Num aparelho de 320px estouraria, mas ali
-     "Pagamento" já estoura hoje com três. */
-  if((DB.etq||[]).length){
-    var ret=rotuloEtq(S.etq);
-    var ce=el('<button class="chip"><span class="k">Etiquetas</span>'+
-      '<span class="v'+(ret?'':' sem')+'">'+(ret?esc(ret):'nenhuma')+'</span></button>');
-    ce.onclick=function(){
-      folhaEtiquetas(S.etq||[],function(ids){
-        S.etq=ids;
-        var r=rotuloEtq(ids),v=ce.querySelector('.v');
-        v.textContent=r||'nenhuma';v.classList.toggle('sem',!r);
-      });
-    };
-    chips.appendChild(ce);
-    chips.classList.add('q4');
-  }
+  /* v28: o chip existe SEMPRE.
+
+     Na v27 ele só nascia depois da primeira etiqueta criada, com o argumento
+     "custo zero para quem não usa". O argumento estava errado, e você achou o
+     buraco no primeiro uso: quem ainda não tem etiqueta nenhuma não tem por
+     onde começar — precisa descobrir sozinho que a porta fica em Ajustes.
+     Pior: é exatamente o defeito que eu usei no mockup para descartar a opção
+     C ("tarefa que depende de você lembrar é tarefa que não acontece"), e
+     construí para o primeiro uso.
+
+     O "usuário que decidiu nunca usar etiqueta" não existe — existe quem ainda
+     não usou. Para ele o chip não é peso morto, é a única porta visível.
+     Vazio, ele convida em vez de ficar inerte. */
+  var ret=rotuloEtq(S.etq);
+  var vazio=!(DB.etq||[]).length;
+  var ce=el('<button class="chip"><span class="k">Etiquetas</span>'+
+    '<span class="v'+(ret?'':' sem')+'">'+(ret?esc(ret):(vazio?'criar':'nenhuma'))+'</span></button>');
+  ce.onclick=function(){
+    folhaEtiquetas(S.etq||[],function(ids){
+      S.etq=ids;
+      var r=rotuloEtq(ids),v=ce.querySelector('.v');
+      v.textContent=r||((DB.etq||[]).length?'nenhuma':'criar');
+      v.classList.toggle('sem',!r);
+    });
+  };
+  chips.appendChild(ce);
+  chips.classList.add('q4');
   w.appendChild(chips);
 
   var db=el('<div class="descbox"><input type="text" inputmode="text" placeholder="Descrição (opcional)" maxlength="80"></div>');
@@ -3002,9 +3117,11 @@ function telaResumo(){
     (ent?'Recebido em ':'Gasto em ')+mesLabel(mk).split(' de ')[0]+
     (eMesAtual?(' · '+diasCorridos+(diasCorridos===1?' dia':' dias')):'')+'</div>'+
     '<div class="big tnum">R$ '+brl(totLado)+'</div>'+
-    linhaCmp+sparkHTML(mk,ent)+rodape+'</div>');
+    linhaCmp+portaEvo(mk,ent)+rodape+'</div>');
   var bcmp=hero.querySelector('.deltabtn');
   if(bcmp)bcmp.onclick=function(){folhaMudou(mk,ent);};
+  var bevo=hero.querySelector('.evoport');
+  if(bevo)bevo.onclick=function(){folhaEvolucao(mk,ent);};
   sc.appendChild(hero);
 
   /* v13 (item 31): os quatro tiles saíram — média diária, projeção do mês,
@@ -4589,6 +4706,220 @@ function folhaFormacao(noMes,mk){
    diferente do ranking: Moradia é sempre a maior categoria e por isso nunca
    chama atenção no ranking; aqui ela aparece quando SAI DO LUGAR dela.
    O seletor no topo escolhe a régua, e só existe quando há mais de uma. */
+/* ============================================================
+   ITEM 4 — A EVOLUÇÃO MENSAL
+   ============================================================
+   A folha que a sparkline do Resumo abre. Doze meses, uma série por vez.
+
+   Por que uma série por vez, e não várias sobrepostas: são 15 categorias, e
+   três linhas num gráfico de 361px já viram espaguete. Além disso a pergunta
+   que esta tela responde é "essa categoria está subindo?", que é a categoria
+   contra ELA MESMA no tempo — comparar categorias entre si é o que o ranking
+   do Resumo já faz, e faz melhor.
+
+   O que ela NÃO faz: filtrar o Resumo. Você entra, olha e sai; o mês e o lado
+   continuam sendo os de trás. Um seletor que mudasse a tela de baixo seria um
+   segundo sistema de filtros competindo com o da aba Lançamentos.
+*/
+function corDaSerie(modo,cat_){
+  if(modo==='cat'&&cat_)return cat_.c;
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue('--tint').trim()||'#0A84FF';
+}
+/* A média que a régua tracejada mostra: só meses FECHADOS.
+   O mês em curso puxaria a régua para baixo todo dia 1º e a faria subir ao
+   longo do mês — uma referência que se mexe sozinha não é referência. */
+function mediaEvo(serie,parcial){
+  var f=parcial?serie.slice(0,-1):serie;
+  if(!f.length)return 0;
+  var t=0;for(var i=0;i<f.length;i++)t+=f[i].v;
+  return Math.round(t/f.length);
+}
+function desenhaEvo(host,serie,sel,cor,parcial,aoTocar){
+  host.innerHTML='';
+  var n=serie.length,i;
+  var med=mediaEvo(serie,parcial);
+  var mx=0;for(i=0;i<n;i++)if(serie[i].v>mx)mx=serie[i].v;
+  if(med>mx)mx=med;
+  var topo=Math.round(mx*1.12)||1;
+  var plot=el('<div class="evoplot" style="--bar:'+cor+'"></div>');
+  var barras=el('<div class="evobars"></div>');
+  serie.forEach(function(x,j){
+    var cls='';
+    if(parcial&&j===n-1)cls+=' parc';
+    if(j===sel)cls+=' on';
+    /* 3px de piso: um mês zerado tem que continuar sendo um alvo de toque e
+       tem que aparecer. Barra de 0px é um mês que some do gráfico. */
+    var h=Math.max(3,Math.round(x.v/topo*126));
+    var bt=el('<button class="evobar'+cls+'" aria-label="'+esc(mesLabel(x.m))+'">'+
+      '<i style="height:'+h+'px"></i></button>');
+    bt.onclick=function(){aoTocar(j);};
+    barras.appendChild(bt);
+  });
+  plot.appendChild(barras);
+  /* A régua da média não leva rótulo em cima: ela cruza o gráfico na altura em
+     que as barras estão, e qualquer posição do rótulo tapava uma delas. O
+     número já está escrito por extenso no cabeçalho, uma linha acima. */
+  if(med>0){
+    var y=126-Math.round(med/topo*126);
+    plot.appendChild(el('<div class="evomed" style="top:'+y+'px"></div>'));
+  }
+  host.appendChild(plot);
+  var labs=el('<div class="evolab"></div>');
+  serie.forEach(function(x,j){
+    /* rótulo sim, rótulo não: doze nomes de mês em 361px encostam um no outro.
+       O mês tocado sempre mostra o dele, esteja em que posição estiver. */
+    var mostra=(j%2===1)||(j===sel);
+    labs.appendChild(el('<span class="'+(j===sel?'on':'')+'">'+
+      (mostra?MESC[+x.m.slice(5,7)-1]:'')+'</span>'));
+  });
+  host.appendChild(labs);
+}
+function folhaEvolucao(mk,ent){
+  var n=janelaEvo(mk);
+  if(n<3)return;
+  var sel=n-1;                       /* nasce no mês do Resumo */
+  folha('Evolução',function(b){
+    var seg=el('<div class="seg" style="margin:2px 0 0"></div>');
+    [['tudo','Tudo'],['cat','Categoria'],['etq','Etiqueta']].forEach(function(o){
+      var bt=el('<button aria-selected="'+(S.evoModo===o[0])+'">'+o[1]+'</button>');
+      bt.onclick=function(){
+        if(S.evoModo===o[0])return;
+        S.evoModo=o[0];
+        seg.querySelectorAll('button').forEach(function(x,k){
+          x.setAttribute('aria-selected',['tudo','cat','etq'][k]===S.evoModo);});
+        sel=n-1;pintaEvo();
+      };
+      seg.appendChild(bt);
+    });
+    b.appendChild(seg);
+    var corpo=el('<div></div>');
+    b.appendChild(corpo);
+
+    function catsDoLado(){
+      return catsOrdenadas(false).filter(function(c){return (c.tipo==='e')===!!ent;});
+    }
+    /* Qual categoria vem escolhida da primeira vez: a que mais pesou na janela.
+       Abrir em "Educação, R$ 0,00" seria abrir num gráfico vazio por acaso. */
+    function catPadrao(){
+      var cs=catsDoLado(),melhor=null,mv=-1;
+      cs.forEach(function(c){
+        var t=0,se=serieEvo(mk,n,ent,{tipo:'cat',id:c.id});
+        se.forEach(function(x){t+=x.v;});
+        if(t>mv){mv=t;melhor=c.id;}
+      });
+      return melhor;
+    }
+    function pintaEvo(){
+      corpo.innerHTML='';
+      var modo=S.evoModo,filtro=null,cor=null,rot='',cat_=null;
+      if(modo==='cat'){
+        var cs=catsDoLado();
+        if(!cs.length){
+          corpo.appendChild(el('<div class="hint" style="margin-top:12px">Não há '+
+            (ent?'categorias de entrada':'categorias de saída')+' para recortar.</div>'));
+          return;
+        }
+        if(!S.evoCat||!cs.some(function(c){return c.id===S.evoCat;}))S.evoCat=catPadrao();
+        cat_=cat(S.evoCat);
+        filtro={tipo:'cat',id:S.evoCat};rot=cat_.n;cor=cat_.c;
+        var pc=el('<button class="picker"><span class="esq">'+
+          '<span class="pt" style="background:'+cat_.c+'"></span>'+cat_.e+' '+esc(cat_.n)+
+          '</span>'+ICO.chev+'</button>');
+        pc.onclick=function(){
+          folhaSobre('Categoria',function(bb,fechar){
+            var w=el('<div class="optwrap"></div>');
+            catsDoLado().forEach(function(c){
+              var o=el('<button class="opt"><span class="ic">'+c.e+'</span>'+
+                '<span class="nm">'+esc(c.n)+'</span>'+
+                (c.id===S.evoCat?'<span class="tag">✓</span>':'<span></span>')+'</button>');
+              o.onclick=function(){S.evoCat=c.id;fechar();sel=n-1;pintaEvo();};
+              w.appendChild(o);
+            });
+            bb.appendChild(w);
+          },{cancelar:'Cancelar'});
+        };
+        corpo.appendChild(pc);
+      }else if(modo==='etq'){
+        var ts=DB.etq||[];
+        if(!ts.length){
+          corpo.appendChild(el('<div class="hint" style="margin-top:12px">Nenhuma '+
+            '<b>etiqueta</b> criada ainda. Elas nascem no quarto botão da tela de registro, '+
+            'ou em Ajustes › Etiquetas — e a partir daí esta aba passa a existir.</div>'));
+          return;
+        }
+        if(!S.evoEtq||!ts.some(function(t){return t.id===S.evoEtq;}))S.evoEtq=ts[0].id;
+        var tq=etq(S.evoEtq);
+        filtro={tipo:'etq',id:S.evoEtq};rot=tq.n;
+        var pe=el('<button class="picker"><span class="esq">🏷️ '+esc(tq.n)+
+          '</span>'+ICO.chev+'</button>');
+        pe.onclick=function(){
+          folhaSobre('Etiqueta',function(bb,fechar){
+            var w=el('<div class="optwrap"></div>');
+            (DB.etq||[]).forEach(function(t){
+              var o=el('<button class="opt"><span class="ic">🏷️</span>'+
+                '<span class="nm">'+esc(t.n)+'</span>'+
+                (t.id===S.evoEtq?'<span class="tag">✓</span>':'<span></span>')+'</button>');
+              o.onclick=function(){S.evoEtq=t.id;fechar();sel=n-1;pintaEvo();};
+              w.appendChild(o);
+            });
+            bb.appendChild(w);
+          },{cancelar:'Cancelar'});
+        };
+        corpo.appendChild(pe);
+      }
+      cor=corDaSerie(modo,cat_);
+      var serie=serieEvo(mk,n,ent,filtro);
+      var parcial=(serie[n-1].m===mkey(hoje()));
+      var soma=0;serie.forEach(function(x){soma+=x.v;});
+      if(!soma){
+        corpo.appendChild(el('<div class="hint" style="margin-top:12px">Nenhum lançamento '+
+          'de <b>'+esc(rot)+'</b> nestes '+n+' meses. A janela é a mesma para todos os '+
+          'recortes de propósito: encolhê-la para os meses com movimento faria dois '+
+          'gráficos lado a lado terem eixos diferentes.</div>'));
+        return;
+      }
+      var med=mediaEvo(serie,parcial);
+      var x0=serie[sel],lado=ent?'entradas':'saídas';
+      var cab=el('<div class="evosel"><div class="q">'+esc(mesLabel(x0.m))+' · '+
+        (rot?esc(rot):lado)+'</div><div class="v tnum">R$ '+brl(x0.v)+'</div></div>');
+      /* A recusa deliberada: no dia 9, "33% abaixo da média" é verdade
+         aritmética e mentira útil. O mês em curso diz que está em curso. */
+      if(parcial&&sel===n-1){
+        var dias=+hoje().slice(8);
+        cab.appendChild(el('<div class="d flat">mês em curso · '+dias+
+          (dias===1?' dia corrido':' dias corridos')+' — ainda não dá para comparar'+
+          (med?(' (média dos fechados: R$ '+brl(med)+')'):'')+'</div>'));
+      }else if(!med){
+        cab.appendChild(el('<div class="d flat">sem média para comparar</div>'));
+      }else{
+        var dp=(x0.v-med)/med*100;
+        var cls=dp>=0.05?'up':(dp<=-0.05?'down':'flat');
+        if(ent)cls=(cls==='up'?'down':(cls==='down'?'up':'flat'));
+        cab.appendChild(el('<div class="d '+cls+'">'+
+          (dp>=0.05?'▲ ':(dp<=-0.05?'▼ ':'≈ '))+
+          (Math.abs(dp)<0.05?'na média':
+            (Math.abs(dp).toFixed(1).replace('.',',')+'% '+(dp>0?'acima':'abaixo')+' da média'))+
+          ' (R$ '+brl(med)+')</div>'));
+      }
+      corpo.appendChild(cab);
+      var plot=el('<div class="evo"></div>');
+      corpo.appendChild(plot);
+      desenhaEvo(plot,serie,sel,cor,parcial,function(j){sel=j;pintaEvo();});
+      /* Navegar é decisão explícita, nunca efeito colateral do toque na barra:
+         quem está comparando meses não quer a tela de trás mudando por baixo. */
+      var ir=el('<button class="btnghost">Ver '+esc(mesLabel(x0.m))+' no Resumo</button>');
+      ir.onclick=function(){S.mesSum=x0.m;fecharFolhas();render();};
+      corpo.appendChild(ir);
+      corpo.appendChild(el('<div class="evofoot">'+n+' meses até '+
+        esc(mesLabel(mk))+'. A média tracejada usa '+
+        (parcial?('os '+(n-1)+' meses fechados — o mês em curso não entra'):
+                 ('os '+n+' meses'))+'. Parcela conta no mês em que vence, '+
+        'como no resto do app.</div>'));
+    }
+    pintaEvo();
+  },{cancelar:'Fechar'});
+}
 function folhaMudou(mk,ent){
   var regs=reguas(mk,ent);
   if(!regs.length)return;
@@ -5262,28 +5593,17 @@ function telaCfg(){
       ' · '+usoQ+(usoQ===1?' lançamento':' lançamentos')):'nenhuma')+'</span>'+ICO.chev+
     '</div></button>');
   rq.onclick=folhaGerirEtiquetas;g2.appendChild(rq);
-  /* v27 (item 51): a trava era `diasEntre(prefs.inicio, hoje) >= 60`, ou seja,
-     media a idade da INSTALAÇÃO e não se há dado para ranquear. Quem importasse
-     dois anos de CSV continuaria 60 dias sem ver. Agora olha o dado: lançamentos
-     bastantes, espalhados por categorias bastantes. E o nome passou a dizer o
-     que a linha FAZ — ela reordena as categorias, e as 7 primeiras são os
-     botões da tela 1. */
-  var freq=baseFrequencia();
-  if(freq.n>=30&&freq.cats>=6){
-    var rf=el('<button class="grow tap"><div><div class="r1">Ordenar pela frequência real'+
-      (DB.prefs.viuFreq?'':' <span class="novo">novo</span>')+'</div>'+
-      '<div class="r2">Põe as categorias que você mais lança na frente — e as 7 primeiras '+
-      'são os botões da tela de registro.</div></div>'+ICO.chev+'</button>');
-    rf.onclick=function(){
-      /* A marca de novidade tem que sumir NA HORA. Gravar a preferência sem
-         redesenhar deixava o selo na tela até a pessoa sair da aba e voltar —
-         e um "novo" que continua depois de visto é ruído. `render()` antes de
-         abrir a folha: a folha vive em #layers e não é afetada. */
-      if(!DB.prefs.viuFreq){DB.prefs.viuFreq=1;salvar();render();}
-      folhaFrequencia();
-    };
-    g2.appendChild(rf);
-  }
+  /* v28 (sua observação): "Ordenar pela frequência real" deixou de ser uma
+     linha própria aqui e foi para DENTRO de "Ordem das categorias".
+
+     Você está certo, e a razão é a mesma que eu venho usando para criticar
+     outras coisas: duas linhas irmãs que mexem na MESMA coisa são um convite a
+     errar. "Ordem das categorias" é a tela que define a ordem; ordenar por
+     frequência é um JEITO de definir a ordem, não um assunto ao lado dela.
+
+     A mudança apaga mais código do que acrescenta: foram embora a trava daqui,
+     a preferência `viuFreq` e o selo de novidade — a opção passa a estar onde
+     quem foi mexer na ordem já está olhando, e não precisa ser anunciada. */
   b.appendChild(g2);
 
   /* Dados */
@@ -5307,10 +5627,25 @@ function telaCfg(){
     (bytes/1024).toFixed(1).replace('.',',')+' KB de ~5 MB</div></div></div>'));
   g4.appendChild(el('<div class="grow"><div><div class="r1">Último backup</div>'+
     '<div class="r2">'+(DB.prefs.ultBackup?(diaLabel(DB.prefs.ultBackup)+' · há '+diasEntre(DB.prefs.ultBackup,hoje())+' dias'):'nunca')+'</div></div></div>'));
-  if(location.protocol==='https:'){
-    var ru=el('<button class="grow tap"><div><div class="r1">Buscar atualização</div>'+
+  /* v29: a porta era `https:` porque a versão antiga mexia no service worker,
+     que só existe em contexto seguro. A de agora primeiro PERGUNTA ao servidor
+     qual build está publicada — o que faz sentido em qualquer lugar servido
+     pela rede, inclusive no localhost onde o app roda durante o trabalho. O
+     único caso em que não faz sentido nenhum é `file:`, que não tem servidor
+     para perguntar. */
+  if(location.protocol!=='file:'){
+    var ru=el('<button class="grow tap"'+(ATU&&ATU.cls==='busca'?' disabled':'')+
+      '><div><div class="r1">Buscar atualização</div>'+
       '<div class="r2">Build atual: '+BUILD+'</div></div>'+ICO.chev+'</button>');
     ru.onclick=buscarAtualizacao;g4.appendChild(ru);
+    /* A resposta aparece AQUI, colada na linha que a pediu, e some quando você
+       sai da aba. Botão desabilitado só enquanto a consulta está no ar — é o
+       único caso em que desabilitar é honesto: ele está ocupado, não indisponível. */
+    if(ATU){
+      var ae=el('<div class="estado '+esc(ATU.cls)+'"><span class="ic">'+ATU.ic+'</span>'+
+        '<span><span class="t">'+esc(ATU.t)+'</span><span class="s">'+ATU.s+'</span></span></div>');
+      g4.appendChild(ae);
+    }
   }
   var rd=el('<button class="grow tap danger"><div><div class="r1">Apagar todos os dados</div>'+
     '<div class="r2">Confirmação dupla. Não tem volta.</div></div></button>');
@@ -5341,6 +5676,37 @@ function folhaDensidade(){
 function folhaOrdem(){
   folha('Ordem das categorias',function(b){
     var L=layout(catsOrdenadas(false).length);
+    /* v28: ordenar pela frequência é um JEITO de definir esta ordem, então
+       mora aqui, e não numa linha irmã em Ajustes.
+
+       E mora ANTES da lista. Na primeira versão desta mudança eu pus embaixo,
+       com o rótulo "Ou deixe o app ordenar" — e a captura mostrou o buraco: são
+       15 categorias, então o atalho só aparecia depois de rolar a tela inteira.
+       Quem abre esta folha arrasta tudo à mão e só descobre no fim que havia um
+       jeito automático. O defeito de origem do item 51 era justamente esse: a
+       opção existia e ninguém via.
+
+       Quando não há dado para ranquear, a tela DIZ isso, no mesmo lugar, em vez
+       de oferecer um botão morto — a regra que o item 41 fixou: controle
+       desabilitado é promessa quebrada a cada toque. */
+    var f=baseFrequencia();
+    b.appendChild(el('<div class="glabel" style="padding-top:0">Automático</div>'));
+    if(f.n>=30&&f.cats>=6){
+      var w=el('<div class="optwrap"></div>');
+      var o=el('<button class="opt"><span class="ic">📊</span>'+
+        '<span class="nm">Ordenar pela frequência real'+
+        '<small>Põe na frente o que você mais lançou nos últimos 60 dias.</small></span>'+
+        ICO.chev+'</button>');
+      o.onclick=folhaFrequencia;
+      w.appendChild(o);b.appendChild(w);
+    }else{
+      b.appendChild(el('<div class="hint" style="padding-top:0">O app pode ordenar sozinho '+
+        'pela frequência real dos seus lançamentos, mas ainda não há dado para isso: hoje são <b>'+
+        f.n+(f.n===1?' lançamento':' lançamentos')+' em '+f.cats+
+        (f.cats===1?' categoria':' categorias')+'</b> nos últimos 60 dias, e a opção '+
+        'aparece aqui a partir de 30 em 6.</div>'));
+    }
+    b.appendChild(el('<div class="glabel">À mão</div>'));
     b.appendChild(el('<div class="hint" style="padding-top:0">Arraste pela alça. As primeiras viram botão na tela de registro; o resto fica atrás do card de lista.</div>'));
     var host=el('<div class="reorder optwrap"></div>');
     b.appendChild(host);
@@ -5722,23 +6088,107 @@ function folhaEditarSub(c,s){
     }
   });
 }
-/* força o service worker a reinstalar e limpa o cache do app — os dados
-   ficam no localStorage e não são tocados */
+/* ============================================================
+   BUSCAR ATUALIZAÇÃO (v29)
+   ============================================================
+   Antes: apagava o cache, matava o service worker e recarregava ÀS CEGAS.
+   Você voltava para a tela inicial sem saber se atualizou, se já estava
+   atualizado, ou se nem houve rede — e, sem rede, o botão era a única forma
+   de transformar um app que funciona num app que não abre, porque apagava
+   justamente o cache que o faz abrir offline.
+
+   Agora ele PERGUNTA ANTES. Busca o próprio index.html no servidor ignorando
+   o cache (`cache:'reload'`), lê o carimbo da build que veio e compara com a
+   que está rodando. Só apaga e recarrega se for diferente.
+
+   O limite honesto, que está escrito na frase da tela: "o servidor está na
+   build X" não é a mesma coisa que "não existe versão nova". Se o CDN do
+   GitHub Pages ainda estiver servindo a página antiga — o que acontece por
+   alguns minutos depois de cada publicação — a resposta está certa sobre o
+   servidor e errada sobre o mundo. Por isso a frase nomeia o servidor.
+
+   ATU é estado de tela e mora fora do DB: nada disto entra no backup. */
+var ATU=null;
+var ATU_CHAVE='despesas.atu';
+function estadoAtualizacao(){return ATU;}
+function limparCacheERecarregar(){
+  var fim=function(){location.reload();};
+  var tarefas=[];
+  try{
+    if(window.caches&&caches.keys)tarefas.push(caches.keys().then(function(ks){
+      return Promise.all(ks.map(function(k){return caches.delete(k);}));}));
+    if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)
+      tarefas.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+        return Promise.all(rs.map(function(r){return r.unregister();}));}));
+  }catch(e){}
+  if(!tarefas.length)return fim();
+  Promise.all(tarefas).then(fim,fim);
+  setTimeout(fim,2500);
+}
 function buscarAtualizacao(){
-  confirmar2('Buscar atualização?','O app vai limpar o cache e recarregar a partir do servidor. Seus lançamentos não são afetados.','Atualizar',false,function(){
-    var fim=function(){location.reload(true);};
-    var tarefas=[];
-    try{
-      if(window.caches&&caches.keys)tarefas.push(caches.keys().then(function(ks){
-        return Promise.all(ks.map(function(k){return caches.delete(k);}));}));
-      if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)
-        tarefas.push(navigator.serviceWorker.getRegistrations().then(function(rs){
-          return Promise.all(rs.map(function(r){return r.unregister();}));}));
-    }catch(e){}
-    if(!tarefas.length)return fim();
-    Promise.all(tarefas).then(fim,fim);
-    setTimeout(fim,2500);
+  if(ATU&&ATU.cls==='busca')return;          /* dois toques não viram duas buscas */
+  ATU={cls:'busca',ic:'⏳',t:'Consultando o servidor…',
+       s:'Buscando a versão publicada, sem usar o cache.'};
+  render();
+  var morto=false;
+  var expira=setTimeout(function(){
+    if(morto||!ATU||ATU.cls!=='busca')return;
+    morto=true;
+    ATU={cls:'err',ic:'⚠︎',t:'O servidor não respondeu',
+         s:'A consulta passou de 10 segundos. Nada foi alterado no app.'};
+    render();
+  },10000);
+  fetch(location.pathname,{cache:'reload'}).then(function(r){
+    if(!r.ok)throw new Error('http '+r.status);
+    return r.text();
+  }).then(function(txt){
+    if(morto)return;
+    clearTimeout(expira);
+    var m=/var BUILD='([^']+)'/.exec(txt);
+    if(!m)throw new Error('sem carimbo');
+    if(m[1]===BUILD){
+      ATU={cls:'ok',ic:'✓',t:'Você já está na versão mais recente',
+           s:'O servidor está na build <b>'+esc(BUILD)+'</b>, a mesma que está aqui. '+
+             'Nada foi recarregado.'};
+      render();return;
+    }
+    ATU={cls:'ok',ic:'↻',t:'Versão nova encontrada',
+         s:'Baixando a build <b>'+esc(m[1])+'</b>…'};
+    render();
+    try{localStorage.setItem(ATU_CHAVE,JSON.stringify({de:BUILD,para:m[1]}));}catch(e){}
+    limparCacheERecarregar();
+  }).catch(function(){
+    if(morto)return;
+    clearTimeout(expira);morto=true;
+    ATU={cls:'err',ic:'⚠︎',t:'Não consegui falar com o servidor',
+         s:'Você parece estar sem conexão. O app continua funcionando normalmente — '+
+           'ele não depende da rede para nada além disto.'};
+    render();
   });
+}
+/* Depois do recarregamento: conta o que aconteceu e volta para Ajustes.
+   Roda uma vez, no boot, e a chave é apagada na leitura — a frase é sobre
+   ESTE recarregamento, não sobre todos os próximos. */
+function retomarAtualizacao(){
+  var cru=null;
+  try{cru=localStorage.getItem(ATU_CHAVE);localStorage.removeItem(ATU_CHAVE);}catch(e){}
+  if(!cru)return;
+  var r=null;try{r=JSON.parse(cru);}catch(e){}
+  if(!r||!r.de)return;
+  if(BUILD!==r.de){
+    ATU={cls:'ok',ic:'↻',t:'Atualizado',
+         s:'Da build <b>'+esc(r.de)+'</b> para a <b>'+esc(BUILD)+'</b>. '+
+           'Seus lançamentos não foram tocados.'};
+  }else{
+    /* O caso chato e real: o servidor anunciou a build nova, o recarregamento
+       trouxe a antiga. Quase sempre é o CDN ainda publicando. Dizer
+       "atualizado" aqui seria mentir sobre o que está rodando. */
+    ATU={cls:'err',ic:'⚠︎',t:'A atualização não veio',
+         s:'O servidor anunciou a build <b>'+esc(r.para||'nova')+'</b>, mas o app voltou '+
+           'na <b>'+esc(BUILD)+'</b>. Costuma ser o servidor ainda publicando: '+
+           'tente de novo em alguns minutos.'};
+  }
+  S.aba='cfg';
 }
 function apagarTudo(){
   confirmar2('Apagar todos os dados?','Isso remove os '+DB.exp.length+' lançamentos, as categorias e as preferências deste aparelho.','Continuar',true,function(){
@@ -6031,6 +6481,10 @@ function ordenarExp(){DB.exp.sort(function(a,b){return a.d<b.d?1:(a.d>b.d?-1:(b.
    PARTIDA
    ============================================================ */
 carregar();
+/* v29: se este boot veio de um "Buscar atualização", a resposta espera aqui —
+   e a aba volta a ser Ajustes, que é de onde você pediu. Antes de desenhar,
+   para que a primeira tela já seja a certa. */
+if(!FUTURO)retomarAtualizacao();
 /* dado mais novo que esta casca: para aqui, sem desenhar o app e sem gravar */
 if(FUTURO)telaFutura();
 else render();
@@ -6105,6 +6559,15 @@ try{
        carrega a regra inteira — a verificação chama a função de verdade com
        uma compra montada à mão, em vez de acreditar no que a tela mostra. */
     /* v27: etiquetas e a trava da frequência. */
+    /* v29: item 4 (evolução) e o retorno do Buscar atualização. */
+    window.__v29={serieEvo:serieEvo,janelaEvo:janelaEvo,mediaEvo:mediaEvo,
+                  portaEvo:portaEvo,folhaEvolucao:folhaEvolucao,
+                  buscarAtualizacao:buscarAtualizacao,retomarAtualizacao:retomarAtualizacao,
+                  ATU_CHAVE:ATU_CHAVE,BUILD:BUILD,
+                  get atu(){return ATU;},set atu(v){ATU=v;},
+                  get evoModo(){return S.evoModo;},set evoModo(v){S.evoModo=v;},
+                  get evoCat(){return S.evoCat;},set evoCat(v){S.evoCat=v;},
+                  get evoEtq(){return S.evoEtq;},set evoEtq(v){S.evoEtq=v;}};
     window.__v27={etq:etq,nomeEtq:nomeEtq,etqsDe:etqsDe,normEtq:normEtq,
                   acharEtq:acharEtq,criarEtq:criarEtq,usosEtq:usosEtq,
                   temEtq:temEtq,rotuloEtq:rotuloEtq,baseFrequencia:baseFrequencia,
