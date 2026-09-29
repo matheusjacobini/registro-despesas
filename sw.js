@@ -22,7 +22,7 @@
    versão nova, ela entra na abertura seguinte, não na imediata. Por isso o
    app ganhou, nesta mesma build, a guarda de formato de dados futuro — uma
    casca uma versão atrás não pode ler em silêncio um dado mais novo que ela. */
-var CACHE='despesas-2026-09-28.3';
+var CACHE='despesas-2026-09-29.2';
 var ARQS=['./','./index.html','./manifest.webmanifest','./icon180.png'];
 self.addEventListener('install',function(e){
   self.skipWaiting();

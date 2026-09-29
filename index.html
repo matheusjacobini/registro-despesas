@@ -591,6 +591,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .estado.err{background:color-mix(in srgb,var(--danger) 9%,var(--card))}
 .estado.err .t{color:var(--danger)}
 .grow[disabled]{opacity:.5}
+/* v31: etiqueta arquivada. Mesma linguagem da categoria arquivada: o nome
+   esmaecido e a marca em texto, sem cor nova nem selo. */
+.optgrp{font-size:11.5px;color:var(--muted2);padding:14px 4px 5px}
+.opt.arq .nm{color:var(--muted)}
+.opt .nm .marca{display:inline;font-size:11.5px;color:var(--muted2);font-weight:500}
 /* v14 (arrumação a): Entradas e Saldo como rodapé do cartão, não como bloco
    próprio. Um cartão, um número grande, hierarquia inequívoca. */
 .herolin{display:flex;justify-content:space-between;gap:10px;margin-top:12px;
@@ -1145,7 +1150,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-28.3';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-09-29.2';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1272,15 +1277,34 @@ function acharEtq(nome){
   for(var i=0;i<L.length;i++)if(normEtq(L[i].n)===k)return L[i];
   return null;
 }
-/* Devolve {etq, jaExistia}. Nunca cria duplicata: quem já existe volta. */
+/* v31: etiqueta arquivada.
+
+   Mesmo mecanismo da categoria e da sub-categoria, e de propósito a mesma
+   palavra: arquivada sai da lista de ESCOLHA e continua em tudo o mais — nos
+   lançamentos que já a têm, no filtro da lista, no recorte da evolução e em
+   Ajustes, que é onde se reativa.
+
+   O campo é opcional: etiqueta sem `arq` é etiqueta ativa. Por isso o formato
+   não sobe — uma versão antiga do app lendo esta base mostraria a arquivada na
+   lista de escolha, que é a degradação mais inofensiva que existe. */
+function etqsAtivas(){return (DB.etq||[]).filter(function(t){return !t.arq;});}
+function etqsArquivadas(){return (DB.etq||[]).filter(function(t){return !!t.arq;});}
+/* Devolve {etq, jaExistia, reativou}. Nunca cria duplicata: quem já existe
+   volta — e, se estava arquivada, VOLTA ATIVA. Digitar o nome de uma etiqueta
+   arquivada é dizer que você quer usá-la de novo; devolver "já existe" e
+   deixá-la fora da lista seria um beco sem saída. */
 function criarEtq(nome){
   nome=String(nome||'').trim().replace(/\s+/g,' ');
   if(!nome)return null;
   var ja=acharEtq(nome);
-  if(ja)return {etq:ja,jaExistia:true};
-  var t={id:uid('q'),n:nome};
+  if(ja){
+    var rea=!!ja.arq;
+    if(rea)ja.arq=false;
+    return {etq:ja,jaExistia:true,reativou:rea};
+  }
+  var t={id:uid('q'),n:nome,arq:false};
   DB.etq=DB.etq||[];DB.etq.push(t);
-  return {etq:t,jaExistia:false};
+  return {etq:t,jaExistia:false,reativou:false};
 }
 /* Quantos LANÇAMENTOS usam a etiqueta. Conta o lançamento, não a ocorrência:
    uma compra em 6× com a etiqueta é uma coisa etiquetada, não seis. */
@@ -2191,6 +2215,30 @@ function render(){
   abas();
 }
 window.__render=render;
+/* v30: redesenhar sem tirar você do lugar.
+
+   `render()` reconstrói a tela inteira, e com ela o contêiner que rola — a
+   posição volta para o topo. Quando o que mudou foi um PEDAÇO da tela (a
+   resposta do "Buscar atualização", a etiqueta de um lançamento), voltar ao
+   topo é o app te levando para outro lugar sem você ter pedido.
+
+   Isto não vale para troca de aba nem para mudança de mês: ali o topo é o
+   começo certo. Por isso é uma função à parte, e não um jeito novo de
+   render(). */
+function renderNoLugar(){
+  var sc=main.querySelector('.scroll');
+  var y=sc?sc.scrollTop:0;
+  render();
+  var novo=main.querySelector('.scroll');
+  if(novo&&y)novo.scrollTop=y;
+}
+/* A lista NÃO precisa disto, e a verificação foi quem disse: `redesenharLista()`
+   troca o conteúdo do .scroll sem trocar o elemento, e o navegador não chega a
+   recortar a rolagem porque o conteúdo volta na mesma altura, no mesmo quadro.
+   Eu tinha escrito um `redesenharListaNoLugar` por simetria; reintroduzir o
+   defeito nele não derrubou verificação nenhuma — ou seja, era código que não
+   fazia nada. Saiu. O que a verificação cobra é o contrato (a lista não pula),
+   e ela reprova na hora se alguém trocar isto por um `render()`. */
 
 function cabecalho(){
   var L=hdr.l,R=hdr.r;
@@ -2488,14 +2536,16 @@ function telaValor(){
      não usou. Para ele o chip não é peso morto, é a única porta visível.
      Vazio, ele convida em vez de ficar inerte. */
   var ret=rotuloEtq(S.etq);
-  var vazio=!(DB.etq||[]).length;
+  /* v31: "criar" quando não há o que escolher — e com todas arquivadas não há,
+     mesmo existindo etiqueta na base. O chip diz o que a folha vai oferecer. */
+  var vazio=!etqsAtivas().length;
   var ce=el('<button class="chip"><span class="k">Etiquetas</span>'+
     '<span class="v'+(ret?'':' sem')+'">'+(ret?esc(ret):(vazio?'criar':'nenhuma'))+'</span></button>');
   ce.onclick=function(){
     folhaEtiquetas(S.etq||[],function(ids){
       S.etq=ids;
       var r=rotuloEtq(ids),v=ce.querySelector('.v');
-      v.textContent=r||((DB.etq||[]).length?'nenhuma':'criar');
+      v.textContent=r||(etqsAtivas().length?'nenhuma':'criar');
       v.classList.toggle('sem',!r);
     });
   };
@@ -3416,16 +3466,25 @@ function folha(titulo,montar,opts){
 function folhaSobre(titulo,montar,opts){
   opts=opts||{};
   var scrim=el('<div class="scrim"></div>');
+  /* v30: `opts.pronto` põe o botão ÚNICO à direita, em vez de à esquerda.
+     A esquerda é o lugar de "Cancelar" — voltar atrás — e a direita é o lugar
+     de confirmar, no iOS e no resto deste app. Numa folha em que cada toque já
+     vale (as etiquetas), o botão não cancela nada: ele diz "terminei". Estava
+     do lado errado. Não são dois botões: pôr "Cancelar" ao lado seria oferecer
+     uma volta que não existe. */
+  var dir=!!opts.pronto;
+  var rot=esc(opts.cancelar||(dir?'Pronto':'Cancelar'));
   var sh=el('<div class="sheet"><div class="sheet-h">'+
-    '<button class="sa">'+(opts.cancelar||'Cancelar')+'</button>'+
+    (dir?'<span class="sa"></span>':('<button class="sa">'+rot+'</button>'))+
     '<div class="st">'+esc(titulo)+'</div>'+
-    '<span class="sa right"></span></div><div class="sheet-b"></div></div>');
+    (dir?('<button class="sa right strong">'+rot+'</button>'):'<span class="sa right"></span>')+
+    '</div><div class="sheet-b"></div></div>');
   function fechar(){
     if(scrim.parentNode)scrim.parentNode.removeChild(scrim);
     if(sh.parentNode)sh.parentNode.removeChild(sh);
   }
   scrim.onclick=fechar;
-  sh.querySelector('.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
+  sh.querySelector('button.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
   montar(sh.querySelector('.sheet-b'),fechar);
   var deBaixo=layers.querySelector('.sheet');
   layers.appendChild(scrim);layers.appendChild(sh);
@@ -3696,38 +3755,56 @@ function folhaEtiquetas(sel,aoMudar,opts){
     b.appendChild(el('<div class="hint" style="padding:2px 4px 10px">Etiqueta é para o que '+
       '<b>cruza categoria</b>. O que só existe dentro de uma categoria é sub-categoria.</div>'));
     var w=el('<div class="optwrap"></div>');
+    /* v31: as arquivadas não entram aqui — é exatamente daqui que elas saem.
+       A exceção é a que JÁ ESTÁ neste lançamento: escondê-la tiraria de você a
+       única forma de removê-la, e o app estaria escondendo algo que está no seu
+       lançamento. Essa aparece num grupo próprio, marcada, e some da folha
+       assim que você a desmarca. */
+    var gArq=el('<div></div>');
+    function linha(t,marca){
+      var on=sel.indexOf(t.id)>=0;
+      var o=el('<button class="opt'+(t.arq?' arq':'')+'"><span class="ic">🏷️</span>'+
+        '<span class="nm">'+esc(t.n)+(marca?' <span class="marca">· arquivada</span>':'')+'</span>'+
+        (on?'<span class="tag">✓</span>':'<span></span>')+'</button>');
+      o.setAttribute('aria-pressed',String(on));
+      o.onclick=function(){
+        var i=sel.indexOf(t.id);
+        if(i>=0)sel.splice(i,1);else sel.push(t.id);
+        pinta();aoMudar(sel.slice());
+      };
+      return o;
+    }
     function pinta(){
-      w.innerHTML='';
-      (DB.etq||[]).forEach(function(t){
-        var on=sel.indexOf(t.id)>=0;
-        var o=el('<button class="opt"><span class="ic">🏷️</span><span class="nm">'+esc(t.n)+'</span>'+
-          (on?'<span class="tag">✓</span>':'<span></span>')+'</button>');
-        o.setAttribute('aria-pressed',String(on));
-        o.onclick=function(){
-          var i=sel.indexOf(t.id);
-          if(i>=0)sel.splice(i,1);else sel.push(t.id);
-          pinta();aoMudar(sel.slice());
-        };
-        w.appendChild(o);
-      });
+      w.innerHTML='';gArq.innerHTML='';
+      etqsAtivas().forEach(function(t){w.appendChild(linha(t,false));});
       var nova=el('<button class="opt"><span class="ic">＋</span>'+
         '<span class="nm">Nova etiqueta</span><span></span></button>');
       nova.onclick=function(){
-        folhaNovaEtiqueta(function(t,jaExistia){
+        folhaNovaEtiqueta(function(t,jaExistia,reativou){
           if(sel.indexOf(t.id)<0)sel.push(t.id);
           pinta();aoMudar(sel.slice());
-          if(jaExistia)toast('Esta etiqueta já existe',esc(t.n)+' foi marcada.','',null);
+          if(reativou)toast('Etiqueta reativada',esc(t.n)+' estava arquivada e voltou.','',null);
+          else if(jaExistia)toast('Esta etiqueta já existe',esc(t.n)+' foi marcada.','',null);
         });
       };
       w.appendChild(nova);
+      var pres=etqsArquivadas().filter(function(t){return sel.indexOf(t.id)>=0;});
+      if(pres.length){
+        gArq.appendChild(el('<div class="optgrp">Neste lançamento, mas arquivada'+
+          (pres.length>1?'s':'')+'</div>'));
+        var wa=el('<div class="optwrap"></div>');
+        pres.forEach(function(t){wa.appendChild(linha(t,true));});
+        gArq.appendChild(wa);
+      }
     }
     pinta();
     b.appendChild(w);
-    if(!(DB.etq||[]).length)
+    b.appendChild(gArq);
+    if(!etqsAtivas().length&&!(DB.etq||[]).length)
       b.appendChild(el('<div class="hint">Você ainda não tem etiquetas. '+
         'Exemplos que cruzam categoria: <b>reembolsável</b>, <b>presente de Natal</b>, '+
         '<b>viagem SP</b>.</div>'));
-  },{cancelar:opts.cancelar||'Pronto'});
+  },{cancelar:opts.cancelar||'Pronto',pronto:true});
 }
 /* O campo de texto de criar. A lista fica visível logo acima, na folha de
    baixo — e é ISSO que impede o "reemb": você vê "reembolsável" três linhas
@@ -3746,10 +3823,14 @@ function folhaNovaEtiqueta(cb){
       if(!n){alerta('Nome obrigatório','Toda etiqueta precisa de um nome.');return;}
       var r=criarEtq(n);
       if(!r)return;
-      if(!r.jaExistia&&!salvar()){
-        DB.etq=DB.etq.filter(function(x){return x.id!==r.etq.id;});return;
+      /* v31: reativar também grava — criarEtq já tirou o `arq`, e uma gravação
+         que falhe tem que devolver a etiqueta ao estado de antes. */
+      if((!r.jaExistia||r.reativou)&&!salvar()){
+        if(r.reativou)r.etq.arq=true;
+        else DB.etq=DB.etq.filter(function(x){return x.id!==r.etq.id;});
+        return;
       }
-      fechar();cb(r.etq,r.jaExistia);
+      fechar();cb(r.etq,r.jaExistia,r.reativou);
     };
     b.appendChild(ok);
     setTimeout(function(){var i=f.querySelector('input');if(i)i.focus();},60);
@@ -4848,17 +4929,22 @@ function folhaEvolucao(mk,ent){
             'ou em Ajustes › Etiquetas — e a partir daí esta aba passa a existir.</div>'));
           return;
         }
-        if(!S.evoEtq||!ts.some(function(t){return t.id===S.evoEtq;}))S.evoEtq=ts[0].id;
+        /* v31: a arquivada CONTINUA aqui — a série dos 12 meses é sobre o que
+           já aconteceu, e é justamente o passado dela que interessa. Só entra
+           marcada, e nunca como escolha inicial. */
+        var ativas=etqsAtivas();
+        if(!S.evoEtq||!ts.some(function(t){return t.id===S.evoEtq;}))
+          S.evoEtq=(ativas[0]||ts[0]).id;
         var tq=etq(S.evoEtq);
         filtro={tipo:'etq',id:S.evoEtq};rot=tq.n;
         var pe=el('<button class="picker"><span class="esq">🏷️ '+esc(tq.n)+
-          '</span>'+ICO.chev+'</button>');
+          (tq.arq?' · arquivada':'')+'</span>'+ICO.chev+'</button>');
         pe.onclick=function(){
           folhaSobre('Etiqueta',function(bb,fechar){
             var w=el('<div class="optwrap"></div>');
             (DB.etq||[]).forEach(function(t){
-              var o=el('<button class="opt"><span class="ic">🏷️</span>'+
-                '<span class="nm">'+esc(t.n)+'</span>'+
+              var o=el('<button class="opt'+(t.arq?' arq':'')+'"><span class="ic">🏷️</span>'+
+                '<span class="nm">'+esc(t.n)+(t.arq?' <span class="marca">· arquivada</span>':'')+'</span>'+
                 (t.id===S.evoEtq?'<span class="tag">✓</span>':'<span></span>')+'</button>');
               o.onclick=function(){S.evoEtq=t.id;fechar();sel=n-1;pintaEvo();};
               w.appendChild(o);
@@ -5057,11 +5143,26 @@ function acoesLancamento(e){
     }
     /* v27 (item 9): etiquetar depois também tem que ser possível — o chip da
        tela de registro não é o único caminho, só o mais direto. */
+    /* v30: o que você escolhe aqui aparece na hora.
+
+       Até a v29 o `aoMudar` gravava e só. A folha de baixo continuava dizendo
+       "nenhuma" e a lista atrás continuava sem o rótulo até você trocar de
+       aba e voltar — o dado estava certo e a tela mentia, que é o pior dos
+       dois mundos: parece que não funcionou, e você tenta de novo.
+
+       Redesenhar tem que ser no lugar: a lista atrás está rolada até o
+       lançamento que você abriu, e jogá-la para o topo seria trocar um
+       defeito por outro. */
+    var linhaEtq=null;
     acoes.push(['🏷️','Etiquetas',function(){
       folhaEtiquetas(cp.etq||[],function(ids){
+        var antes=cp.etq?cp.etq.slice():null;
         if(ids.length)cp.etq=ids;else delete cp.etq;
-        salvar();
-      },{cancelar:'Pronto'});
+        if(!salvar()){if(antes)cp.etq=antes;else delete cp.etq;return;}
+        var em=linhaEtq&&linhaEtq.querySelector('.nm em');
+        if(em)em.textContent=rotuloEtq(cp.etq)||'nenhuma';
+        if(S.aba==='list')redesenharLista();
+      });
     },rotuloEtq(cp.etq)||'nenhuma']);
     acoes.push(['🔁','Repetir hoje',function(){fecharFolhas();repetir(e);}]);
     if(!e.rec)acoes.push(['🔄','Tornar recorrente',function(){fecharFolhas();tornarRecorrente(e);}]);
@@ -5072,6 +5173,7 @@ function acoesLancamento(e){
       var o=el('<button class="opt"><span class="ic">'+a[0]+'</span><span class="nm"'+(ult?' style="color:var(--danger)"':'')+'>'+a[1]+
         (a[3]?('<em>'+esc(a[3])+'</em>'):'')+'</span><span></span></button>');
       o.onclick=a[2];w.appendChild(o);
+      if(a[1]==='Etiquetas')linhaEtq=o;
     });
     b.appendChild(w);
   },{cancelar:'Fechar'});
@@ -5588,7 +5690,7 @@ function telaCfg(){
   var nq=(DB.etq||[]).length;
   var usoQ=DB.exp.filter(function(e){return e.etq&&e.etq.length;}).length;
   var rq=el('<button class="grow tap"><div><div class="r1">Etiquetas</div>'+
-    '<div class="r2">Cortes que cruzam categoria — "reembolsável", "viagem SP".</div></div>'+
+    '<div class="r2">Cortes que cruzam categoria.</div></div>'+
     '<div class="right"><span>'+(nq?(nq+(nq===1?' etiqueta':' etiquetas')+
       ' · '+usoQ+(usoQ===1?' lançamento':' lançamentos')):'nenhuma')+'</span>'+ICO.chev+
     '</div></button>');
@@ -5645,6 +5747,8 @@ function telaCfg(){
       var ae=el('<div class="estado '+esc(ATU.cls)+'"><span class="ic">'+ATU.ic+'</span>'+
         '<span><span class="t">'+esc(ATU.t)+'</span><span class="s">'+ATU.s+'</span></span></div>');
       g4.appendChild(ae);
+      if(ATU.rolar){ATU.rolar=false;
+        setTimeout(function(){try{ae.scrollIntoView({block:'center'});}catch(e){}},60);}
     }
   }
   var rd=el('<button class="grow tap danger"><div><div class="r1">Apagar todos os dados</div>'+
@@ -5786,20 +5890,33 @@ function folhaGerirEtiquetas(){
     b.appendChild(el('<div class="hint" style="padding:2px 4px 10px">Etiqueta é para o que '+
       '<b>cruza categoria</b> — um almoço e um táxi reembolsáveis moram em categorias '+
       'diferentes. O que só existe dentro de uma categoria é sub-categoria.</div>'));
-    var w=el('<div class="optwrap"></div>');
-    (DB.etq||[]).forEach(function(t){
+    function linhaGer(t){
       var u=usosEtq(t.id);
-      var o=el('<button class="opt"><span class="ic">🏷️</span>'+
+      var o=el('<button class="opt'+(t.arq?' arq':'')+'"><span class="ic">🏷️</span>'+
         '<span class="nm">'+esc(t.n)+'<small>'+(u?('em '+u+(u===1?' lançamento':' lançamentos')):
-        'sem uso')+'</small></span>'+ICO.chev+'</button>');
+        'sem uso')+(t.arq?' · arquivada':'')+'</small></span>'+ICO.chev+'</button>');
       o.onclick=function(){folhaEditarEtiqueta(t);};
-      w.appendChild(o);
-    });
+      return o;
+    }
+    var w=el('<div class="optwrap"></div>');
+    etqsAtivas().forEach(function(t){w.appendChild(linhaGer(t));});
     var nova=el('<button class="opt"><span class="ic">＋</span>'+
       '<span class="nm">Nova etiqueta</span><span></span></button>');
     nova.onclick=function(){folhaNovaEtiqueta(function(){salvar();fecharFolhas();render();folhaGerirEtiquetas();});};
     w.appendChild(nova);
     b.appendChild(w);
+    /* v31: as arquivadas descem para um grupo próprio — não somem daqui, que é
+       justamente onde se reativa. */
+    var arqs=etqsArquivadas();
+    if(arqs.length){
+      b.appendChild(el('<div class="optgrp">Arquivadas · '+arqs.length+'</div>'));
+      var wa=el('<div class="optwrap"></div>');
+      arqs.forEach(function(t){wa.appendChild(linhaGer(t));});
+      b.appendChild(wa);
+      b.appendChild(el('<div class="hint">Arquivada sai da lista de escolha do lançamento. '+
+        'Ela continua nos lançamentos que já a têm, continua no filtro da lista e continua '+
+        'aqui, para você reativar quando quiser.</div>'));
+    }
     if(!(DB.etq||[]).length)
       b.appendChild(el('<div class="hint">Ainda não há nenhuma. Depois da primeira, '+
         'um quarto botão aparece na tela de registro para etiquetar na hora.</div>'));
@@ -5827,6 +5944,27 @@ function folhaEditarEtiqueta(t){
       fechar();fecharFolhas();render();folhaGerirEtiquetas();
     };
     b.appendChild(ok);
+    /* v31: arquivar, entre Salvar e Excluir, exatamente onde a categoria põe o
+       dela — e com a mesma palavra. Excluir apaga o rótulo de todo mundo;
+       arquivar só tira da lista de escolha. São coisas diferentes e o desenho
+       diz isso: o secundário no meio, o destrutivo no fim. */
+    var arq=el('<button class="btnfull sec">'+(t.arq?'Reativar etiqueta':'Arquivar etiqueta')+'</button>');
+    arq.onclick=function(){
+      var antes=!!t.arq;
+      t.arq=!antes;
+      if(!salvar()){t.arq=antes;return;}
+      fechar();fecharFolhas();render();folhaGerirEtiquetas();
+      toast(antes?'Etiqueta reativada':'Etiqueta arquivada',
+        t.n+(antes?' voltou para a lista de escolha.':
+          (u?(' · continua em '+u+(u===1?' lançamento':' lançamentos')):' · sem uso')),
+        'Desfazer',function(){t.arq=antes;salvar();render();});
+    };
+    b.appendChild(arq);
+    b.appendChild(el('<div class="hint">'+(t.arq
+      ? 'Reativar devolve a etiqueta à lista de escolha do lançamento.'
+      : 'Arquivar tira da lista de escolha do lançamento. '+
+        (u?('Os '+u+(u===1?' lançamento continua':' lançamentos continuam')+' com ela, e você '):
+            'Você ')+'pode reativar aqui a qualquer momento.')+'</div>'));
     /* Excluir NÃO é bloqueado quando há uso, como acontece com categoria —
        tirar a etiqueta de três lançamentos é inofensivo: o lançamento continua
        inteiro, só perde um rótulo. O que ela precisa é dizer o número e ter
@@ -6129,14 +6267,14 @@ function buscarAtualizacao(){
   if(ATU&&ATU.cls==='busca')return;          /* dois toques não viram duas buscas */
   ATU={cls:'busca',ic:'⏳',t:'Consultando o servidor…',
        s:'Buscando a versão publicada, sem usar o cache.'};
-  render();
+  renderNoLugar();
   var morto=false;
   var expira=setTimeout(function(){
     if(morto||!ATU||ATU.cls!=='busca')return;
     morto=true;
     ATU={cls:'err',ic:'⚠︎',t:'O servidor não respondeu',
          s:'A consulta passou de 10 segundos. Nada foi alterado no app.'};
-    render();
+    renderNoLugar();
   },10000);
   fetch(location.pathname,{cache:'reload'}).then(function(r){
     if(!r.ok)throw new Error('http '+r.status);
@@ -6150,11 +6288,11 @@ function buscarAtualizacao(){
       ATU={cls:'ok',ic:'✓',t:'Você já está na versão mais recente',
            s:'O servidor está na build <b>'+esc(BUILD)+'</b>, a mesma que está aqui. '+
              'Nada foi recarregado.'};
-      render();return;
+      renderNoLugar();return;
     }
     ATU={cls:'ok',ic:'↻',t:'Versão nova encontrada',
          s:'Baixando a build <b>'+esc(m[1])+'</b>…'};
-    render();
+    renderNoLugar();
     try{localStorage.setItem(ATU_CHAVE,JSON.stringify({de:BUILD,para:m[1]}));}catch(e){}
     limparCacheERecarregar();
   }).catch(function(){
@@ -6163,7 +6301,7 @@ function buscarAtualizacao(){
     ATU={cls:'err',ic:'⚠︎',t:'Não consegui falar com o servidor',
          s:'Você parece estar sem conexão. O app continua funcionando normalmente — '+
            'ele não depende da rede para nada além disto.'};
-    render();
+    renderNoLugar();
   });
 }
 /* Depois do recarregamento: conta o que aconteceu e volta para Ajustes.
@@ -6175,6 +6313,8 @@ function retomarAtualizacao(){
   if(!cru)return;
   var r=null;try{r=JSON.parse(cru);}catch(e){}
   if(!r||!r.de)return;
+  /* Depois de um recarregamento de verdade a tela nasce no topo e não há
+     rolagem a preservar — o que precisa é a mensagem entrar na vista. */
   if(BUILD!==r.de){
     ATU={cls:'ok',ic:'↻',t:'Atualizado',
          s:'Da build <b>'+esc(r.de)+'</b> para a <b>'+esc(BUILD)+'</b>. '+
@@ -6188,6 +6328,7 @@ function retomarAtualizacao(){
            'na <b>'+esc(BUILD)+'</b>. Costuma ser o servidor ainda publicando: '+
            'tente de novo em alguns minutos.'};
   }
+  ATU.rolar=true;
   S.aba='cfg';
 }
 function apagarTudo(){
