@@ -36,8 +36,8 @@
   --faint:rgba(60,60,67,.30);
   --line:#E5E5EA;
   --line2:#D1D1D6;
-  --tint:#007AFF;
-  --tint-soft:rgba(0,122,255,.12);
+  --tint:#0064D8;
+  --tint-soft:rgba(0,100,216,.12);
   --danger:#D70015;
   --warn:#B25000;
   --ok:#0B7A34;
@@ -93,7 +93,7 @@ svg{width:20px;height:20px;flex:none}
 html,body{height:100%}
 body{
   margin:0;background:var(--bg);color:var(--ink);
-  font-family:var(--f);font-size:16px;line-height:1.35;
+  font-family:var(--f);font-size:15px;line-height:1.35;
   -webkit-font-smoothing:antialiased;
   overscroll-behavior:none;
   overflow:hidden;
@@ -126,12 +126,46 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
      do cabeçalho para fora dela, tirando do espaço de baixo para o custo em
      altura útil ficar em 4px em vez de 12px. */
   padding:calc(env(safe-area-inset-top,0px) + 16px) 8px 4px;
+  /* O `center` daqui continua como estava, e de propósito: quem alinha agora
+     são as PEÇAS, com `align-self:start` (ver a linha única, logo abaixo).
+     Eu tinha trocado isto para `start` junto com o resto; reintroduzir o
+     defeito não derrubou verificação nenhuma, porque `align-self` no item
+     vence `align-items` no contêiner — era uma linha que não fazia nada. */
   display:grid;grid-template-columns:56px minmax(0,1fr) 56px;align-items:center;gap:4px;
 }
+/* ============================================================
+   v32 — A LINHA ÚNICA
+   ============================================================
+   A regra do cabeçalho passa a caber numa frase: MARCA, TÍTULO E "VOLTAR"
+   SENTAM NA LINHA DO TÍTULO, em qualquer tela.
+
+   Antes cada peça escolhia sozinha onde sentar dentro da grade, e o resultado
+   eram três desalinhamentos medidos a 393px, todos levantados por você:
+
+     · nas quatro abas o título ficava 3px ACIMA da marca (y 32,0 contra 35,0),
+       porque o miolo reserva três linhas e as duas de baixo, vazias, ainda
+       carregavam os 5px de margem dos pontinhos;
+     · nos passos 2 e 3 o "Voltar" ficava 12,6px ABAIXO do título (39,4 contra
+       26,8): ele centralizado na faixa inteira, o título presa na primeira
+       linha;
+     · e a marca — a única peça presente em TODAS as telas — pulava 8,2px ao
+       trocar de aba (35,0 nas abas, 26,8 no registro).
+
+   Agora o alinhamento é consequência da regra, não ajuste fino: tudo em
+   y 26,8, nas cinco telas. E como as duas caixas vazias deixam de existir nas
+   abas, o cabeçalho delas cai de 58px para 41,6px — 16,4px de altura útil
+   devolvidos em quatro das cinco telas, de graça. */
+#hdr:not(.reg) .htitle .s,#hdr:not(.reg) .dots{display:none}
 .hbtn{
-  min-height:38px;padding:0 8px;display:flex;align-items:center;gap:3px;
-  color:var(--tint);font-size:16px;border-radius:10px;
+  padding:0 8px;display:flex;align-items:center;gap:2px;
+  color:var(--tint);font-size:15px;border-radius:10px;
+  /* a altura é a da linha do título, medida: 21,59px a 16px/600 */
+  align-self:start;height:21.59px;min-height:0;position:relative;
 }
+/* O DESENHO encolhe para a linha; o ALVO DE TOQUE não. Ele cresce por fora,
+   invisível, até 43,6px — porque diminuir alvo para alinhar seria trocar um
+   defeito que se vê por um que só aparece quando o dedo erra. */
+#hdr .hbtn:not(.logo)::after{content:'';position:absolute;inset:-12px -10px}
 .hbtn.right{justify-content:flex-end;text-align:right}
 /* colunas fixas: esconder um botão não pode empurrar o título para a coluna 1 */
 #hleft{grid-column:1}
@@ -162,14 +196,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    não tem corte e a palavra termina 30px antes de onde os pontinhos começam.
    E a linha do título passa a ter altura reservada mesmo vazia, para que as
    três telas tenham o mesmo cabeçalho e o indicador de passo não dance. */
-.hbtn.logo.marca{gap:7px;width:max-content;overflow:visible;
+/* v32: a marca já senta na linha por causa da regra geral; aqui sobra só o
+   que é dela — a palavra ao lado e o transbordo do símbolo. */
+.hbtn.logo.marca{gap:6px;width:max-content;overflow:visible;
   /* a marca senta na LINHA DO TÍTULO, não no centro do cabeçalho: é o lugar
      que "Nova saída" ocupa nas telas 2 e 3, e é isso que faz as três parecerem
      a mesma tela. Sem alvo de toque a perder — a marca não é botão. */
   /* altura FIXA igual à da linha do título: o símbolo tem 26px e transborda
      2,2px para cada lado, o que é exatamente o que se quer — o que precisa
      casar entre as telas é a linha de texto, não a caixa do desenho. */
-  align-self:start;height:21.59px;min-height:0;align-items:center;padding-top:0}
+  padding-top:0}
 /* As duas linhas do miolo passam a existir sempre, mesmo vazias, MAS SÓ NA ABA
    DE REGISTRO. A de baixo é o subtítulo, que só tem texto a partir da tela 2 —
    e era ela que fazia o cabeçalho crescer 8,8px no meio do caminho e o
@@ -186,18 +222,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 #hdr.reg .htitle .t{min-height:21.59px}
 #hdr.reg .htitle .s{min-height:16.19px}
 .hbtn.logo .wm{
-  font-size:19px;font-weight:600;letter-spacing:-.025em;color:var(--ink);
+  font-size:17px;font-weight:600;letter-spacing:-.025em;color:var(--ink);
   line-height:1;
 }
-/* precisa vencer `.hbtn svg{width:19px}`, que é mais específico que `.marca` */
-.hbtn .marca,.marca{width:26px;height:26px;flex:none}
+/* `svg.marca` (0,2,1) vence `.hbtn svg{width:19px}` (0,1,1) sem precisar do
+   `.marca` solto que estava aqui — e esse solto era uma armadilha de duas
+   pontas: ele casava também com o BOTÃO da marca (que tem a classe) e, desde
+   a v31, com o texto "· arquivada" das etiquetas. Foi ele que segurou a marca
+   em 26px de altura quando a linha única mandou 21,59. Nome de classe genérico
+   pega quem não foi convidado. */
+.hbtn svg.marca{width:26px;height:26px;flex:none}
 .htitle{text-align:center;min-width:0}
-.htitle .t{font-size:16px;font-weight:600;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.htitle .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.dots{display:flex;gap:4px;justify-content:center;margin-top:5px}
+.htitle .t{font-size:15px;font-weight:600;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htitle .s{font-size:12px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.dots{display:flex;gap:4px;justify-content:center;margin-top:4px}
 .dot{width:16px;height:3px;border-radius:2px;background:var(--line2)}
 .dot.on{background:var(--tint)}
 .dot.done{background:var(--tint);opacity:.45}
+/* v32: nas abas, tocar no cabeçalho volta ao topo — o gesto da barra de status
+   do iOS, no lugar onde o dedo já está. Sem affordance visual, como lá. */
+#hdr.aotopo{cursor:pointer;-webkit-tap-highlight-color:transparent}
 
 /* telas */
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0}
@@ -213,9 +257,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   background:var(--card);border-top:.5px solid var(--line);
   padding:6px 4px calc(env(safe-area-inset-bottom,0px) + 6px);
 }
-.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;color:var(--muted2)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;color:var(--muted2)}
 .tab svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.tab span{font-size:10px;font-weight:500;letter-spacing:.01em}
+.tab span{font-size:11px;font-weight:500;letter-spacing:.01em}
 .tab[aria-selected="true"]{color:var(--tint)}
 /* v18: o aviso de pendência. Fica colado no ícone e não no rótulo, porque é do
    assunto que ele fala; e é posicionado sobre um invólucro do tamanho do ícone,
@@ -223,7 +267,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .tab .tw{position:relative;display:block;width:22px;height:22px}
 .tab .pill{
   position:absolute;top:-4px;left:12px;background:var(--danger);color:#fff;
-  font-size:9px;font-weight:700;line-height:1;border-radius:7px;padding:3px 4.5px;
+  font-size:11px;font-weight:700;line-height:1;border-radius:10px;padding:2px 4px;
   min-width:14px;text-align:center;letter-spacing:0;
 }
 
@@ -234,17 +278,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   display:grid;
   grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));
   grid-template-rows:repeat(var(--rows,4),minmax(0,1fr));
-  gap:9px;padding:2px 12px 12px;height:100%;
+  gap:8px;padding:2px 12px 12px;height:100%;
 }
 .cardbtn{
   background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:13px 13px 12px;
+  padding:12px 12px 12px;
   display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
   min-width:0;min-height:0;transition:transform .08s ease,background .12s;
 }
 .cardbtn:active{transform:scale(.97);background:var(--fill2)}
 .cardbtn .badge{
-  width:46px;height:46px;border-radius:11px;display:grid;place-items:center;font-size:24px;line-height:1;
+  width:46px;height:46px;border-radius:10px;display:grid;place-items:center;font-size:22px;line-height:1;
   background:var(--fill2);
   background:color-mix(in srgb, var(--c) 17%, var(--card));
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 32%, transparent);
@@ -254,12 +298,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   font-size:15px;font-weight:600;letter-spacing:-.012em;line-height:1.2;
   overflow-wrap:break-word;hyphens:auto;min-width:0;text-wrap:balance;
 }
-.grid[data-rows="5"] .cardbtn{padding:11px 12px 10px}
-.grid[data-rows="5"] .cardbtn .badge{width:38px;height:38px;border-radius:9px;font-size:20px}
-.grid[data-rows="5"] .cardbtn .nm{font-size:14px}
-.grid[data-rows="3"] .cardbtn .badge{width:52px;height:52px;border-radius:13px;font-size:28px}
+.grid[data-rows="5"] .cardbtn{padding:10px 12px 10px}
+.grid[data-rows="5"] .cardbtn .badge{width:38px;height:38px;border-radius:10px;font-size:22px}
+.grid[data-rows="5"] .cardbtn .nm{font-size:13px}
+.grid[data-rows="3"] .cardbtn .badge{width:52px;height:52px;border-radius:14px;font-size:28px}
 .grid[data-rows="3"] .cardbtn .nm{font-size:17px}
-.cardbtn.more .badge{background:var(--fill2);box-shadow:none;color:var(--muted)}
+.cardbtn.more .badge{background:var(--fill2);box-shadow:none;color:var(--muted2)}
 .cardbtn.more .badge svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .grid[data-rows="5"] .cardbtn.more .badge svg{width:20px;height:20px}
 
@@ -268,110 +312,110 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    ============================================================ */
 /* flex, não grid: com trilhas auto + fr o navegador distribuía a folga nas
    linhas de cima e os chips inchavam */
-.val{display:flex;flex-direction:column;gap:9px;padding:0 12px 12px;height:100%}
+.val{display:flex;flex-direction:column;gap:8px;padding:0 12px 12px;height:100%}
 .val>.amount,.val>.chips,.val>.descbox{flex:none}
 .val>.pad{flex:1;min-height:0}
-.amount{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px 13px}
-.amount .k{font-size:12px;color:var(--muted)}
+.amount{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 16px 12px}
+.amount .k{font-size:12px;color:var(--muted2)}
 .amount .n{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums;margin-top:1px}
-.amount .cur{font-size:21px;font-weight:600;color:var(--muted)}
-.amount .fig{font-size:46px;font-weight:600;letter-spacing:-.035em;line-height:1.08;color:var(--ink)}
+.amount .cur{font-size:22px;font-weight:600;color:var(--muted2)}
+.amount .fig{font-size:40px;font-weight:600;letter-spacing:-.035em;line-height:1.08;color:var(--ink)}
 .amount .fig.zero{color:var(--faint)}
-.amount .dec{color:var(--muted);transition:color .12s}
+.amount .dec{color:var(--muted2);transition:color .12s}
 .amount .dec.typed{color:inherit}
 /* linha derivada do parcelamento: é ela que impede digitar o valor da parcela
    achando que é o total */
-.amount .parc{display:flex;align-items:center;gap:7px;margin:7px 0 0;padding-top:8px;
-  border-top:.5px solid var(--line);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.amount .parc{display:flex;align-items:center;gap:6px;margin:7px 0 0;padding-top:8px;
+  border-top:.5px solid var(--line);font-size:13px;color:var(--muted2);font-variant-numeric:tabular-nums}
 .amount .parc b{color:var(--ink2);font-weight:600}
 .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 /* v27: com etiqueta no app, a fila vira quatro. Medido a 393px: 86px por chip,
    nada estoura. O gap cai de 8 para 6 para devolver 6px à largura de cada um. */
 .chips.q4{grid-template-columns:repeat(4,1fr);gap:6px}
-.chips.q4 .chip{padding:9px 9px}
+.chips.q4 .chip{padding:8px 8px}
 /* v27: o separador entre as categorias e as etiquetas, na faixa de filtros */
 .fsep{flex:0 0 1px;width:1px;align-self:center;height:20px;background:var(--line2);margin:0 3px}
 .fchip.etq[aria-pressed="true"]{background:var(--tint);color:#fff}
 
-.chip{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:9px 12px;min-width:0}
-.chip .k{display:block;font-size:11px;color:var(--muted);
+.chip{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px 12px;min-width:0}
+.chip .k{display:block;font-size:11px;color:var(--muted2);
   /* v28: o rótulo passa a cortar com reticências em vez de quebrar ou vazar.
      Num aparelho de 320px "Pagamento" e "Etiquetas" não cabem em 70px — e ali
      "Pagamento" já não cabia com TRÊS chips, antes das etiquetas existirem.
      Cortar é o pior caso honesto; empurrar o layout seria pior. */
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .v{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip .v.sem{font-weight:400;color:var(--muted)}
+.chip .v.sem{font-weight:400;color:var(--muted2)}
 .chip:active{background:var(--fill2)}
-.descbox{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:11px 14px}
-.descbox input{width:100%;font-size:15px}
-.descbox input::placeholder{color:var(--muted)}
+.descbox{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:0 12px}
+.descbox input{width:100%;font-size:15px;min-height:44px}   /* v31: idem */
+.descbox input::placeholder{color:var(--muted2)}
 .pad{display:grid;grid-template-rows:auto minmax(0,1fr);gap:8px;min-height:0}
 .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .quick button{
-  background:var(--card);border-radius:11px;box-shadow:var(--shadow);
+  background:var(--card);border-radius:10px;box-shadow:var(--shadow);
   padding:8px 0;text-align:center;color:var(--tint);font-size:15px;font-weight:500;
 }
 .quick button:active{background:var(--fill2)}
 .keys{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,minmax(0,1fr)) auto;gap:8px;min-height:0}
 .key{
-  background:var(--card);border-radius:12px;box-shadow:var(--shadow);
+  background:var(--card);border-radius:14px;box-shadow:var(--shadow);
   display:grid;place-items:center;font-size:28px;font-weight:400;font-variant-numeric:tabular-nums;
   transition:background .1s,transform .06s;
 }
 .key:active{background:var(--fill2);transform:scale(.96)}
-.key.comma{font-size:32px;font-weight:500;padding-bottom:16px}
+.key.comma{font-size:28px;font-weight:500;padding-bottom:16px}
 .key.back{color:var(--tint)}
 .key.back svg{width:27px;height:27px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .key.go{
   grid-column:1/-1;background:var(--tint);color:#fff;font-size:17px;font-weight:600;
-  padding:16px 0;border-radius:13px;letter-spacing:-.01em;box-shadow:none;
+  padding:16px 0;border-radius:14px;letter-spacing:-.01em;box-shadow:none;
 }
-.key.go:disabled{opacity:.35}
-.key:disabled{opacity:.35}
+.key.go:disabled{background:var(--fill2);color:var(--muted2);opacity:1;box-shadow:none}
+.key:disabled{opacity:.4}
 
 /* ============================================================
    LISTAS AGRUPADAS (padrão iOS)
    ============================================================ */
-.glabel{font-size:12.5px;color:var(--muted2);padding:18px 4px 7px;text-transform:none;letter-spacing:0}
+.glabel{font-size:12px;color:var(--muted2);padding:16px 4px 6px;text-transform:none;letter-spacing:0}
 .glabel:first-child{padding-top:6px}
 .group{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
 .grow{
   display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;
-  padding:12px 14px;width:100%;position:relative;
+  padding:12px 12px;width:100%;position:relative;
 }
 .grow+.grow::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
 .grow.tap:active{background:var(--fill2)}
-.grow .r1{font-size:16px;letter-spacing:-.01em}
-.grow .r2{font-size:12.5px;color:var(--muted2);margin-top:2px;line-height:1.35}
-.grow .val{font-size:15px;color:var(--muted);white-space:nowrap}
+.grow .r1{font-size:15px;letter-spacing:-.01em}
+.grow .r2{font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.35}
+.grow .val{font-size:15px;color:var(--muted2);white-space:nowrap}
 .chev{width:8px;height:13px;stroke:var(--faint);stroke-width:2.4;fill:none;flex:none}
 .grow.danger .r1{color:var(--danger)}
-.grow .right{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:15px}
+.grow .right{display:flex;align-items:center;gap:6px;color:var(--muted2);font-size:15px}
 
 /* segmentado */
-.seg{display:flex;background:var(--fill2);border-radius:9px;padding:2px;gap:2px}
+.seg{display:flex;background:var(--fill2);border-radius:10px;padding:2px;gap:2px}
 /* v21 (item 27): 44px de alvo, a régua da Apple. Estes controles mediam 30px
    — e são dos mais tocados do app. O aumento é do ALVO, não da tipografia: a
    altura vem de min-height, o texto continua 13px. */
 .seg button{
-  flex:1;text-align:center;padding:6px 4px;border-radius:7px;font-size:13px;font-weight:500;
+  flex:1;text-align:center;padding:6px 4px;border-radius:10px;font-size:13px;font-weight:500;
   color:var(--ink);white-space:nowrap;transition:background .15s;
   min-height:40px;display:flex;align-items:center;justify-content:center;
 }
-.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.10);font-weight:600}
 
 /* ============================================================
    CONSULTA
    ============================================================ */
-.topbar{padding:0 16px 10px;display:flex;flex-direction:column;gap:9px}
-.searchwrap{background:var(--fill2);border-radius:10px;padding:8px 11px;display:flex;align-items:center;gap:7px;
+.topbar{padding:0 16px 10px;display:flex;flex-direction:column;gap:8px}
+.searchwrap{background:var(--fill2);border-radius:10px;padding:0 10px;display:flex;align-items:center;gap:6px;
   min-height:44px}   /* v21 (item 27): o campo de busca media 22px */
 .searchwrap svg{width:16px;height:16px;stroke:var(--muted);stroke-width:2.2;fill:none;flex:none}
-.searchwrap input{flex:1;font-size:15px;min-width:0}
+.searchwrap input{flex:1;font-size:15px;min-width:0;min-height:44px}   /* v31: o alvo é o campo, não a moldura */
 .periodbar{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:6px}
-.periodbar .pb{display:grid;place-items:center;height:44px;border-radius:11px;color:var(--tint);background:var(--fill2)}
-.periodbar .pb:disabled{opacity:.3}
+.periodbar .pb{display:grid;place-items:center;height:44px;border-radius:10px;color:var(--tint);background:var(--fill2)}
+.periodbar .pb:disabled{opacity:.4}
 .periodbar .pb svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .periodbar .lbl{text-align:center;font-size:15px;font-weight:600;letter-spacing:-.01em}
 /* A fileira mantém a largura inteira para as categorias. O primeiro chip
@@ -384,14 +428,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    dos chips de ícone. O padding vertical abre espaço para ela, e a margem
    negativa devolve os pixels ao layout, para a fileira não crescer. */
 .chiprow .rola{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;
-  padding:7px 0;margin:-7px 0}
+  padding:6px 0;margin:-7px 0}
 .chiprow .rola::-webkit-scrollbar{display:none}
 .fchips{display:flex;gap:6px;overflow-x:auto;padding:1px 16px 10px;scrollbar-width:none}
 .fchips::-webkit-scrollbar{display:none}
 .fchip{
   flex:none;background:var(--fill2);border-radius:999px;padding:6px 12px;
   font-size:13px;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:6px;
-  min-height:38px;   /* v21 (item 27): era 30px; 38 é o que cabe sem empurrar a lista */
+  min-height:44px;   /* v31: a única exceção da régua de alvos — ver a seção no fim */
 }
 .fchip[aria-pressed="true"]{background:var(--tint);color:#fff}
 .fchip .sw{width:8px;height:8px;border-radius:3px;background:var(--sw);flex:none}
@@ -399,25 +443,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .fchip.filt{color:var(--tint)}
 .fchip.filt[data-on="1"]{background:var(--tint);color:#fff}
 .fchip.limpar{background:var(--tint-soft);color:var(--tint);font-weight:600}
-/* Chip só de ícone. O ✕ sozinho media 35px, abaixo do mínimo de 44 da Apple.
-   Crescer o chip resolveria, mas ele ficaria mais alto que os chips de
-   categoria (30px) e a fileira sairia desalinhada. Então a ÁREA DE TOQUE é
-   esticada por um pseudo-elemento: 44px de alvo real, 30px de desenho.
-   Medir isto com getBoundingClientRect dá o número errado — o teste usa
-   elementFromPoint, como o do campo de data. */
-.fchip.so{min-width:44px;justify-content:center;padding:6px 10px;position:relative}
-/* v21 (item 27): 46 e não 44. O chip subiu de 30 para 38px e o meio dele caiu
-   numa fração de pixel — a área medida vinha 43. Dois pixels de folga fazem a
-   régua valer em qualquer arredondamento. */
-.fchip.so::after{content:"";position:absolute;left:0;right:0;top:50%;
-  height:46px;transform:translateY(-50%)}
+/* Chip só de ícone: o ✕ precisa da largura mínima, a altura vem da régua de
+   alvos no fim da folha. */
+.fchip.so{min-width:44px;justify-content:center;padding:6px 10px}
 .fchip.so .xs{width:13px;height:13px}
 .fchip.so .fn{width:15px;height:15px}
 .fchip .xs{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round}
 .fchip .fn{width:13px;height:13px;stroke:currentColor;stroke-width:1.9;fill:none;
   stroke-linejoin:round;stroke-linecap:round}
-.fchip .ct{background:var(--tint);color:#fff;border-radius:9px;min-width:16px;height:16px;
-  display:grid;place-items:center;font-size:10.5px;font-weight:700;padding:0 4px}
+.fchip .ct{background:var(--tint);color:#fff;border-radius:10px;min-width:16px;height:16px;
+  display:grid;place-items:center;font-size:11px;font-weight:700;padding:0 4px}
 .fchip.filt[data-on="1"] .ct{background:#fff;color:var(--tint)}
 
 /* O período era um texto solto de 20px entre duas setas: sem fundo, sem
@@ -427,8 +462,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 /* precisa vencer `.periodbar .lbl`, que é mais específico que `.perbtn` */
 /* v21 (item 27): era 20px de alvo — e é o ÚNICO acesso a Período e a
    Ordenar por. O pior alvo do app estava na porta de duas telas inteiras. */
-.periodbar .lbl.perbtn{display:flex;align-items:center;justify-content:center;gap:5px;
-  height:44px;padding:0 12px;border-radius:11px;background:var(--fill2);
+.periodbar .lbl.perbtn{display:flex;align-items:center;justify-content:center;gap:4px;
+  height:44px;padding:0 12px;border-radius:10px;background:var(--fill2);
   font-size:15px;font-weight:600;letter-spacing:-.01em;min-width:0}
 .perbtn:active{background:var(--line2)}
 .perbtn em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -437,22 +472,22 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 
 .totbar{
   margin:0 16px 12px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:12px 15px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
+  padding:12px 16px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;
 }
-.totbar .k{font-size:12px;color:var(--muted)}
-.totbar .v{font-size:25px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
+.totbar .k{font-size:12px;color:var(--muted2)}
+.totbar .v{font-size:28px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:1px}
 /* O número grande é o dono da barra: ele NUNCA quebra. Quem cede espaço é a
    legenda, e ela só pode quebrar no "·" — por isso cada valor vem embrulhado
    em .nb. Sem isto, "+ R$ 999.400,00" partia em "+ R$" / "999.400,00". */
 .totbar .v{white-space:nowrap}
-.totbar .c{font-size:12px;color:var(--muted);text-align:right;line-height:1.45;
+.totbar .c{font-size:12px;color:var(--muted2);text-align:right;line-height:1.45;
   font-variant-numeric:tabular-nums;min-width:0}
 .totbar .c .nb{white-space:nowrap}
 
-.daygrp{margin-bottom:15px}
+.daygrp{margin-bottom:16px}
 .dayhd{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 6px}
-.dayhd .d{font-size:12.5px;color:var(--muted)}
-.dayhd .t{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dayhd .d{font-size:12px;color:var(--muted2)}
+.dayhd .t{font-size:12px;color:var(--muted2);font-variant-numeric:tabular-nums}
 .swipe{position:relative;overflow:hidden}
 .swipe .del{
   position:absolute;inset:0;background:var(--danger);color:#fff;
@@ -462,47 +497,47 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .swipe.armado .del{justify-content:flex-start}
 .erow{
   position:relative;background:var(--card);
-  display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:11px;align-items:center;
-  padding:11px 14px;width:100%;
+  display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:10px 12px;width:100%;
   transition:transform .18s ease;touch-action:pan-y;
 }
 .erow:active{background:var(--fill2)}
 .erow .ic{
-  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px;
+  width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:17px;
   background:var(--fill2);
   background:color-mix(in srgb, var(--c) 17%, var(--card));
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
 }
 .erow .tx{min-width:0;display:block}
-.erow .t1{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.erow .t2{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.erow .vl{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+.erow .t1{display:block;font-size:15px;font-weight:500;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.erow .t2{display:block;font-size:12px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.erow .vl{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
 .pbadge{display:inline-block;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;
-  padding:1px 6px;border-radius:6px;margin-left:7px;vertical-align:1px;
-  background:var(--fill2);color:var(--muted)}
+  padding:1px 6px;border-radius:10px;margin-left:7px;vertical-align:1px;
+  background:var(--fill2);color:var(--muted2)}
 .erow .t1 .pbadge{background:color-mix(in srgb, var(--c) 20%, var(--card));color:var(--ink2)}
 
 /* ============================================================
    RESUMO
    ============================================================ */
 .hero{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
-.hero .k{font-size:12.5px;color:var(--muted)}
-.hero .big{font-size:40px;font-weight:600;letter-spacing:-.04em;line-height:1.08;margin-top:3px;font-variant-numeric:tabular-nums}
-.delta{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:13.5px;font-weight:500;font-variant-numeric:tabular-nums}
+.hero .k{font-size:12px;color:var(--muted2)}
+.hero .big{font-size:40px;font-weight:600;letter-spacing:-.04em;line-height:1.08;margin-top:2px;font-variant-numeric:tabular-nums}
+.delta{display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-size:13px;font-weight:500;font-variant-numeric:tabular-nums}
 .delta.up{color:var(--warn)}
 .delta.down{color:var(--ok)}
-.delta.flat{color:var(--muted)}
+.delta.flat{color:var(--muted2)}
 /* v14 (ideias 1, 2 e 4) — o cartão do topo.
    A comparação é UM controle e não três: o bloco inteiro é um alvo só, com
    chevron à direita. Mesmo tratamento que o rótulo do período recebeu no
    item 33, e pelo mesmo motivo — texto solto ninguém descobre ser botão. */
-.deltabtn{display:flex;align-items:center;gap:6px;margin-top:9px;padding:8px 10px;
-  border-radius:9px;background:var(--fill2);font-size:13.5px;font-weight:500;
+.deltabtn{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;
+  border-radius:10px;background:var(--fill);font-size:13px;font-weight:500;
   font-variant-numeric:tabular-nums;width:100%;min-height:38px}
-.deltabtn .gp{flex:1;text-align:left;display:flex;align-items:center;gap:5px;min-width:0}
+.deltabtn .gp{flex:1;text-align:left;display:flex;align-items:center;gap:4px;min-width:0}
 .deltabtn.up{color:var(--warn)}
 .deltabtn.down{color:var(--ok)}
-.deltabtn.flat{color:var(--muted)}
+.deltabtn.flat{color:var(--muted2)}
 .deltabtn:active{opacity:.6}
 /* v20 (lote D): do lado das ENTRADAS o juízo se inverte. Subir o gasto é aviso;
    subir o recebimento é boa notícia. A direção da seta continua sendo a
@@ -512,7 +547,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .deltabtn .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 /* a sparkline: sem eixo, sem valores, só o formato */
-.sparkwrap{position:relative;margin-top:11px}
+.sparkwrap{position:relative;margin-top:10px}
 .sparkwrap .pt{position:absolute;right:-1px;width:7px;height:7px;border-radius:50%;
   background:var(--tint);box-shadow:0 0 0 2px var(--card);transform:translate(0,-50%)}
 /* mês corrente é parcial: ponto vazado, para não parecer número fechado */
@@ -522,8 +557,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   stroke-linecap:round}
 .spark .area{fill:var(--tint-soft);stroke:none}
 .spark .parc{stroke-dasharray:3 3}
-.sparkl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);
-  margin-top:3px}
+.sparkl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted2);
+  margin-top:2px}
 /* v29 (item 4): a sparkline virou a porta da folha de evolução.
    O <button> de fora não tem desenho nenhum — quem desenha continuam sendo o
    rótulo (.deltabtn, o mesmo do botão de comparação logo acima) e a sparkline. */
@@ -534,24 +569,24 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    significar duas coisas, e seis verificações que diziam "o botão de
    comparação" passaram a encontrar dois elementos. Nome que serve a dois donos
    é nome que mente para os dois. */
-.evolbl{display:flex;align-items:center;gap:6px;margin-top:9px;padding:8px 10px;
-  border-radius:9px;background:var(--fill2);font-size:13.5px;font-weight:500;
-  width:100%;min-height:38px;color:var(--muted)}
-.evolbl .gp{flex:1;text-align:left;display:flex;align-items:center;gap:5px;min-width:0}
+.evolbl{display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;
+  border-radius:10px;background:var(--fill);font-size:13px;font-weight:500;
+  width:100%;min-height:38px;color:var(--muted2)}
+.evolbl .gp{flex:1;text-align:left;display:flex;align-items:center;gap:4px;min-width:0}
 .evolbl .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 .evoport .sparkwrap{display:block}
 .evoport:active{opacity:.6}
 /* o gráfico da folha: doze barras, régua de média e rótulos alternados */
-.evosel{background:var(--fill);border-radius:12px;padding:10px 12px;margin-top:11px}
-.evosel .q{font-size:11.5px;color:var(--muted2)}
-.evosel .v{font-size:21px;font-weight:600;letter-spacing:-.02em;margin-top:1px}
-.evosel .d{font-size:12.5px;margin-top:2px;font-variant-numeric:tabular-nums}
+.evosel{background:var(--fill);border-radius:14px;padding:10px 12px;margin-top:10px}
+.evosel .q{font-size:11px;color:var(--muted2)}
+.evosel .v{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-top:1px}
+.evosel .d{font-size:12px;margin-top:2px;font-variant-numeric:tabular-nums}
 .evosel .d.up{color:var(--warn)}
 .evosel .d.down{color:var(--ok)}
-.evosel .d.flat{color:var(--muted)}
-.evoplot{position:relative;height:126px;margin-top:14px}
-.evobars{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end;
+.evosel .d.flat{color:var(--muted2)}
+.evoplot{position:relative;height:126px;margin-top:12px}
+.evobars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;
   height:126px;position:relative;z-index:1}
 /* o alvo de toque é a COLUNA inteira, não a barra: uma barra de 3px seria um
    alvo de 3px, contra os 44px que o resto do app respeita */
@@ -564,28 +599,28 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bar,#C2410C) 55%,transparent)}
 .evobar.parc.on i{opacity:.85}
 .evomed{position:absolute;left:0;right:0;border-top:1px dashed var(--muted);z-index:2}
-.evolab{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-top:5px}
-.evolab span{font-size:9.5px;color:var(--muted2);text-align:center;letter-spacing:-.02em}
+.evolab{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:4px}
+.evolab span{font-size:11px;color:var(--muted2);text-align:center;letter-spacing:-.02em}
 .evolab span.on{color:var(--ink2);font-weight:600}
-.evofoot{font-size:11.5px;color:var(--muted2);line-height:1.55;margin-top:12px}
-.btnghost{width:100%;background:var(--fill);color:var(--tint);border:0;border-radius:12px;
-  padding:12px;font-size:14.5px;font-weight:600;margin-top:10px;min-height:44px}
+.evofoot{font-size:11px;color:var(--muted2);line-height:1.55;margin-top:12px}
+.btnghost{width:100%;background:var(--fill);color:var(--tint);border:0;border-radius:14px;
+  padding:12px;font-size:13px;font-weight:600;margin-top:10px;min-height:44px}
 .btnghost:active{opacity:.6}
 .picker{display:flex;align-items:center;justify-content:space-between;gap:8px;
-  background:var(--fill);border-radius:12px;padding:11px 13px;margin-top:11px;
+  background:var(--fill);border-radius:14px;padding:10px 12px;margin-top:10px;
   font-size:15px;width:100%;border:0;color:var(--ink);text-align:left;min-height:44px}
-.picker .esq{display:flex;align-items:center;gap:9px;min-width:0;overflow:hidden;
+.picker .esq{display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
 .picker .pt{width:9px;height:9px;border-radius:50%;flex:none}
 .picker .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 .picker:active{opacity:.6}
 /* v29: a resposta do "Buscar atualização", colada na linha que a pediu */
-.estado{background:var(--fill);border-radius:12px;padding:13px 14px;margin-top:9px;
-  display:grid;grid-template-columns:22px minmax(0,1fr);gap:11px;align-items:start}
+.estado{background:var(--fill);border-radius:14px;padding:12px 12px;margin-top:8px;
+  display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start}
 .estado .ic{font-size:17px;line-height:1.25}
-.estado .t{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.estado .s{display:block;font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:2px}
+.estado .t{display:block;font-size:13px;font-weight:600;letter-spacing:-.01em}
+.estado .s{display:block;font-size:12px;color:var(--muted2);line-height:1.55;margin-top:2px}
 .estado.ok{background:color-mix(in srgb,var(--ok) 10%,var(--card))}
 .estado.ok .t{color:var(--ok)}
 .estado.err{background:color-mix(in srgb,var(--danger) 9%,var(--card))}
@@ -593,16 +628,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .grow[disabled]{opacity:.5}
 /* v31: etiqueta arquivada. Mesma linguagem da categoria arquivada: o nome
    esmaecido e a marca em texto, sem cor nova nem selo. */
-.optgrp{font-size:11.5px;color:var(--muted2);padding:14px 4px 5px}
-.opt.arq .nm{color:var(--muted)}
-.opt .nm .marca{display:inline;font-size:11.5px;color:var(--muted2);font-weight:500}
+.optgrp{font-size:11px;color:var(--muted2);padding:12px 4px 4px}
+.opt.arq .nm{color:var(--muted2)}
+.opt .nm .arqtxt{font-size:11px;color:var(--muted2);font-weight:500}
 /* v14 (arrumação a): Entradas e Saldo como rodapé do cartão, não como bloco
    próprio. Um cartão, um número grande, hierarquia inequívoca. */
 .herolin{display:flex;justify-content:space-between;gap:10px;margin-top:12px;
   padding-top:11px;border-top:.5px solid var(--line);font-variant-numeric:tabular-nums}
 .herolin .c{display:flex;flex-direction:column;gap:1px;min-width:0}
 .herolin .c.dir{text-align:right;align-items:flex-end}
-.herolin .k{font-size:11.5px;color:var(--muted)}
+.herolin .k{font-size:11px;color:var(--muted2)}
 .herolin .v{font-weight:600;font-size:15px;letter-spacing:-.02em;white-space:nowrap}
 .herolin .v.vin{color:var(--ok)}
 .herolin .v.vneg{color:var(--danger)}
@@ -612,26 +647,26 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .banner .bw{min-width:0}
 .banner.fech{align-items:flex-start}
 .banner.fech .ba{margin-top:2px}
-.banner .bf{font-size:12.5px;color:var(--ink2);margin-top:6px;padding-top:6px;
+.banner .bf{font-size:12px;color:var(--ink2);margin-top:6px;padding-top:6px;
   border-top:.5px solid var(--line);line-height:1.4}
 .banner .bf b{font-weight:600}
 /* v14 (ideia 1): a folha "O que mudou". Eixo no meio: sobe para a direita na
    cor do delta que sobe, cai para a esquerda na cor do que cai. */
 .vars{display:flex;flex-direction:column;gap:2px}
-.varrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;
+.varrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;
   padding:10px 0;align-items:baseline;width:100%}
 .varrow:active{opacity:.6}
-.varrow .bn{font-size:14.5px;font-weight:500;display:flex;align-items:center;gap:7px;
+.varrow .bn{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;
   min-width:0;letter-spacing:-.01em}
 .varrow .bn em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.varrow .bv{font-size:14px;font-variant-numeric:tabular-nums;font-weight:600}
+.varrow .bv{font-size:13px;font-variant-numeric:tabular-nums;font-weight:600}
 .varrow .bv.up{color:var(--warn)}
 .varrow .bv.down{color:var(--ok)}
-.varrow .eixo{grid-column:1/-1;height:8px;position:relative;margin-top:3px}
+.varrow .eixo{grid-column:1/-1;height:8px;position:relative;margin-top:2px}
 .varrow .eixo::before{content:"";position:absolute;left:50%;top:-2px;width:1.5px;
   height:12px;background:var(--line2);border-radius:1px}
 .varrow .eixo i{position:absolute;top:0;height:8px;border-radius:3px}
-.varrow .vsub{grid-column:1/-1;font-size:11.5px;color:var(--muted);
+.varrow .vsub{grid-column:1/-1;font-size:11px;color:var(--muted2);
   font-variant-numeric:tabular-nums;text-align:left}
 
 /* v15 (arrumação b): o Comprometido ganhou valor e toque.
@@ -640,30 +675,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .comprhd .k{flex:1}
 .compr{width:100%;text-align:left}
 .compr:active{opacity:.6}
-.compr .cbar em.vv{display:block;font-size:9.5px;color:var(--ink2);font-weight:600;
-  margin-bottom:3px;font-variant-numeric:tabular-nums}
+.compr .cbar em.vv{display:block;font-size:11px;color:var(--ink2);font-weight:600;
+  margin-bottom:2px;font-variant-numeric:tabular-nums}
 .compr .comprhd .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
 
 /* v15 (ideia 5): como o mês se formou */
 .mix{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:14px 16px;width:100%;text-align:left}
+  padding:12px 16px;width:100%;text-align:left}
 .mix:active{opacity:.6}
 .mixhd{display:flex;align-items:center;gap:8px}
-.mixhd .k{flex:1;font-size:12.5px;color:var(--muted)}
+.mixhd .k{flex:1;font-size:12px;color:var(--muted2)}
 .mixhd .chev{width:8px;height:13px;stroke:var(--muted);stroke-width:2;fill:none;
   stroke-linecap:round;stroke-linejoin:round;flex:none}
-.mixbar{display:flex;height:13px;border-radius:7px;overflow:hidden;margin-top:10px;gap:2px}
+.mixbar{display:flex;height:13px;border-radius:10px;overflow:hidden;margin-top:10px;gap:2px}
 .mixbar i{display:block;height:100%}
 .mixbar i.a,.mixleg .sw.a{background:#6366F1}
 .mixbar i.b,.mixleg .sw.b{background:var(--tint)}
 .mixleg{display:flex;flex-direction:column;gap:6px;margin-top:10px}
-.mixleg .ln{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.mixleg .ln{display:flex;align-items:center;gap:8px;font-size:13px}
 .mixleg .sw{width:9px;height:9px;border-radius:3px;flex:none}
 .mixleg .nm{flex:1;min-width:0}
-.mixleg .nm small{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+.mixleg .nm small{display:block;font-size:11px;color:var(--muted2);margin-top:1px}
 .mixleg .vl{font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-.mix .pe{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.4;
+.mix .pe{font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.4;
   padding-top:8px;border-top:.5px solid var(--line)}
 
 /* v15: o carrossel dos cartões do meio.
@@ -687,7 +722,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    cada arrasto. Medido, não presumido. */
 .carro>*{flex:0 0 100%;scroll-snap-align:start;scroll-snap-stop:always}
 .carro>*>*{height:100%}
-.cdots{display:flex;gap:5px;justify-content:center;margin-top:9px;align-items:center}
+.cdots{display:flex;gap:4px;justify-content:center;margin-top:8px;align-items:center}
 .cdot{width:6px;height:6px;border-radius:50%;background:var(--line2);flex:none;
   transition:background .15s,width .15s}
 .cdot.on{background:var(--tint);width:16px;border-radius:3px}
@@ -709,74 +744,82 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    anel nas diagonais. Nome de categoria longo ("Salários e benefícios") para em
    duas linhas com reticências em vez de empurrar o bloco para fora do buraco. */
 .dmid>*{max-width:100px}
-.dmid .dk{font-size:11px;color:var(--muted);line-height:1.25}
+.dmid .dk{font-size:11px;color:var(--muted2);line-height:1.25}
 .dmid .dv{font-size:15px;font-weight:600;letter-spacing:-.02em;margin-top:1px;line-height:1.18;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .dmid .dp{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;
   font-variant-numeric:tabular-nums;white-space:nowrap}
 /* comprometido à frente: sem ele, o parcelamento faria o mês parecer menor
    sem dizer para onde o resto foi */
-.compr{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;margin-top:9px}
-.compr .k{font-size:12.5px;color:var(--muted)}
-.compr .v{font-size:25px;font-weight:600;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums}
-.compr .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+.compr{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 16px;margin-top:8px}
+.compr .k{font-size:12px;color:var(--muted2)}
+.compr .v{font-size:28px;font-weight:600;letter-spacing:-.03em;margin-top:2px;font-variant-numeric:tabular-nums}
+.compr .s{font-size:12px;color:var(--muted2);margin-top:2px}
 /* v15: 70px e não 56. Com o valor acima da barra a coluna passou a medir
    69px, e a altura declarada de 56 virou mentira — o conteúdo vazava para
    fora sem ninguém notar, porque não há corte. O mockup prometia "mesma
    altura"; a medição desmentiu, e o número certo é este. */
-.compr .cbars{display:flex;gap:6px;margin-top:11px;align-items:flex-end;height:70px}
-.compr .cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.compr .cbars{display:flex;gap:6px;margin-top:10px;align-items:flex-end;height:70px}
+.compr .cbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .compr .cbar i{display:block;width:100%;border-radius:4px 4px 2px 2px;background:var(--tint);opacity:.5}
-.compr .cbar em{font-style:normal;font-size:10px;color:var(--muted)}
+.compr .cbar em{font-style:normal;font-size:11px;color:var(--muted2)}
 /* escolha das parcelas */
-.parcgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.parcgrid button{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:13px 0;
+.parcgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.parcgrid button{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 0;
   text-align:center;font-size:17px;font-weight:600;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:var(--ink)}
 .parcgrid button:active{background:var(--fill2)}
-.parcgrid button small{display:block;font-size:10.5px;font-weight:500;color:var(--muted);margin-top:2px}
+.parcgrid button small{display:block;font-size:11px;font-weight:500;color:var(--muted2);margin-top:2px}
 .parcgrid button[aria-pressed="true"]{background:var(--tint);color:#fff;box-shadow:none}
 .parcgrid button[aria-pressed="true"] small{color:rgba(255,255,255,.82)}
 /* revisão de recorrentes */
 .rrev{display:grid;grid-template-columns:34px minmax(0,1fr) auto 26px;gap:10px;align-items:center;
-  padding:11px 14px;width:100%;position:relative;background:var(--card);text-align:left}
+  padding:10px 12px;width:100%;position:relative;background:var(--card);text-align:left}
 .rrev+.rrev::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
-.rrev .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+.rrev .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;
   background:var(--fill2);
   background:color-mix(in srgb, var(--c) 17%, var(--card));
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent)}
-.rrev .nm{display:block;font-size:15.5px;font-weight:500;letter-spacing:-.01em;
+.rrev .nm{display:block;font-size:15px;font-weight:500;letter-spacing:-.01em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrev .sb{display:block;font-size:12px;color:var(--muted);margin-top:1px;
+.rrev .sb{display:block;font-size:12px;color:var(--muted2);margin-top:1px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrev .vl{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
-.rrev input.vin,.rrev button.vin{width:96px;text-align:right;font-size:16px;font-weight:600;
-  font-variant-numeric:tabular-nums;background:var(--fill2);border-radius:8px;padding:6px 8px}
+.rrev .vl{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rrev input.vin,.rrev button.vin{width:96px;text-align:right;font-size:15px;font-weight:600;
+  font-variant-numeric:tabular-nums;background:var(--fill2);border-radius:10px;padding:6px 8px}
 /* v20 (item 30): virou botão. O alvo cresce para os 44px da HIG, que o input
    de 30px nunca teve. */
 .rrev button.vin{min-height:44px;color:var(--ink)}
 .rrev button.vin:active{opacity:.6}
-.rrev .ck{width:24px;height:24px;border-radius:99px;display:grid;place-items:center;
+.rrev .ck{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;
   background:var(--tint);color:#fff;font-size:13px;font-weight:700}
 .rrev[aria-pressed="false"] .ck{background:var(--fill2);color:transparent}
-.rrev[aria-pressed="false"] .nm,.rrev[aria-pressed="false"] .vl{color:var(--muted)}
-.skiprow{display:block;background:var(--card);padding:0 14px 11px;position:relative}
-.skiprow button.dan{color:var(--danger);font-size:12.5px;padding:4px 0}
+.rrev[aria-pressed="false"] .nm,.rrev[aria-pressed="false"] .vl{color:var(--muted2)}
+/* v32: a linha que explica o estado do meio. O vermelho continua, porque
+   pular é destrutivo de verdade — o que mudou é ele não ser mais a única coisa
+   que aparece quando você desmarca. Rótulo é verbo ("Pular este mês"), a
+   consequência é o texto ao lado. */
+.pendrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+  background:var(--card);padding:0 12px 10px;position:relative}
+.pendrow .ex{font-size:12px;color:var(--muted2);line-height:1.4}
+.pendrow button.dan{color:var(--danger);font-size:12px;font-weight:600;
+  background:var(--fill);border-radius:999px;padding:6px 12px;white-space:nowrap;
+  min-height:44px}
 /* meses pulados, no detalhe do molde */
 .msk{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:11px 14px;background:var(--card);position:relative;width:100%;text-align:left}
+  padding:10px 12px;background:var(--card);position:relative;width:100%;text-align:left}
 .msk+.msk::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
-.msk .mn{font-size:15.5px}
-.msk .mr{font-size:14px;color:var(--tint);font-weight:500;white-space:nowrap}
+.msk .mn{font-size:15px}
+.msk .mr{font-size:13px;color:var(--tint);font-weight:500;white-space:nowrap}
 .bars{display:flex;flex-direction:column;gap:2px}
-.barrow{padding:10px 0;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:baseline}
+.barrow{padding:10px 0;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:baseline}
 .barrow:active{opacity:.6}
-.barrow .bn{font-size:14.5px;font-weight:500;display:flex;align-items:center;gap:7px;min-width:0;letter-spacing:-.01em}
+.barrow .bn{font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;min-width:0;letter-spacing:-.01em}
 .barrow .bn em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.barrow .bv{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink2)}
-.barrow .track{grid-column:1/-1;height:8px;border-radius:4px;background:var(--fill2);overflow:hidden;margin-top:3px}
+.barrow .bv{font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.barrow .track{grid-column:1/-1;height:8px;border-radius:4px;background:var(--fill2);overflow:hidden;margin-top:2px}
 .barrow .fill{display:block;height:100%;min-width:4px;background:var(--c);border-radius:0 4px 4px 0}
-.barrow .bp{grid-column:1/-1;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.barrow .bp{grid-column:1/-1;font-size:11px;color:var(--muted2);font-variant-numeric:tabular-nums}
 /* v18: a meta na linha do ranking. O trilho precisa deixar o traço escapar
    para cima, então perde o overflow:hidden — e por isso o preenchimento ganha
    o arredondamento de volta, que antes vinha do corte do trilho. */
@@ -793,7 +836,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .metahd{
   display:flex;align-items:center;gap:8px;width:100%;text-align:left;
   background:color-mix(in srgb,var(--danger) 9%,var(--card));
-  border-radius:12px;padding:12px 13px;margin-top:14px;font-size:13.5px;
+  border-radius:14px;padding:12px 12px;margin-top:12px;font-size:13px;
   min-height:44px;
 }
 .metahd:active{opacity:.6}
@@ -801,11 +844,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .metahd svg.chev{flex:none}
 /* a caixa de vigência, na folha de definir a meta */
 .vigbox{
-  font-size:12.5px;color:var(--ink2);background:var(--fill);border-radius:10px;
-  padding:10px 12px;line-height:1.45;margin-top:9px;
+  font-size:12px;color:var(--ink2);background:var(--fill);border-radius:10px;
+  padding:10px 12px;line-height:1.45;margin-top:8px;
 }
 .vigbox b{font-weight:600}
-.vigbox .av{color:var(--muted);display:block;margin-top:3px;font-size:11.5px}
+.vigbox .av{color:var(--muted2);display:block;margin-top:2px;font-size:11px}
 .opt .tag.def{color:var(--tint);font-weight:600}
 .opt .tag.tem{color:var(--ink2);font-weight:600}
 
@@ -814,31 +857,35 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    ============================================================ */
 .banner{
   margin:0 16px 12px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);
-  padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:12px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;
   border:.5px solid var(--line2);
   border:.5px solid color-mix(in srgb, var(--warn) 45%, transparent);
 }
-.banner .bt{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.banner .bs{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.4}
-.banner .ba{background:var(--tint);color:#fff;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;white-space:nowrap}
-.banner .bx{color:var(--muted);padding:6px;margin:-6px}
+/* v32: quando nada venceu, a faixa não some — ela para de cobrar. Borda
+   neutra e botão secundário; o verbo vira "Ver". */
+.banner.calmo{border:.5px solid var(--line2)}
+.banner.calmo .ba{background:var(--fill);color:var(--tint)}
+.banner .bt{font-size:13px;font-weight:600;letter-spacing:-.01em}
+.banner .bs{font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.4}
+.banner .ba{background:var(--tint);color:#fff;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.banner .bx{color:var(--muted2);padding:6px;margin:-6px}
 
-.empty{padding:44px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:9px}
+.empty{padding:44px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
 .empty .e1{font-size:17px;font-weight:600;letter-spacing:-.02em}
-.empty .e2{font-size:14px;color:var(--muted);max-width:32ch;line-height:1.45}
-.empty .eb{margin-top:6px;background:var(--tint);color:#fff;border-radius:999px;padding:11px 20px;font-size:15px;font-weight:600}
+.empty .e2{font-size:13px;color:var(--muted2);max-width:32ch;line-height:1.45}
+.empty .eb{margin-top:6px;background:var(--tint);color:#fff;border-radius:999px;padding:10px 20px;font-size:15px;font-weight:600}
 .empty.alert .e1{color:var(--danger)}
 
 #toast{
   position:fixed;left:12px;right:12px;z-index:60;
   bottom:calc(env(safe-area-inset-bottom,0px) + 74px);
   background:var(--card);border:.5px solid var(--line);border-radius:14px;
-  box-shadow:0 8px 30px rgba(0,0,0,.22);
-  padding:12px 15px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;
+  box-shadow:0 8px 24px rgba(0,0,0,.22);
+  padding:12px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;
   animation:up .22s cubic-bezier(.2,.8,.25,1);
 }
-#toast .tt{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-#toast .ts{font-size:12.5px;color:var(--muted);margin-top:1px}
+#toast .tt{font-size:13px;font-weight:600;letter-spacing:-.01em}
+#toast .ts{font-size:12px;color:var(--muted2);margin-top:1px}
 #toast .tu{color:var(--tint);font-size:15px;font-weight:600;white-space:nowrap}
 @keyframes up{from{transform:translateY(14px);opacity:0}}
 
@@ -857,10 +904,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 @keyframes rise{from{transform:translateY(100%)}}
 .sheet-h{
   display:grid;grid-template-columns:64px minmax(0,1fr) 64px;align-items:center;gap:6px;
-  padding:14px 12px 10px;
+  padding:12px 12px 10px;
 }
-.sheet-h .st{text-align:center;font-size:16px;font-weight:600;letter-spacing:-.02em}
-.sheet-h .sa{color:var(--tint);font-size:16px}
+.sheet-h .st{text-align:center;font-size:15px;font-weight:600;letter-spacing:-.02em}
+.sheet-h .sa{color:var(--tint);font-size:15px}
 .sheet-h .sa.right{text-align:right}
 /* v20: ação secundária destrutiva no cabeçalho da folha (hoje: remover meta) */
 .sheet-h .sa.dan{color:var(--danger)}
@@ -871,18 +918,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .sheet-b>*{flex:0 0 auto}
 .opt{
   display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:12px;align-items:center;
-  background:var(--card);padding:11px 14px;width:100%;position:relative;
+  background:var(--card);padding:10px 12px;width:100%;position:relative;
 }
 .opt+.opt::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
 .opt:active{background:var(--fill2)}
 .opt .ic{
-  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:17px;
   background:var(--fill2);
   background:color-mix(in srgb, var(--c,var(--fill2)) 17%, var(--card));
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c,transparent) 30%, transparent);
 }
-.opt .nm{font-size:16px;letter-spacing:-.01em;min-width:0}
-.opt .nm small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.opt .nm{font-size:15px;letter-spacing:-.01em;min-width:0}
+.opt .nm small{display:block;font-size:12px;color:var(--muted2);margin-top:1px}
 /* v25: legenda de uma linha na ação, para quando o nome não basta —
    "Registrar estorno" precisa dizer que não é o mesmo que excluir. */
 .opt .nm em{display:block;font-style:normal;font-size:12px;color:var(--muted2);
@@ -891,58 +938,62 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 /* v25: os dois botões grandes da folha de estorno (tudo × parte) e a
    pré-visualização do efeito. Um estorno vinculado mexe em vários meses de
    uma vez; a folha diz o que vai acontecer antes de gravar. */
-.duplo{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}
-.big2{background:var(--fill);border-radius:13px;padding:14px 12px;text-align:center;
+.duplo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.big2{background:var(--fill);border-radius:14px;padding:12px 12px;text-align:center;
   font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.01em;min-height:44px}
 .big2 em{display:block;font-style:normal;font-size:12px;font-weight:400;
-  color:var(--muted2);margin-top:3px}
+  color:var(--muted2);margin-top:2px}
 .big2.on{background:color-mix(in srgb,var(--tint) 14%,var(--card));color:var(--tint)}
 .big2.on em{color:var(--tint)}
 .big2:active{background:var(--fill2)}
-.prev{background:var(--fill);border-radius:12px;padding:12px 13px;margin-top:11px;
-  font-size:12.5px;line-height:1.6;color:var(--ink2)}
-.prev .pt{font-size:11.5px;color:var(--muted2);margin-bottom:5px}
-.prev .li{display:grid;grid-template-columns:14px minmax(0,1fr);gap:7px;margin-top:4px}
-.prev .li .s{color:var(--muted)}
+.prev{background:var(--fill);border-radius:14px;padding:12px 12px;margin-top:10px;
+  font-size:12px;line-height:1.6;color:var(--ink2)}
+.prev .pt{font-size:11px;color:var(--muted2);margin-bottom:4px}
+.prev .li{display:grid;grid-template-columns:14px minmax(0,1fr);gap:6px;margin-top:4px}
+.prev .li .s{color:var(--muted2)}
 .prev b{font-variant-numeric:tabular-nums}
-.opt .tag{font-size:12px;color:var(--muted);white-space:nowrap}
+.opt .tag{font-size:12px;color:var(--muted2);white-space:nowrap}
 .optwrap{border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.dayopts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.dayopt{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 14px}
+.dayopts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dayopt{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 12px}
 .dayopt.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden}
 /* o campo de data cobre o card inteiro e fica invisível: tocar em qualquer
    ponto abre o calendário, não só em cima do valor */
 .dayopt.wide input[type="date"]{
   position:absolute;inset:0;width:100%;height:100%;opacity:0;
-  -webkit-appearance:none;appearance:none;font-size:16px;
+  -webkit-appearance:none;appearance:none;font-size:15px;
 }
 .dayopt.wide .cal{font-size:22px;line-height:1}
 /* mesma ideia no formulário de edição: o campo inteiro é a área de toque */
 .field.data{position:relative}
 .field.data input[type="date"]{position:relative;z-index:1;width:100%}
-.dayopt .n{font-size:18px;font-weight:600;letter-spacing:-.02em}
-.dayopt .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+.dayopt .n{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.dayopt .s{font-size:12px;color:var(--muted2);margin-top:2px}
 .dayopt[aria-pressed="true"]{outline:2px solid var(--tint);outline-offset:-2px}
 
 /* formulário */
-.field{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:10px 14px;margin-bottom:9px}
-.field .k{display:block;font-size:11.5px;color:var(--muted)}
-.field input,.field select{width:100%;font-size:16px;margin-top:2px;background:none}
+.field{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:10px 12px;margin-bottom:8px}
+.field .k{display:block;font-size:11px;color:var(--muted2)}
+.field input,.field select{width:100%;font-size:15px;margin-top:2px;background:none}
 .field input[type="date"]{font-variant-numeric:tabular-nums}
 .field.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
-.field .v{display:block;font-size:16px;margin-top:2px}
-.field .v.sem{color:var(--muted)}
+.field .v{display:block;font-size:15px;margin-top:2px}
+.field .v.sem{color:var(--muted2)}
 /* v20 (item 30): os dois campos da faixa de valor entram lado a lado, e o
    chevron não cabe na largura de meia tela sem espremer o número. */
-.field.row.col{grid-template-columns:minmax(0,1fr) auto;padding:10px 11px;margin-bottom:0}
+.field.row.col{grid-template-columns:minmax(0,1fr) auto;padding:10px 10px;margin-bottom:0}
 .field.row.col .v{font-size:15px}
 .btnfull{
   display:block;width:100%;text-align:center;background:var(--tint);color:#fff;
-  border-radius:13px;padding:14px;font-size:17px;font-weight:600;margin-top:6px;
+  border-radius:14px;padding:12px;font-size:17px;font-weight:600;margin-top:6px;
 }
 .btnfull.sec{background:var(--fill2);color:var(--tint)}
 .btnfull.dan{background:var(--fill2);color:var(--danger)}
-.btnfull:disabled{opacity:.4}
+/* v32: o mesmo contrato do "Confirmar" do teclado (v31) — DESLIGADO, não
+   apagado. Branco sobre azul lavado é quase ilegível e parece um botão que
+   deveria funcionar. A régua da v31 consertou o teclado e deixou este para
+   trás porque a varredura olha as sete telas, não as folhas. */
+.btnfull:disabled{background:var(--fill2);color:var(--muted2);opacity:1}
 
 /* ============================================================
    CALENDÁRIO (v12)
@@ -952,20 +1003,20 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    ============================================================ */
 .calwrap{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 10px 12px}
 .calhd{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:6px;padding:2px 0 6px}
-.calhd .pb{display:grid;place-items:center;height:32px;border-radius:9px;color:var(--tint);background:var(--fill2)}
-.calhd .pb:disabled{opacity:.3}
+.calhd .pb{display:grid;place-items:center;height:32px;border-radius:10px;color:var(--tint);background:var(--fill2)}
+.calhd .pb:disabled{opacity:.4}
 .calhd .pb svg{width:15px;height:15px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
-.calhd .m{text-align:center;font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+.calhd .m{text-align:center;font-size:15px;font-weight:600;letter-spacing:-.01em}
 .caldow{display:grid;grid-template-columns:repeat(7,1fr)}
-.caldow span{text-align:center;font-size:11px;color:var(--muted);padding:3px 0 5px}
+.caldow span{text-align:center;font-size:11px;color:var(--muted2);padding:2px 0 4px}
 .calgrid{display:grid;grid-template-columns:repeat(7,1fr)}
 .cday{height:44px;position:relative;display:grid;place-items:center}
 /* a faixa do intervalo fica ATRÁS do número, encostando de célula em célula
    para virar uma barra contínua em vez de 15 pastilhas soltas */
 .cday i{position:absolute;inset:3px 0;display:none;background:var(--tint-soft)}
 .cday.in i{display:block}
-.cday.ini i{border-radius:19px 0 0 19px;left:3px}
-.cday.fim i{border-radius:0 19px 19px 0;right:3px}
+.cday.ini i{border-radius:14px 0 0 14px;left:3px}
+.cday.fim i{border-radius:0 14px 14px 0;right:3px}
 .cday b{position:relative;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;
   font-size:15px;font-weight:400;font-variant-numeric:tabular-nums}
 .cday.ponta b{background:var(--tint);color:#fff;font-weight:600}
@@ -974,14 +1025,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .cday.out{pointer-events:none}
 .cday:active b{opacity:.55}
 .calft{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:9px 4px 5px;margin-top:4px;border-top:.5px solid var(--line);min-height:44px}
-.calft .l{font-size:13px;color:var(--muted)}
+  padding:8px 4px 4px;margin-top:4px;border-top:.5px solid var(--line);min-height:44px}
+.calft .l{font-size:13px;color:var(--muted2)}
 .calft .l b{color:var(--ink);font-weight:600}
-.calft .z{color:var(--tint);font-size:13.5px;font-weight:500;
+.calft .z{color:var(--tint);font-size:13px;font-weight:500;
   min-height:44px;min-width:44px;display:grid;place-items:center;margin:-9px 0}
 
 /* linha de valor que abre o teclado do app, na folha de edição */
-.field.tap .v{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.field.tap .v{font-size:17px;font-weight:600;letter-spacing:-.02em}
 .field.tap .v.vneg{color:var(--danger)}
 .field.tap:active{background:var(--fill2)}
 /* a folha de valor precisa dar altura ao teclado: dentro do .sheet-b, que é
@@ -992,30 +1043,29 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    rolar. Este é a exceção: quando a folha se ajusta à de baixo, é ele que
    estica para ocupar a diferença. */
 .sheet-b>.padbox.cresce{flex:1 1 auto;height:auto;min-height:min(52vh,430px)}
-.btnfull:disabled{opacity:.4}
-.hint{font-size:12.5px;color:var(--muted);line-height:1.45;padding:10px 4px 0}
+.hint{font-size:12px;color:var(--muted2);line-height:1.45;padding:10px 4px 0}
 
 /* reordenação */
 .reorder{position:relative}
 .rrow{
-  display:grid;grid-template-columns:auto 34px minmax(0,1fr) auto;gap:11px;align-items:center;
-  background:var(--card);padding:11px 14px;position:relative;touch-action:pan-y;
+  display:grid;grid-template-columns:auto 34px minmax(0,1fr) auto;gap:10px;align-items:center;
+  background:var(--card);padding:10px 12px;position:relative;touch-action:pan-y;
 }
 .rrow+.rrow::before{content:"";position:absolute;left:14px;right:0;top:0;height:.5px;background:var(--line)}
 .rrow.drag{z-index:3;box-shadow:0 8px 24px rgba(0,0,0,.22);border-radius:10px;opacity:.97}
 .rrow .hnd{color:var(--faint);padding:8px;margin:-8px;cursor:grab;touch-action:none}
 .rrow .hnd svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round}
 .rrow .ic{
-  width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-size:17px;
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;
   background:var(--fill2);
   background:color-mix(in srgb, var(--c) 17%, var(--card));
   box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
 }
-.rrow .nm{font-size:15.5px;letter-spacing:-.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrow .ct{font-size:12px;color:var(--muted);white-space:nowrap}
+.rrow .nm{font-size:15px;letter-spacing:-.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow .ct{font-size:12px;color:var(--muted2);white-space:nowrap}
 .cutline{
-  display:flex;align-items:center;gap:9px;padding:7px 14px;background:var(--fill);
-  font-size:11.5px;color:var(--muted);position:relative;
+  display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--fill);
+  font-size:11px;color:var(--muted2);position:relative;
 }
 .cutline::before,.cutline::after{content:"";flex:1;height:.5px;background:var(--line2)}
 
@@ -1023,11 +1073,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 #boot{position:fixed;inset:0;z-index:90;background:var(--bg);color:var(--ink);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
   padding:32px 26px;text-align:center}
-#boot .bt{font-size:19px;font-weight:600;letter-spacing:-.02em}
-#boot .bs{font-size:14px;color:var(--muted);max-width:34ch;line-height:1.45}
+#boot .bt{font-size:17px;font-weight:600;letter-spacing:-.02em}
+#boot .bs{font-size:13px;color:var(--muted2);max-width:34ch;line-height:1.45}
 #boot.erro .bt{color:var(--danger)}
-#boot .rel{text-align:left;font-size:13.5px;line-height:1.5;display:flex;flex-direction:column;gap:9px;
-  background:var(--card);border-radius:12px;padding:14px 15px;max-width:36ch;width:100%}
+#boot .rel{text-align:left;font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:8px;
+  background:var(--card);border-radius:14px;padding:12px 16px;max-width:36ch;width:100%}
 #boot .dl{display:grid;grid-template-columns:20px minmax(0,1fr);gap:8px;align-items:start;word-break:break-word}
 #boot .si{color:var(--ok);font-weight:700}
 #boot .nao{color:var(--danger);font-weight:700}
@@ -1058,17 +1108,53 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .amount .n.neg .cur,.amount .n.neg .fig{color:var(--danger)}
 .amount .n.rec .cur,.amount .n.rec .fig{color:var(--ok)}
 .key.go.dan{background:var(--danger)}
-.chip:disabled{opacity:.38}
-.field.off{opacity:.55}
+.chip:disabled{opacity:.4}
+.field.off{opacity:.4}
 .field.off select{pointer-events:none}
 /* seletor de lado na lista — só aparece quando existe lançamento de entrada */
-.seg{display:flex;background:var(--fill2);border-radius:9px;padding:2px;gap:2px;margin:0 4px 8px}
-.seg button{flex:1;font-size:13.5px;font-weight:600;padding:6px 0;border-radius:7px;color:var(--ink2)}
+.seg{display:flex;background:var(--fill2);border-radius:10px;padding:2px;gap:2px;margin:0 4px 8px}
+.seg button{flex:1;font-size:13px;font-weight:600;padding:6px 0;border-radius:10px;color:var(--ink2)}
 .seg button[aria-selected="true"]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.10);color:var(--ink)}
 /* No Resumo o seletor abre um bloco novo, não continua o de cima: por isso o
    respiro maior em cima do que embaixo. Altura total 36px — acima dos 44px só
    com o dedo, mas é a mesma régua do seletor da aba Lançamentos, que já roda. */
 .seg.res{margin:18px 0 10px}
+/* ============================================================
+   A RÉGUA DE ALVOS  (v31)
+   ------------------------------------------------------------
+   Uma regra só, num lugar só: TODO CONTROLE TEM 44px DE ALVO.
+   Antes isto estava espalhado — cada controle que alguém media
+   ganhava o seu remendo, e o que ninguém media ficava com 34.
+
+   O alvo cresce POR FORA, invisível: o desenho não muda de
+   tamanho, e nenhuma tela fica mais alta. É o mesmo pseudo-
+   elemento que o "Voltar" do cabeçalho usa desde a v30.
+
+   46 e não 44: o meio de um controle de altura ímpar cai numa
+   fração de pixel e a área medida volta 43. Dois pixels de
+   folga fazem a régua valer em qualquer arredondamento.
+
+   MEDIR ISTO COM getBoundingClientRect DÁ O NÚMERO ERRADO.
+   O alvo não é o retângulo do elemento; é quem responde no
+   ponto. A suíte v30 pergunta com elementFromPoint.
+
+   A EXCEÇÃO, e ela está escrita: o chip da faixa de filtros.
+   A faixa rola na horizontal, e quem rola recorta o que
+   transborda — ali o pseudo-elemento não sobrevive. O chip
+   cresce de verdade (38 -> 44px) e a faixa fica 6px mais alta.
+   É o único lugar do app onde a régua custa pixel.
+   ============================================================ */
+.seg button,.calhd .pb,.periodbar .pb,.banner .ba,.banner .bx,.deltabtn,
+.quick button,.fchip.so{position:relative}
+.seg button::after,.calhd .pb::after,.periodbar .pb::after,.banner .ba::after,
+.banner .bx::after,.deltabtn::after,.quick button::after,.fchip.so::after{
+  content:'';position:absolute;left:0;right:0;top:50%;height:46px;
+  transform:translateY(-50%);
+}
+/* As setas de período e de calendário têm 36px de largura: o alvo também
+   cresce para os lados, senão o dedo acerta a altura e erra a coluna. */
+.calhd .pb::after,.periodbar .pb::after{left:-5px;right:-5px}
+
 </style>
 </head>
 <body>
@@ -1150,7 +1236,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-09-29.2';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-01.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1490,7 +1576,12 @@ function pendentes(){
     for(var j=0;j<cs.length;j++){
       var c=cs[j];
       if(feitos[c]||pul.indexOf(c)>=0)continue;
-      out.push({rec:r.id,comp:c,d:dataComp(r,c),n:r.n,cat:r.cat,sub:r.sub,
+      var dd=dataComp(r,c);
+      out.push({rec:r.id,comp:c,d:dd,n:r.n,cat:r.cat,sub:r.sub,
+                /* v32: VENCIDA é o que separa "precisa de você hoje" de "ainda
+                   vai acontecer". Não é o mês: é o dia do molde já ter chegado.
+                   Pendência de mês passado é vencida por definição. */
+                vencida:dd<=hoje(),
                 fixo:r.fixo!==false,v:valorSugerido(r),pay:r.pay||null,desc:r.desc||'',
                 /* v27 (item 9): a etiqueta do molde viaja na pendência e
                    chega no lançamento confirmado. */
@@ -1499,6 +1590,11 @@ function pendentes(){
   }
   out.sort(function(a,b){return a.comp<b.comp?-1:(a.comp>b.comp?1:(a.n<b.n?-1:1));});
   return out;
+}
+/* v32: o que o app COBRA é só o que já venceu. O resto continua existindo —
+   na folha, no número do fechamento do mês — mas não pede nada. */
+function pendentesVencidas(){
+  return pendentes().filter(function(x){return x.vencida;});
 }
 /* quantos lançamentos já confirmados vieram deste molde */
 function confirmadosDe(id){
@@ -2240,12 +2336,25 @@ function renderNoLugar(){
    fazia nada. Saiu. O que a verificação cobra é o contrato (a lista não pula),
    e ela reprova na hora se alguém trocar isto por um `render()`. */
 
+/* v32: tocar no cabeçalho volta ao topo da tela.
+
+   É o gesto da barra de status do iOS, no lugar onde o dedo já está — com 60
+   lançamentos no mês, voltar ao topo eram seis arrastadas. Não vale na aba de
+   registro: lá o cabeçalho é o "Voltar", e um toque perto dele tem outro
+   significado. */
+function aoTopo(){
+  var sc=main.querySelector('.scroll');
+  if(!sc||sc.scrollTop<=0)return;
+  try{sc.scrollTo({top:0,behavior:'smooth'});}catch(e){sc.scrollTop=0;}
+}
 function cabecalho(){
   var L=hdr.l,R=hdr.r;
   L.hidden=true;R.hidden=true;L.innerHTML='';R.innerHTML='';
   hdr.d.innerHTML='';hdr.s.textContent='';
   /* v21: só a aba de registro reserva as duas linhas do miolo — ver o CSS. */
   hdr.el.classList.toggle('reg',S.aba==='reg');
+  hdr.el.classList.toggle('aotopo',S.aba!=='reg');
+  hdr.el.onclick=(S.aba==='reg')?null:aoTopo;
   /* a marca entra na coluna esquerda, que só é usada pelo botão Voltar nos
      passos 2 e 3 do registro. Onde o Voltar não está, ela não custa um pixel. */
   function marcaNaEsquerda(){
@@ -2314,7 +2423,9 @@ function abas(){
        diferentes. Acima de 9 vira "9+", senão a pílula empurra o ícone. */
     var av='';
     if(x[0]==='plan'){
-      var np=0;try{np=pendentes().length;}catch(e){}
+      /* v32: conta as VENCIDAS. A pílula é cobrança; no dia 1º ela dizia 5
+         quando havia uma só para resolver. */
+      var np=0;try{np=pendentesVencidas().length;}catch(e){}
       if(np>0)av='<span class="pill" aria-hidden="true">'+(np>9?'9+':np)+'</span>';
     }
     var b=el('<button class="tab" role="tab" aria-selected="'+(S.aba===x[0])+'">'+
@@ -3764,7 +3875,7 @@ function folhaEtiquetas(sel,aoMudar,opts){
     function linha(t,marca){
       var on=sel.indexOf(t.id)>=0;
       var o=el('<button class="opt'+(t.arq?' arq':'')+'"><span class="ic">🏷️</span>'+
-        '<span class="nm">'+esc(t.n)+(marca?' <span class="marca">· arquivada</span>':'')+'</span>'+
+        '<span class="nm">'+esc(t.n)+(marca?' <span class="arqtxt">· arquivada</span>':'')+'</span>'+
         (on?'<span class="tag">✓</span>':'<span></span>')+'</button>');
       o.setAttribute('aria-pressed',String(on));
       o.onclick=function(){
@@ -3902,20 +4013,37 @@ function txtPend(lista){
   if(!t.misto)return 'R$ '+brl(t.ent||t.sai);
   return '− R$ '+brl(t.sai)+' · + R$ '+brl(t.ent);
 }
+/* v32: a faixa cobra o que VENCEU. Quando nada venceu ela não some — some
+   seria levar junto a linha de fechamento do mês, que é das mais úteis do app.
+   Ela MUDA DE TOM: borda neutra, botão secundário, verbo "Ver". Deixa de pedir
+   e passa a informar. */
 function bannerRecorrentes(mk,totMes){
   var ps=pendentes();
   if(!ps.length)return null;
+  var venc=ps.filter(function(x){return x.vencida;});
+  var cobra=venc.length>0;
+  var base=cobra?venc:ps;
   var nomes=[];
-  ps.forEach(function(x){if(nomes.indexOf(x.n)<0&&nomes.length<3)nomes.push(x.n);});
+  base.forEach(function(x){if(nomes.indexOf(x.n)<0&&nomes.length<3)nomes.push(x.n);});
   var lista=nomes.join(', ');
-  if(ps.length>nomes.length)lista+=' e outras';
-  var meses=[];ps.forEach(function(x){if(meses.indexOf(x.comp)<0)meses.push(x.comp);});
-  var quando=meses.length===1?mesLabel(meses[0]).split(' de ')[0]
-            :(meses.length+' meses');
-  var b=el('<div class="banner"><div class="bw"><div class="bt">'+ps.length+
-    (ps.length===1?' recorrente a confirmar':' recorrentes a confirmar')+'</div>'+
-    '<div class="bs">'+esc(lista)+' · '+esc(quando)+' · '+txtPend(ps)+'</div></div>'+
-    '<button class="ba">Revisar</button></div>');
+  if(base.length>nomes.length)lista+=' e outras';
+  var sub;
+  if(cobra){
+    var meses=[];venc.forEach(function(x){if(meses.indexOf(x.comp)<0)meses.push(x.comp);});
+    var quando=meses.length===1?mesLabel(meses[0]).split(' de ')[0]
+              :(meses.length+' meses');
+    sub=esc(lista)+' · '+esc(quando)+' · '+txtPend(venc);
+  }else{
+    /* nenhuma venceu: todas são deste mês e ainda vão acontecer */
+    var prim=ps[0];
+    ps.forEach(function(x){if(x.d<prim.d)prim=x;});
+    sub=esc(lista)+' · a primeira vence dia '+(+prim.d.slice(8));
+  }
+  var b=el('<div class="banner'+(cobra?'':' calmo')+'"><div class="bw"><div class="bt">'+
+    (cobra?(venc.length+(venc.length===1?' recorrente a confirmar':' recorrentes a confirmar'))
+          :(ps.length+(ps.length===1?' recorrente neste mês':' recorrentes neste mês')))+'</div>'+
+    '<div class="bs">'+sub+'</div></div>'+
+    '<button class="ba">'+(cobra?'Revisar':'Ver')+'</button></div>');
   b.querySelector('.ba').onclick=folhaRevisao;
   /* v14 (ideia 3): o fechamento do mês.
      A ideia nasceu como cartão novo e encolheu para esta linha depois de uma
@@ -3941,11 +4069,39 @@ function bannerRecorrentes(mk,totMes){
 }
 
 /* Nada é gravado até o botão de baixo. Desmarcar deixa pendente para a próxima
-   vez; Pular é definitivo (e desfazível no detalhe do molde). */
+   vez; Pular é definitivo (e desfazível no detalhe do molde).
+
+   v32 — a folha passou a ter DOIS grupos e TRÊS desfechos com nome:
+
+     · VENCIDAS  nascem marcadas. É o que o botão de baixo propõe.
+     · A VENCER  nascem DESMARCADAS. Antes nasciam marcadas, e no dia 1º um
+       toque criava a conta de luz do mês inteiro com o valor do mês passado,
+       calado, num mês em que ela nem tinha vencido. O caminho mais fácil da
+       tela era o errado.
+
+   E o estado do meio ganhou nome. Ele sempre existiu — desmarcar e fechar não
+   grava nada, a pendência volta no próximo aviso —, mas a única coisa que
+   aparecia ao desmarcar era o botão vermelho de pular. Quem desmarcava via uma
+   ameaça onde devia ver uma escolha. Agora a frase diz o que acontece, e o
+   pular é o secundário ao lado dela. */
 function folhaRevisao(){
   var ps=pendentes();
   if(!ps.length){alerta('Nada a confirmar','Nenhuma recorrência está pendente agora.');return;}
-  var estado=ps.map(function(x){return {p:x,on:true,v:x.v};});
+  /* vencidas primeiro dentro de cada competência */
+  ps=ps.slice().sort(function(a,b){
+    if(a.comp!==b.comp)return a.comp<b.comp?-1:1;
+    if(a.vencida!==b.vencida)return a.vencida?-1:1;
+    if(a.d!==b.d)return a.d<b.d?-1:1;
+    return a.n<b.n?-1:1;
+  });
+  /* o rótulo só separa quando há o que separar: mês com um grupo só não
+     ganha sufixo nenhum. */
+  var mista={};
+  ps.forEach(function(x){
+    if(mista[x.comp]===undefined)mista[x.comp]=x.vencida;
+    else if(mista[x.comp]!==x.vencida)mista[x.comp]='ambos';
+  });
+  var estado=ps.map(function(x){return {p:x,on:!!x.vencida,v:x.v};});
   folha('A confirmar',function(b,sh){
     var btn=el('<button class="btnfull"></button>');
     var avisoSV=el('<div class="hint" hidden></div>');
@@ -3964,19 +4120,25 @@ function folhaRevisao(){
         :(semValor+' linhas marcadas estão sem valor e não serão confirmadas.')):'';
       avisoSV.hidden=!semValor;
     }
-    var mesAtual=null,wrap=null;
+    var grupoAtual=null,wrap=null;
     estado.forEach(function(st,i){
-      var x=st.p;
-      if(x.comp!==mesAtual){
-        mesAtual=x.comp;
+      var x=st.p,gk=x.comp+'|'+(x.vencida?1:0);
+      if(gk!==grupoAtual){
+        grupoAtual=gk;
+        var rot;
+        if(mista[x.comp]!=='ambos')rot=mesLabel(x.comp);
+        else if(x.vencida)rot=mesLabel(x.comp)+' · vencidas';
+        else rot='ainda a vencer · não precisam de você hoje';
         b.appendChild(el('<div class="glabel"'+(i===0?' style="margin-top:0"':'')+'>'+
-          mesLabel(x.comp)+'</div>'));
+          esc(rot)+'</div>'));
         wrap=el('<div class="optwrap"></div>');b.appendChild(wrap);
       }
       var c=cat(x.cat)||{c:'#78716C',n:'—',e:'❓'};
       var r=rec(x.rec)||{};
-      var sub=nomeCat(x.cat)+' · dia '+(+x.d.slice(8))+' · '+(x.fixo?'fixo':'variável');
-      var linha=el('<div class="rrev" style="--c:'+c.c+'" aria-pressed="true">'+
+      var sub=nomeCat(x.cat)+' · '+(x.vencida?'venceu dia ':'dia ')+(+x.d.slice(8))+
+              ' · '+(x.fixo?'fixo':'variável');
+      var linha=el('<div class="rrev" style="--c:'+c.c+'" aria-pressed="'+
+        (st.on?'true':'false')+'">'+
         '<span class="ic">'+emojiSub(x.cat,x.sub)+'</span>'+
         '<span><span class="nm">'+esc(x.n)+'</span><span class="sb">'+esc(sub)+'</span></span>'+
         '<span class="vcel"></span><span class="ck">✓</span></div>');
@@ -4002,12 +4164,21 @@ function folhaRevisao(){
       }
       linha.onclick=function(ev){
         if(ev.target&&ev.target.closest&&ev.target.closest('.vin'))return;
-        st.on=!st.on;linha.setAttribute('aria-pressed',st.on?'true':'false');
+        st.on=!st.on;
+        linha.setAttribute('aria-pressed',st.on?'true':'false');
         if(st.sk)st.sk.hidden=st.on;
         atualizar();
       };
       wrap.appendChild(linha);
-      var sk=el('<div class="skiprow" hidden><button class="dan">Pular este mês, e não perguntar mais</button></div>');
+      /* Revelado por um toque SEU, não pelo estado inicial — e é o `hidden`
+         daqui que carrega isso: as "a vencer" nascem desmarcadas, e abrir a
+         folha com esta explicação repetida embaixo de cada uma seria trocar o
+         ruído do vermelho por outro ruído. (Cheguei a guardar um `tocou` no
+         estado para isto; reintroduzir o defeito nele não derrubou nada, porque
+         só o clique mexe no `hidden`. Saiu.) */
+      var sk=el('<div class="pendrow" hidden>'+
+        '<div class="ex">Fica pendente — volta no próximo aviso.</div>'+
+        '<button class="dan">Pular este mês</button></div>');
       sk.querySelector('button').onclick=function(){
         var r2=rec(x.rec);if(!r2)return;
         pularComp(r2,x.comp);
@@ -4019,10 +4190,11 @@ function folhaRevisao(){
       wrap.appendChild(sk);
       st.sk=sk;
     });
-    b.appendChild(el('<div class="hint">O valor sugerido para os variáveis é o do '+
-      '<b>último mês confirmado</b>. Desmarcar uma linha deixa ela pendente para a próxima '+
-      'vez — e revela a opção de <b>pular</b>, que é definitiva e só pode ser desfeita no '+
-      'detalhe da recorrência.</div>'));
+    b.appendChild(el('<div class="hint">As que <b>ainda não venceram</b> começam desmarcadas: '+
+      'ficam pendentes até você confirmar. Marque qualquer uma para confirmar antes do dia. '+
+      'O valor sugerido para os variáveis é o do <b>último mês confirmado</b>. '+
+      'Tocar numa linha revela a opção de <b>pular</b>, que é definitiva e só pode ser '+
+      'desfeita no detalhe da recorrência.</div>'));
     btn.onclick=function(){
       var sel=estado.filter(function(x){return x.on&&x.v>0;});
       if(!sel.length)return;
@@ -4944,7 +5116,7 @@ function folhaEvolucao(mk,ent){
             var w=el('<div class="optwrap"></div>');
             (DB.etq||[]).forEach(function(t){
               var o=el('<button class="opt'+(t.arq?' arq':'')+'"><span class="ic">🏷️</span>'+
-                '<span class="nm">'+esc(t.n)+(t.arq?' <span class="marca">· arquivada</span>':'')+'</span>'+
+                '<span class="nm">'+esc(t.n)+(t.arq?' <span class="arqtxt">· arquivada</span>':'')+'</span>'+
                 (t.id===S.evoEtq?'<span class="tag">✓</span>':'<span></span>')+'</button>');
               o.onclick=function(){S.evoEtq=t.id;fechar();sel=n-1;pintaEvo();};
               w.appendChild(o);
