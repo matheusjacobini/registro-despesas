@@ -323,10 +323,16 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .amount .fig.zero{color:var(--faint)}
 .amount .dec{color:var(--muted2);transition:color .12s}
 .amount .dec.typed{color:inherit}
-/* v33: o centavo que você NÃO digitou. Ele é real — `,5` vale cinquenta
-   centavos — mas aparece mais claro, para o apagar se ver andando sem que o
-   número minta sobre o que seria salvo. */
-.amount .dec .imp{color:var(--faint)}
+/* O centavo que você NÃO digitou. Ele é real — `,5` vale cinquenta centavos —
+   mas aparece mais claro, para o apagar se ver andando sem que o número minta
+   sobre o que seria salvo.
+
+   v34: era `--faint`, que mede 1,73:1. A régua de contraste da v31 reprovaria,
+   e não pegou porque a varredura só visita telas em repouso — onde o valor ou
+   é o fantasma 0,00 (que tem exceção escrita) ou está todo digitado. Num
+   125,00 de verdade aquele `,00` estava claro demais. `--muted2` é o cinza
+   secundário que o app já usa em todo lugar: 5,63:1. */
+.amount .dec .imp{color:var(--muted2)}
 /* linha derivada do parcelamento: é ela que impede digitar o valor da parcela
    achando que é o total */
 .amount .parc{display:flex;align-items:center;gap:6px;margin:7px 0 0;padding-top:8px;
@@ -1244,7 +1250,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-02.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-02.3';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -2273,15 +2279,23 @@ function kVirgEm(st){
   st.semeado=false;st.modo='cent';st.centD='';
 }
 function kVirg(){kVirgEm(S);}
-/* v33: apaga da direita para a esquerda, e TODO TOQUE muda o número na tela.
-   O `else st.modo='reais'` de antes gastava um toque só para trocar de modo,
-   sem mexer em dígito nenhum — o mesmo mal da tecla muda. Agora o último
-   centavo e a saída do modo acontecem no mesmo toque. */
+/* Apaga da direita para a esquerda, UM caractere por toque — e a vírgula é um
+   caractere.  De 125,80:  ,8 → , → (sai dos centavos) → 12 → 1 → vazio.
+
+   v33 juntou os dois últimos toques dos centavos num só, porque o toque que
+   sai do modo não mexe em dígito nenhum e me pareceu tecla morta. Era o
+   contrário: ele APAGA A VÍRGULA, e é ele que torna o apagar previsível. Sem
+   ele, dois toques sobre dois centavos digitados pulavam direto para os reais
+   e o dígito seguinte ia parar no lugar errado — sem nada na tela avisando.
+
+   v34 devolve os três toques. O aviso de cor (a vírgula acende quando você
+   está nos centavos) volta a ser CONFIRMAÇÃO e não o canal principal: quem
+   digitou a vírgula sabe que ela está lá até apagá-la. */
 function kBackEm(st){
   st.semeado=false;
   if(st.modo==='cent'){
-    if(st.centD.length>1)st.centD=st.centD.slice(0,-1);
-    else{st.centD='';st.modo='reais';}
+    if(st.centD)st.centD=st.centD.slice(0,-1);
+    else st.modo='reais';
   }
   else st.intD=st.intD.slice(0,-1);
 }
@@ -4463,9 +4477,14 @@ function folhaMolde(r,base,pai){
        personalizou, ele é seu e não se mexe. E a troca acontece AQUI, no campo,
        na hora em que você escolhe — não escondida no salvar. Você vê o nome
        mudar e pode escrever outra coisa por cima antes de confirmar. */
+    /* v35: o campo VAZIO também é "só o eco" — não há nada seu ali ainda.
+       Sem esta primeira condição, a recorrente criada do zero nunca ganhava
+       nome sozinha: o campo nasce vazio, `nomeSub(cat,null)` devolve o nome da
+       CATEGORIA (ver p4_core), e a comparação abaixo concluía "é seu" sobre um
+       campo em que você nunca escreveu. Uma regra só serve aos dois caminhos. */
     function seguirNome(catAnt,subAnt){
-      var inp=fn.querySelector('input');
-      if(inp.value.trim()!==nomeSub(catAnt,subAnt))return;   /* é seu: não mexo */
+      var inp=fn.querySelector('input'),atual=inp.value.trim();
+      if(atual&&atual!==nomeSub(catAnt,subAnt))return;       /* é seu: não mexo */
       inp.value=t.sub?nomeSub(t.cat,t.sub):'';
     }
     fc.onclick=function(){escolhaEmLinha(catsOrdenadas(true),function(c){return c.c;},
