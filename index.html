@@ -323,6 +323,10 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .amount .fig.zero{color:var(--faint)}
 .amount .dec{color:var(--muted2);transition:color .12s}
 .amount .dec.typed{color:inherit}
+/* v33: o centavo que você NÃO digitou. Ele é real — `,5` vale cinquenta
+   centavos — mas aparece mais claro, para o apagar se ver andando sem que o
+   número minta sobre o que seria salvo. */
+.amount .dec .imp{color:var(--faint)}
 /* linha derivada do parcelamento: é ela que impede digitar o valor da parcela
    achando que é o total */
 .amount .parc{display:flex;align-items:center;gap:6px;margin:7px 0 0;padding-top:8px;
@@ -1099,7 +1103,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .msk .mr.vneg{color:var(--danger)}
 /* O ± na fileira dos atalhos: separado dos somadores por um respiro, porque
    os três primeiros somam dinheiro e este inverte o sentido. */
-.quick{grid-template-columns:1fr 1fr 1fr 14px 1fr}
+/* v33: dois controles, não cinco. C à esquerda (onde a calculadora o põe) e
+   ± à direita; o meio é o respiro que separa LIMPAR de INVERTER. */
+.quick{grid-template-columns:auto 1fr auto}
+.quick .lim{color:var(--danger);font-weight:600;padding:8px 22px}
+.quick .sig{padding:8px 22px}
 .quick .gap{height:1px}
 .quick .sig{font-size:17px;font-weight:700;letter-spacing:.02em}
 .quick .sig[aria-pressed="true"]{background:color-mix(in srgb,var(--danger) 15%,var(--card));
@@ -1236,7 +1244,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-01.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-02.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -2233,38 +2241,65 @@ function fmtIntDe(st){
 }
 function fmtIntD(){return fmtIntDe(S);}
 function decDe(st){return (st.centD+'00').slice(0,2);}
+/* v33: quais dos dois centavos você digitou e quais vieram de graça. Digitar
+   `,5` neste app significa CINQUENTA centavos — o dígito entra da esquerda
+   para a direita, então o zero que falta é real e o valor já está decidido.
+   Mostrar `,5_` seria mentir sobre o que seria salvo. Então o dígito não
+   digitado aparece mais claro: o número continua verdadeiro e o apagar se vê
+   andando. */
+function decPartesDe(st){
+  var d=decDe(st),n=(st.modo==='cent'?st.centD.length:0);
+  return {tip:d.slice(0,n),imp:d.slice(n)};
+}
 function decD(){return decDe(S);}
 function decDigitadoDe(st){return st.modo==='cent'||st.centD!=='';}
 function decDigitado(){return decDigitadoDe(S);}
+/* v33: SEMEADO = nada foi tocado ainda. A folha abre com o valor "selecionado",
+   como um campo de formulário: o primeiro dígito recomeça o número, que é o que
+   se quer em 9 de cada 10 edições. Do segundo em diante é digitação normal.
+   Antes, o primeiro dígito entrava no fim dos centavos — que já estavam cheios —
+   e era ENGOLIDO EM SILÊNCIO: a tecla aceitava o toque e não fazia nada. */
 function kDigEm(st,d){
+  if(st.semeado){st.semeado=false;st.centD='';st.modo='reais';st.intD=d;return;}
   if(st.modo==='cent'){if(st.centD.length<2)st.centD+=d;}
   else{if(st.intD.length<7)st.intD=(st.intD+d).replace(/^0+(?=\d)/,'');}
 }
 function kDig(d){kDigEm(S,d);}
+/* v33: a vírgula SEMPRE recomeça os centavos, e nunca fica desabilitada.
+   Antes ela desligava assim que o modo virava 'cent' — e com os dois centavos
+   cheios o teclado inteiro ficava mudo, sem saída nenhuma. Uma regra no lugar
+   de duas: tocar na vírgula é dizer "vou digitar os centavos agora". */
 function kVirgEm(st){
-  if(st.modo==='cent')return;
-  st.modo='cent';
-  /* Num valor que já veio preenchido (edição), os centavos chegam com dois
-     dígitos. Sem esta linha, tocar na vírgula e digitar não faria NADA: o
-     campo de centavos já estaria cheio. Então a primeira vírgula depois de
-     semear limpa os centavos, para que sejam redigitados. */
-  if(st.semeado){st.centD='';st.semeado=false;}
+  st.semeado=false;st.modo='cent';st.centD='';
 }
 function kVirg(){kVirgEm(S);}
+/* v33: apaga da direita para a esquerda, e TODO TOQUE muda o número na tela.
+   O `else st.modo='reais'` de antes gastava um toque só para trocar de modo,
+   sem mexer em dígito nenhum — o mesmo mal da tecla muda. Agora o último
+   centavo e a saída do modo acontecem no mesmo toque. */
 function kBackEm(st){
-  if(st.modo==='cent'){if(st.centD)st.centD=st.centD.slice(0,-1);else st.modo='reais';}
+  st.semeado=false;
+  if(st.modo==='cent'){
+    if(st.centD.length>1)st.centD=st.centD.slice(0,-1);
+    else{st.centD='';st.modo='reais';}
+  }
   else st.intD=st.intD.slice(0,-1);
 }
 function kBack(){kBackEm(S);}
-function kSomaEm(st,n){st.intD=String((parseInt(st.intD||'0',10)||0)+n);}
-function kSoma(n){kSomaEm(S,n);}
+/* kSomaEm/kSoma saíram na v33 junto com os botões +10/+50/+100: sem eles,
+   ninguém mais chamava. Código que não faz nada não fica. */
 /* Objeto de digitação já preenchido com um valor que existe (edição). O sinal
    vem do próprio valor, nunca de um parâmetro à parte — foi assim que a v11
    evitou o "− -250,00". */
 function estadoValor(cents){
   var a=Math.abs(cents||0);
+  /* v33: abre em 'cent', ou seja, com o cursor NO FIM do número.
+     Abrindo em 'reais', o apagar comia os reais da direita para a esquerda e
+     NUNCA chegava nos centavos: de 280,50 você ia para 28,50, 2,50, 0,50 — e o
+     ",50" ficava grudado para sempre. Era o defeito que mais incomodava, e ele
+     estava numa única palavra. */
   return {intD:String(Math.floor(a/100)),centD:('0'+(a%100)).slice(-2),
-          modo:'reais',sinal:(cents<0?-1:1),semeado:true};
+          modo:'cent',sinal:(cents<0?-1:1),semeado:true};
 }
 
 /* ---------------- render ---------------- */
@@ -2529,22 +2564,28 @@ function blocoValor(st,cfg){
   var amt=el('<div class="amount"><div class="k">'+
     (cfg.rotulo||('Valor da '+(cfg.ent?'entrada':'saída')))+'</div>'+
     '<div class="n"><span class="cur">R$</span><span class="fig"><span class="int">0</span>'+
-    '<span class="dec">,00</span></span></div></div>');
+    '<span class="dec">,<span class="tip"></span><span class="imp">00</span></span>'+
+    '</span></div></div>');
   var rFig=amt.querySelector('.fig'),rInt=amt.querySelector('.int'),rDec=amt.querySelector('.dec');
+  var rTip=rDec.querySelector('.tip'),rImp=rDec.querySelector('.imp');
   var rN=amt.querySelector('.n'),rCur=amt.querySelector('.cur');
   var rPar=el('<div class="parc" hidden></div>');
   amt.appendChild(rPar);
 
   var pad=el('<div class="pad"><div class="quick"></div><div class="keys"></div></div>');
   var q=pad.querySelector('.quick'),k=pad.querySelector('.keys');
-  [10,50,100].forEach(function(v){
-    var b=el('<button>+'+v+'</button>');
-    b.onclick=function(){kSomaEm(st,v);upd();};
-    q.appendChild(b);
-  });
-  /* O ± fica na mesma fileira dos somadores, mas separado por um respiro: os três
-     primeiros SOMAM dinheiro, o ± INVERTE o sentido. Encostados, pareceriam a
-     mesma coisa. */
+  /* v33: os somadores +10/+50/+100 saíram. Eram três botões que ele não usava,
+     e ocupavam a fileira inteira — espremer um C ali ao lado deles daria cinco
+     controles de 58,6px. Sem eles o C vai para o canto de cima à esquerda, que
+     é onde a calculadora o põe, e a fileira volta a ter dois controles folgados.
+     Voltar atrás é devolver estas sete linhas: nada mais depende delas. */
+  var rLim=el('<button class="lim" aria-label="Limpar o valor">C</button>');
+  rLim.onclick=function(){
+    st.intD='';st.centD='';st.modo='reais';st.semeado=false;upd();
+  };
+  q.appendChild(rLim);
+  /* O respiro continua: o C LIMPA, o ± INVERTE. Encostados, pareceriam a mesma
+     família. */
   q.appendChild(el('<span class="gap"></span>'));
   var rSig=el('<button class="sig" aria-pressed="false" aria-label="Inverter o sinal">±</button>');
   rSig.onclick=function(){
@@ -2565,16 +2606,19 @@ function blocoValor(st,cfg){
     else{b=el('<button class="key">'+d+'</button>');b.onclick=function(){kDigEm(st,d);upd();};}
     k.appendChild(b);
   });
-  var rGo=k.querySelector('.go'),rVir=k.querySelector('.comma');
+  /* `rVir` saiu daqui: a única coisa que se fazia com ele era desabilitá-lo. */
+  var rGo=k.querySelector('.go');
 
   function upd(){
     var t=centsDe(st),neg=(st.sinal<0);
     rInt.textContent=fmtIntDe(st);
-    rDec.textContent=','+decDe(st);
+    var dp=decPartesDe(st);
+    rTip.textContent=dp.tip;rImp.textContent=dp.imp;
     rDec.classList.toggle('typed',decDigitadoDe(st));
     rFig.classList.toggle('zero',t===0);
     rGo.disabled=(t===0&&!cfg.zeroOk);
-    rVir.disabled=(st.modo==='cent');
+    /* v33: a vírgula NUNCA desabilita — ver kVirgEm. */
+    rLim.disabled=(t===0&&!st.intD);
     /* Três avisos ao mesmo tempo para o estorno, em três lugares da tela: o
        número, o próprio ± e o botão de confirmar. Um toque sem querer no ± tem
        de ser impossível de não ver. */
@@ -2586,7 +2630,7 @@ function blocoValor(st,cfg){
     rGo.classList.toggle('dan',neg);
     if(cfg.onUpd)cfg.onUpd(st,{par:rPar,go:rGo});
   }
-  return {amt:amt,pad:pad,upd:upd,par:rPar,go:rGo,sig:rSig};
+  return {amt:amt,pad:pad,upd:upd,par:rPar,go:rGo,sig:rSig,lim:rLim};
 }
 
 /* ============================================================
@@ -3551,6 +3595,30 @@ var toastTimer=null;
 function fecharFolhas(){
   Array.prototype.slice.call(layers.querySelectorAll('.scrim,.sheet')).forEach(function(n){n.remove();});
 }
+/* ============================================================
+   repintar: a peça que faltava para "lista -> item" (v33)
+   ------------------------------------------------------------
+   O app abria o item com `fecharFolhas(); folhaItem(...)` — ou seja,
+   DESTRUÍA a lista para pôr o item no lugar dela. Salvar fechava o item e
+   você caía na aba, duas telas abaixo de onde estava.
+
+   A peça certa já existia: `folhaSobre()` empilha e fecha só a si mesma. Só
+   faltava a de baixo saber se redesenhar, porque o item que você acabou de
+   salvar mudou a linha dela. `repintar()` esvazia o corpo e roda o `montar`
+   de novo — a mesma função que construiu a folha na primeira vez, então não
+   há um segundo jeito de desenhar a lista que possa divergir do primeiro.
+
+   É isto que apaga o remendo da folha de sub-categorias, que tinha um botão
+   "voltar" feito à mão só para RECONSTRUIR a lista de categorias destruída.
+   ============================================================ */
+function ligarRepintar(sh,montar,fechar){
+  sh.repintar=function(){
+    var b=sh.querySelector('.sheet-b');
+    b.innerHTML='';
+    montar(b,fechar||sh);
+  };
+  return sh;
+}
 function folha(titulo,montar,opts){
   opts=opts||{};
   var scrim=el('<div class="scrim"></div>');
@@ -3567,7 +3635,7 @@ function folha(titulo,montar,opts){
   }
   montar(sh.querySelector('.sheet-b'),sh);
   layers.appendChild(scrim);layers.appendChild(sh);
-  return sh;
+  return ligarRepintar(sh,montar,sh);
 }
 /* Folha EMPILHADA: fecha só a si mesma, deixando a de baixo aberta.
    `folha()` usa `fecharFolhas()`, que varre tudo — o que está certo para o fluxo
@@ -3628,7 +3696,8 @@ function folhaSobre(titulo,montar,opts){
     scrim.onclick=fechar;
     sh.querySelector('.sa').onclick=function(){fechar();if(opts.aoFechar)opts.aoFechar();};
   }
-  return {sh:sh,fechar:function(){fechar();}};
+  ligarRepintar(sh,montar,function(){fechar();});
+  return {sh:sh,fechar:function(){fechar();},repintar:function(){sh.repintar();}};
 }
 
 /* Folha de valor: o visor e o teclado da tela de registro, usados para editar um
@@ -3688,11 +3757,14 @@ function alerta(titulo,msg){
     ok.onclick=fecharFolhas;b.appendChild(ok);
   },{cancelar:'Fechar'});
 }
-function confirmar2(titulo,msg,rotulo,perigo,fn){
-  folha(titulo,function(b){
+/* `pai`: quando a confirmação nasce de dentro de uma pilha de folhas, ela
+   empilha e fecha só a si mesma — senão levaria a lista embora junto com o
+   item que você acabou de excluir. */
+function confirmar2(titulo,msg,rotulo,perigo,fn,pai){
+  var f=(pai?folhaSobre:folha)(titulo,function(b){
     b.appendChild(el('<div class="hint" style="font-size:14.5px;padding:2px 4px 14px">'+esc(msg)+'</div>'));
     var ok=el('<button class="btnfull'+(perigo?' dan':'')+'">'+esc(rotulo)+'</button>');
-    ok.onclick=function(){fecharFolhas();fn();};
+    ok.onclick=function(){if(pai){f.fechar();}else{fecharFolhas();}fn();};
     b.appendChild(ok);
     /* v21 (item 27): o "Cancelar" de baixo saiu — o cabeçalho desta folha já
        cancela, e dois jeitos de desistir na mesma tela é ruído, não escolha. */
@@ -4232,7 +4304,9 @@ function resumoMolde(r){
 }
 
 function folhaRecorrentes(){
-  folha('Recorrentes',function(b){
+  /* v33: `lista` é usada lá dentro, nos cliques, que só acontecem DEPOIS de a
+     folha existir. O `var` é içado, então a referência resolve no toque. */
+  var lista=folha('Recorrentes',function(b){
     var L=DB.rec||[];
     if(!L.length){
       b.appendChild(el('<div class="hint" style="font-size:14.5px;padding:2px 4px 14px">'+
@@ -4262,7 +4336,7 @@ function folhaRecorrentes(){
           '<div class="right"><span class="tnum'+(ent?' vin':'')+'">'+
           (ent?brlSinRS(r.v):('R$ '+brl(r.v)))+'</span>'+
           ICO.chev+'</div></button>');
-        o.onclick=function(){fecharFolhas();folhaMolde(r);};
+        o.onclick=function(){folhaMolde(r,null,lista);};
         w.appendChild(o);
       });
       b.appendChild(w);
@@ -4270,13 +4344,16 @@ function folhaRecorrentes(){
         'confirmação o app sugere o do último mês.</div>'));
     }
     var nova=el('<button class="btnfull sec">Nova recorrente</button>');
-    nova.onclick=function(){fecharFolhas();folhaMolde(null);};
+    nova.onclick=function(){folhaMolde(null,null,lista);};
     b.appendChild(nova);
   },{cancelar:'Fechar'});
 }
 
-/* Cria ou edita um molde. `base` prefixa os campos quando vem de um lançamento. */
-function folhaMolde(r,base){
+/* Cria ou edita um molde. `base` prefixa os campos quando vem de um lançamento.
+   `pai`, quando vem, é a folha de onde você saiu: o molde EMPILHA sobre ela e,
+   ao salvar, devolve você para lá repintada — em vez de fechar as duas e te
+   deixar na aba, duas telas abaixo de onde estava. */
+function folhaMolde(r,base,pai){
   /* Sem categoria ativa não há molde possível, e a linha abaixo fazia
      catsOrdenadas(false)[0].id estourar — a folha nem abria, sem mensagem.
      A tela de registro já trata esse mesmo estado; aqui faltava. */
@@ -4291,7 +4368,12 @@ function folhaMolde(r,base){
          :{n:(base&&base.n)||'',cat:(base&&base.cat)||catsOrdenadas(false)[0].id,
            sub:(base&&base.sub)||null,v:(base&&base.v)||0,fixo:true,freq:'mensal',
            dia:(base&&base.dia)||(+hoje().slice(8)),mes:+hoje().slice(5,7),ate:null};
-  folha(novo?'Nova recorrente':esc(t.n||'Recorrente'),function(b,sh){
+  /* uma só saída, para os seis lugares que terminam a folha */
+  function sair(){
+    if(pai){f.fechar();pai.repintar();}else{fecharFolhas();}
+    render();
+  }
+  var f=(pai?folhaSobre:folha)(novo?'Nova recorrente':esc(t.n||'Recorrente'),function(b,sh){
     var fn=el('<div class="field"><span class="k">Nome</span><input type="text" maxlength="40" value="'+esc(t.n)+'"></div>');
     var fc=el('<button class="field row"><span><span class="k">Categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
     var fs=el('<button class="field row"><span><span class="k">Sub-categoria</span><span class="v"></span></span>'+ICO.chev+'</button>');
@@ -4373,11 +4455,25 @@ function folhaMolde(r,base){
       });
       sub2.scrollIntoView({block:'nearest'});
     }
+    /* v33: o NOME de um recorrente criado a partir de um lançamento nasce com o
+       nome da sub-categoria — e congela ali. Trocando a sub, o emoji (que é
+       derivado) mudava e o nome não, e a lista mostrava "🍻 Almoço no trabalho".
+
+       A regra: o nome acompanha a sub ENQUANTO for só o eco dela. Se você já o
+       personalizou, ele é seu e não se mexe. E a troca acontece AQUI, no campo,
+       na hora em que você escolhe — não escondida no salvar. Você vê o nome
+       mudar e pode escrever outra coisa por cima antes de confirmar. */
+    function seguirNome(catAnt,subAnt){
+      var inp=fn.querySelector('input');
+      if(inp.value.trim()!==nomeSub(catAnt,subAnt))return;   /* é seu: não mexo */
+      inp.value=t.sub?nomeSub(t.cat,t.sub):'';
+    }
     fc.onclick=function(){escolhaEmLinha(catsOrdenadas(true),function(c){return c.c;},
-      function(c){t.cat=c.id;t.sub=null;});};
+      function(c){var ca=t.cat,sa=t.sub;t.cat=c.id;t.sub=null;seguirNome(ca,sa);});};
     fs.onclick=function(){
       var c=cat(t.cat);if(!c||!c.subs.length)return;
-      escolhaEmLinha(c.subs,function(){return c.c;},function(s){t.sub=s.id;});
+      escolhaEmLinha(c.subs,function(){return c.c;},
+        function(sNovo){var ca=t.cat,sa=t.sub;t.sub=sNovo.id;seguirNome(ca,sa);});
     };
     function pinta(){
       fc.querySelector('.v').textContent=nomeCat(t.cat);
@@ -4434,7 +4530,7 @@ function folhaMolde(r,base){
           if(orig){orig.rec=antesOrig.rec;orig.comp=antesOrig.comp;}
           return;
         }
-        fecharFolhas();render();
+        sair();
         toast('Recorrente criada',
           r2.n+' · '+resumoMolde(r2)+(orig?' · este lançamento virou a 1ª confirmação':''),
           'Desfazer',function(){
@@ -4451,7 +4547,7 @@ function folhaMolde(r,base){
         if(etqAtual.length)r.etq=etqAtual.slice();else delete r.etq;
         r.desc=ft.querySelector('input').value||'';
         if(!salvar()){for(var k in antes)r[k]=antes[k];return;}
-        fecharFolhas();render();
+        sair();
         toast('Recorrente atualizada',r.n+' · '+resumoMolde(r),'Desfazer',function(){
           for(var k2 in antes)r[k2]=antes[k2];salvar();render();});
       }
@@ -4473,7 +4569,7 @@ function folhaMolde(r,base){
           o.onclick=function(){
             reativarComp(r,m);
             if(!salvar()){pularComp(r,m);return;}
-            fecharFolhas();render();
+            sair();
             toast('Mês reativado',r.n+' · '+mesLabel(m)+' voltou para pendente','Desfazer',
               function(){pularComp(r,m);salvar();render();});
           };
@@ -4488,24 +4584,28 @@ function folhaMolde(r,base){
         if(r.ate){
           var antes2=r.ate;r.ate=null;
           if(!salvar()){r.ate=antes2;return;}
-          fecharFolhas();render();
+          sair();
           toast('Recorrente reativada',r.n+' volta a ser cobrada','Desfazer',function(){
             r.ate=antes2;salvar();render();});
-        }else{fecharFolhas();folhaEncerrar(r);}
+        }else{folhaEncerrar(r,pai||f);}
       };
       b.appendChild(enc);
       var del=el('<button class="btnfull dan">Excluir recorrência</button>');
-      del.onclick=function(){fecharFolhas();excluirMolde(r);};
+      del.onclick=function(){excluirMolde(r,pai||f);};
       b.appendChild(del);
     }
-  },{acao:null});
+  },{acao:null,cancelar:'Cancelar'});
 }
 
-function folhaEncerrar(r){
+function folhaEncerrar(r,pai){
   var mk=mkey(hoje());
   var abertas=pendentes().filter(function(x){return x.rec===r.id;}).length;
   var conf=confirmadosDe(r.id);
-  folha('Encerrar '+r.n+'?',function(b){
+  function sair(){
+    if(pai){f.fechar();pai.repintar();}else{fecharFolhas();}
+    render();
+  }
+  var f=(pai?folhaSobre:folha)('Encerrar '+r.n+'?',function(b){
     b.appendChild(el('<div class="hint" style="font-size:14.5px;padding:2px 4px 12px">'+
       'Ele deixa de aparecer para confirmação a partir do mês escolhido.</div>'));
     /* v26 (item 50): era um <select> de meses, ou seja, a roda do iOS. */
@@ -4542,7 +4642,7 @@ function folhaEncerrar(r){
          novembro" grava outubro. */
       r.ate=addMes(escolhido,-1);
       if(!salvar()){r.ate=antes;return;}
-      fecharFolhas();render();
+      sair();
       toast('Recorrente encerrada',r.n+' não aparece mais a partir de '+mesLabel(escolhido),'Desfazer',
         function(){r.ate=antes;salvar();render();});
     };
@@ -4552,23 +4652,27 @@ function folhaEncerrar(r){
   });
 }
 
-function excluirMolde(r){
+function excluirMolde(r,pai){
   var conf=confirmadosDe(r.id);
-  folha('Excluir '+r.n+'?',function(b){
+  function sair(){
+    if(pai){f.fechar();pai.repintar();}else{fecharFolhas();}
+    render();
+  }
+  var f=(pai?folhaSobre:folha)('Excluir '+r.n+'?',function(b){
     b.appendChild(el('<div class="hint" style="font-size:14.5px;padding:2px 4px 14px">'+
       'Os <b>'+conf+(conf===1?' lançamento já confirmado continua':' lançamentos já confirmados continuam')+
       '</b> na sua lista. Some só o molde e as pendências ainda não confirmadas.<br><br>'+
       'Para uma recorrência que simplesmente acabou, <b>encerrar</b> é melhor: guarda a '+
       'configuração e o histórico, e dá para reativar.</div>'));
     var enc=el('<button class="btnfull sec">Encerrar em vez de excluir</button>');
-    enc.onclick=function(){fecharFolhas();folhaEncerrar(r);};
+    enc.onclick=function(){if(pai){f.fechar();}else{fecharFolhas();}folhaEncerrar(r,pai);};
     b.appendChild(enc);
     var ok=el('<button class="btnfull dan">Excluir a recorrência</button>');
     ok.onclick=function(){
       var i=DB.rec.indexOf(r);if(i<0)return;
       DB.rec.splice(i,1);
       if(!salvar()){DB.rec.splice(i,0,r);return;}
-      fecharFolhas();render();
+      sair();
       toast('Recorrente excluída',conf?(conf+(conf===1?' lançamento mantido':' lançamentos mantidos')):'Nenhum lançamento afetado','Desfazer',
         function(){DB.rec.splice(i,0,r);salvar();render();});
     };
@@ -6201,24 +6305,28 @@ function folhaFrequencia(){
 
 /* ---------------- categorias e sub-categorias ---------------- */
 function folhaCategorias(){
-  folha('Categorias',function(b){
+  var lista=folha('Categorias',function(b){
     var w=el('<div class="optwrap"></div>');
     catsOrdenadas(true).forEach(function(c){
       var na=c.subs.filter(function(s){return !s.arq;}).length;
       var o=el('<button class="opt" style="--c:'+c.c+'"><span class="ic">'+c.e+'</span>'+
         '<span class="nm">'+esc(c.n)+(c.arq?' · arquivada':'')+'<small>'+na+(na===1?' sub-categoria':' sub-categorias')+'</small></span>'+ICO.chev+'</button>');
-      o.onclick=function(){fecharFolhas();folhaEditarCat(c);};
+      o.onclick=function(){folhaEditarCat(c,lista);};
       w.appendChild(o);
     });
     b.appendChild(w);
     var nv=el('<button class="btnfull sec">Criar categoria</button>');
-    nv.onclick=function(){fecharFolhas();folhaEditarCat(null);};
+    nv.onclick=function(){folhaEditarCat(null,lista);};
     b.appendChild(nv);
   },{cancelar:'Fechar'});
 }
-function folhaEditarCat(c){
+function folhaEditarCat(c,pai){
   var novo=!c;
-  folha(novo?'Nova categoria':'Editar categoria',function(b){
+  function sair(){
+    if(pai){fEd.fechar();pai.repintar();}else{fecharFolhas();}
+    render();
+  }
+  var fEd=(pai?folhaSobre:folha)(novo?'Nova categoria':'Editar categoria',function(b){
     var fn=el('<div class="field"><div class="k">Nome</div><input maxlength="40" value="'+esc(novo?'':c.n)+'" placeholder="Ex.: Educação"></div>');
     var fe=el('<div class="field"><div class="k">Emoji</div><input maxlength="4" value="'+esc(novo?'🏷️':c.e)+'"></div>');
     /* O tipo trava assim que existe lançamento: virar uma categoria de saída em
@@ -6274,22 +6382,22 @@ function folhaEditarCat(c){
         c.n=nome;c.e=emo;c.c=cor;
         if(!jaUsada)c.tipo=tp;   /* travado quando já há lançamento */
       }
-      salvar();fecharFolhas();render();
+      salvar();sair();
     };
     b.appendChild(ok);
 
     if(!novo){
       var subs=el('<button class="btnfull sec">Sub-categorias ('+c.subs.length+')</button>');
-      subs.onclick=function(){fecharFolhas();folhaSubsDe(c);};
+      subs.onclick=function(){folhaSubsDe(c,pai||fEd);};
       b.appendChild(subs);
       var usada=DB.exp.some(function(e){return e.cat===c.id;});
       var arq=el('<button class="btnfull sec">'+(c.arq?'Reativar categoria':'Arquivar categoria')+'</button>');
-      arq.onclick=function(){c.arq=!c.arq;salvar();fecharFolhas();render();};
+      arq.onclick=function(){c.arq=!c.arq;salvar();sair();};
       b.appendChild(arq);
       var del=el('<button class="btnfull dan">Excluir categoria</button>');
       del.onclick=function(){
         if(usada){
-          fecharFolhas();
+          sair();
           alerta('Não dá para excluir','Existem lançamentos nesta categoria. Excluí-la apagaria o histórico deles. Arquive: ela some da tela de registro e continua aparecendo nos resumos antigos.');
           return;
         }
@@ -6302,7 +6410,8 @@ function folhaEditarCat(c){
           for(k=0;k<DB.cats.length;k++)if(DB.cats[k].id===c.id){iCat=k;copia=DB.cats[k];break;}
           DB.cats=DB.cats.filter(function(x){return x.id!==c.id;});
           DB.ordem=DB.ordem.filter(function(x){return x!==c.id;});
-          salvar();render();
+          salvar();
+          if(pai)sair();else render();
           toast('Categoria excluída',c.n+' · '+(copia&&copia.subs?copia.subs.length:0)+
             ((copia&&copia.subs&&copia.subs.length===1)?' sub-categoria':' sub-categorias'),
             'Desfazer',function(){
@@ -6311,35 +6420,41 @@ function folhaEditarCat(c){
               DB.ordem.splice(Math.min(Math.max(iOrd,0),DB.ordem.length),0,c.id);
               salvar();render();
             });
-        });
+        },pai&&fEd);
       };
       b.appendChild(del);
       if(usada)b.appendChild(el('<div class="hint">Esta categoria tem lançamentos: só pode ser arquivada.</div>'));
     }
   });
 }
-function folhaSubsDe(c){
-  folha('Sub-categorias · '+c.n,function(b){
+function folhaSubsDe(c,pai){
+  var lista=(pai?folhaSobre:folha)('Sub-categorias · '+c.n,function(b){
     var w=el('<div class="optwrap"></div>');
     c.subs.forEach(function(s){
       var o=el('<button class="opt" style="--c:'+c.c+'"><span class="ic">'+s.e+'</span>'+
         '<span class="nm">'+esc(s.n)+(s.arq?' · arquivada':'')+'</span>'+ICO.chev+'</button>');
-      o.onclick=function(){fecharFolhas();folhaEditarSub(c,s);};
+      o.onclick=function(){folhaEditarSub(c,s,lista);};
       w.appendChild(o);
     });
     b.appendChild(w);
     if(!c.subs.length)b.appendChild(el('<div class="hint" style="padding-top:0">Sem sub-categorias. O passo da sub-categoria é pulado nesta categoria.</div>'));
     var nv=el('<button class="btnfull sec">Criar sub-categoria</button>');
-    nv.onclick=function(){fecharFolhas();folhaEditarSub(c,null);};
+    nv.onclick=function(){folhaEditarSub(c,null,lista);};
     b.appendChild(nv);
-    var vt=el('<button class="btnfull sec">Voltar às categorias</button>');
-    vt.onclick=function(){fecharFolhas();folhaCategorias();};
-    b.appendChild(vt);
+    /* v33: aqui havia um "Voltar às categorias" feito à mão, que CHAMAVA
+       folhaCategorias() de novo para reconstruir a lista que tinha sido
+       destruída ao abrir esta. Com a pilha, a lista de categorias continua
+       aberta embaixo e o "Cancelar" do cabeçalho já volta para ela: o botão
+       virou um segundo jeito de fazer a mesma coisa, e saiu. */
   },{cancelar:'Fechar'});
 }
-function folhaEditarSub(c,s){
+function folhaEditarSub(c,s,pai){
   var novo=!s;
-  folha(novo?'Nova sub-categoria':'Editar sub-categoria',function(b){
+  function sair(){
+    if(pai){f.fechar();pai.repintar();}else{fecharFolhas();}
+    render();
+  }
+  var f=(pai?folhaSobre:folha)(novo?'Nova sub-categoria':'Editar sub-categoria',function(b){
     var fn=el('<div class="field"><div class="k">Nome</div><input maxlength="48" value="'+esc(novo?'':s.n)+'"></div>');
     var fe=el('<div class="field"><div class="k">Emoji</div><input maxlength="4" value="'+esc(novo?'🔖':s.e)+'"></div>');
     b.appendChild(fn);b.appendChild(fe);
@@ -6380,19 +6495,20 @@ function folhaEditarSub(c,s){
           destino.subs.push(s);
         }
       }
-      salvar();fecharFolhas();render();
+      salvar();sair();
     };
     b.appendChild(ok);
     if(!novo){
       var usada=DB.exp.some(function(e){return e.sub===s.id;});
       var arq=el('<button class="btnfull sec">'+(s.arq?'Reativar':'Arquivar')+'</button>');
-      arq.onclick=function(){s.arq=!s.arq;salvar();fecharFolhas();render();};
+      arq.onclick=function(){s.arq=!s.arq;salvar();sair();};
       b.appendChild(arq);
       var del=el('<button class="btnfull dan">Excluir sub-categoria</button>');
       del.onclick=function(){
-        if(usada){fecharFolhas();alerta('Não dá para excluir','Existem lançamentos nesta sub-categoria. Arquive em vez de excluir — o histórico continua correto.');return;}
+        if(usada){if(pai){f.fechar();}else{fecharFolhas();}alerta('Não dá para excluir','Existem lançamentos nesta sub-categoria. Arquive em vez de excluir — o histórico continua correto.');return;}
         confirmar2('Excluir '+s.n+'?','Nenhum lançamento usa esta sub-categoria.','Excluir',true,function(){
-          c.subs=c.subs.filter(function(x){return x.id!==s.id;});salvar();render();});
+          c.subs=c.subs.filter(function(x){return x.id!==s.id;});salvar();
+          if(pai)sair();else render();},pai&&f);
       };
       b.appendChild(del);
     }
