@@ -37,8 +37,17 @@
   --line:#E5E5EA;
   --line2:#D1D1D6;
   --tint:#0064D8;
+  /* v38 (item 60) — CORES DE FUNDO TÊM TOKEN PRÓPRIO.
+     `--tint` e `--danger` faziam DOIS trabalhos: cor de texto e fundo de texto
+     branco. No tema claro os dois cabem na mesma cor; no escuro não cabem, e é
+     por isso que o escuro tinha treze contrastes abaixo da régua.
+     A regra que nasce aqui: NENHUMA COR É AO MESMO TEMPO COR DE TEXTO E FUNDO
+     DE TEXTO BRANCO. Quem é fundo de texto branco tem `-solid` no nome.
+     No claro os dois valem a cor de sempre: aqui nada muda de aparência. */
+  --tint-solid:#0064D8;
   --tint-soft:rgba(0,100,216,.12);
   --danger:#D70015;
+  --danger-solid:#D70015;
   --warn:#B25000;
   --ok:#0B7A34;
   --shadow:0 1px 2px rgba(0,0,0,.04);
@@ -59,8 +68,14 @@
     --line:#38383A;
     --line2:#48484A;
     --tint:#0A84FF;
+    /* v38 (item 60): branco sobre #0A84FF dá 3,65:1 e sobre #FF6961 dá 2,82:1 —
+       os dois reprovam. Escurecidos, dão 5,82:1 e 5,49:1. `--tint` e `--danger`
+       NÃO mudam: como TEXTO eles passam (4,66:1 e 6,03:1), e escurecê-los
+       quebraria justamente o que já funciona. */
+    --tint-solid:#0B63C5;
     --tint-soft:rgba(10,132,255,.20);
     --danger:#FF6961;
+    --danger-solid:#C2342F;
     --warn:#FFB340;
     --ok:#30D158;
     --shadow:none;
@@ -79,8 +94,14 @@
   --line:#38383A;
   --line2:#48484A;
   --tint:#0A84FF;
+    /* v38 (item 60): branco sobre #0A84FF dá 3,65:1 e sobre #FF6961 dá 2,82:1 —
+       os dois reprovam. Escurecidos, dão 5,82:1 e 5,49:1. `--tint` e `--danger`
+       NÃO mudam: como TEXTO eles passam (4,66:1 e 6,03:1), e escurecê-los
+       quebraria justamente o que já funciona. */
+    --tint-solid:#0B63C5;
   --tint-soft:rgba(10,132,255,.20);
   --danger:#FF6961;
+    --danger-solid:#C2342F;
   --warn:#FFB340;
   --ok:#30D158;
   --shadow:none;
@@ -266,7 +287,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    senão a pílula empurraria a coluna e desalinharia a barra inteira. */
 .tab .tw{position:relative;display:block;width:22px;height:22px}
 .tab .pill{
-  position:absolute;top:-4px;left:12px;background:var(--danger);color:#fff;
+  position:absolute;top:-4px;left:12px;background:var(--danger-solid);color:#fff;
   font-size:11px;font-weight:700;line-height:1;border-radius:10px;padding:2px 4px;
   min-width:14px;text-align:center;letter-spacing:0;
 }
@@ -345,7 +366,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .chips.q4 .chip{padding:8px 8px}
 /* v27: o separador entre as categorias e as etiquetas, na faixa de filtros */
 .fsep{flex:0 0 1px;width:1px;align-self:center;height:20px;background:var(--line2);margin:0 3px}
-.fchip.etq[aria-pressed="true"]{background:var(--tint);color:#fff}
+.fchip.etq[aria-pressed="true"]{background:var(--tint-solid);color:#fff}
 
 .chip{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:8px 12px;min-width:0}
 .chip .k{display:block;font-size:11px;color:var(--muted2);
@@ -378,7 +399,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .key.back{color:var(--tint)}
 .key.back svg{width:27px;height:27px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .key.go{
-  grid-column:1/-1;background:var(--tint);color:#fff;font-size:17px;font-weight:600;
+  grid-column:1/-1;background:var(--tint-solid);color:#fff;font-size:17px;font-weight:600;
   padding:16px 0;border-radius:14px;letter-spacing:-.01em;box-shadow:none;
 }
 .key.go:disabled{background:var(--fill2);color:var(--muted2);opacity:1;box-shadow:none}
@@ -447,11 +468,11 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   font-size:13px;font-weight:500;white-space:nowrap;display:flex;align-items:center;gap:6px;
   min-height:44px;   /* v31: a única exceção da régua de alvos — ver a seção no fim */
 }
-.fchip[aria-pressed="true"]{background:var(--tint);color:#fff}
+.fchip[aria-pressed="true"]{background:var(--tint-solid);color:#fff}
 .fchip .sw{width:8px;height:8px;border-radius:3px;background:var(--sw);flex:none}
 .fchip[aria-pressed="true"] .sw{background:rgba(255,255,255,.85)}
 .fchip.filt{color:var(--tint)}
-.fchip.filt[data-on="1"]{background:var(--tint);color:#fff}
+.fchip.filt[data-on="1"]{background:var(--tint-solid);color:#fff}
 .fchip.limpar{background:var(--tint-soft);color:var(--tint);font-weight:600}
 /* Chip só de ícone: o ✕ precisa da largura mínima, a altura vem da régua de
    alvos no fim da folha. */
@@ -461,9 +482,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .fchip .xs{width:11px;height:11px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round}
 .fchip .fn{width:13px;height:13px;stroke:currentColor;stroke-width:1.9;fill:none;
   stroke-linejoin:round;stroke-linecap:round}
-.fchip .ct{background:var(--tint);color:#fff;border-radius:10px;min-width:16px;height:16px;
+.fchip .ct{background:var(--tint-solid);color:#fff;border-radius:10px;min-width:16px;height:16px;
   display:grid;place-items:center;font-size:11px;font-weight:700;padding:0 4px}
-.fchip.filt[data-on="1"] .ct{background:#fff;color:var(--tint)}
+.fchip.filt[data-on="1"] .ct{background:#fff;color:var(--tint-solid)}
 
 /* O período era um texto solto de 20px entre duas setas: sem fundo, sem
    chevron, sem nada que dissesse "toque aqui" — e é o ÚNICO caminho para
@@ -500,7 +521,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .dayhd .t{font-size:12px;color:var(--muted2);font-variant-numeric:tabular-nums}
 .swipe{position:relative;overflow:hidden}
 .swipe .del{
-  position:absolute;inset:0;background:var(--danger);color:#fff;
+  position:absolute;inset:0;background:var(--danger-solid);color:#fff;
   display:flex;align-items:center;justify-content:flex-end;
   padding:0 26px;font-size:15px;font-weight:600;white-space:nowrap;
 }
@@ -780,7 +801,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
   font-variant-numeric:tabular-nums;color:var(--ink)}
 .parcgrid button:active{background:var(--fill2)}
 .parcgrid button small{display:block;font-size:11px;font-weight:500;color:var(--muted2);margin-top:2px}
-.parcgrid button[aria-pressed="true"]{background:var(--tint);color:#fff;box-shadow:none}
+.parcgrid button[aria-pressed="true"]{background:var(--tint-solid);color:#fff;box-shadow:none}
 .parcgrid button[aria-pressed="true"] small{color:rgba(255,255,255,.82)}
 /* revisão de recorrentes */
 .rrev{display:grid;grid-template-columns:34px minmax(0,1fr) auto 26px;gap:10px;align-items:center;
@@ -802,7 +823,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .rrev button.vin{min-height:44px;color:var(--ink)}
 .rrev button.vin:active{opacity:.6}
 .rrev .ck{width:24px;height:24px;border-radius:999px;display:grid;place-items:center;
-  background:var(--tint);color:#fff;font-size:13px;font-weight:700}
+  background:var(--tint-solid);color:#fff;font-size:13px;font-weight:700}
 .rrev[aria-pressed="false"] .ck{background:var(--fill2);color:transparent}
 .rrev[aria-pressed="false"] .nm,.rrev[aria-pressed="false"] .vl{color:var(--muted2)}
 /* v32: a linha que explica o estado do meio. O vermelho continua, porque
@@ -877,13 +898,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .banner.calmo .ba{background:var(--fill);color:var(--tint)}
 .banner .bt{font-size:13px;font-weight:600;letter-spacing:-.01em}
 .banner .bs{font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.4}
-.banner .ba{background:var(--tint);color:#fff;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.banner .ba{background:var(--tint-solid);color:#fff;border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;white-space:nowrap}
 .banner .bx{color:var(--muted2);padding:6px;margin:-6px}
 
 .empty{padding:44px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
 .empty .e1{font-size:17px;font-weight:600;letter-spacing:-.02em}
 .empty .e2{font-size:13px;color:var(--muted2);max-width:32ch;line-height:1.45}
-.empty .eb{margin-top:6px;background:var(--tint);color:#fff;border-radius:999px;padding:10px 20px;font-size:15px;font-weight:600}
+.empty .eb{margin-top:6px;background:var(--tint-solid);color:#fff;border-radius:999px;padding:10px 20px;font-size:15px;font-weight:600}
 .empty.alert .e1{color:var(--danger)}
 
 #toast{
@@ -994,7 +1015,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .field.row.col{grid-template-columns:minmax(0,1fr) auto;padding:10px 10px;margin-bottom:0}
 .field.row.col .v{font-size:15px}
 .btnfull{
-  display:block;width:100%;text-align:center;background:var(--tint);color:#fff;
+  display:block;width:100%;text-align:center;background:var(--tint-solid);color:#fff;
   border-radius:14px;padding:12px;font-size:17px;font-weight:600;margin-top:6px;
 }
 .btnfull.sec{background:var(--fill2);color:var(--tint)}
@@ -1029,7 +1050,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .cday.fim i{border-radius:0 14px 14px 0;right:3px}
 .cday b{position:relative;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;
   font-size:15px;font-weight:400;font-variant-numeric:tabular-nums}
-.cday.ponta b{background:var(--tint);color:#fff;font-weight:600}
+.cday.ponta b{background:var(--tint-solid);color:#fff;font-weight:600}
 .cday.hoje b{box-shadow:inset 0 0 0 1.5px var(--tint)}
 .cday.hoje.ponta b{box-shadow:none}
 .cday.out{pointer-events:none}
@@ -1169,6 +1190,69 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
    cresce para os lados, senão o dedo acerta a altura e erra a coluna. */
 .calhd .pb::after,.periodbar .pb::after{left:-5px;right:-5px}
 
+/* ============================================================
+   v37 — O CABEÇALHO DA TELA LANÇAMENTOS
+
+   Período, chips e total passaram a morar DENTRO do contêiner que rola. O
+   encolhimento, portanto, é rolagem normal: eles saem de cena 1 para 1 com o
+   dedo, sem transição, sem listener e sem estado. Não há código sustentando a
+   parte que mais importa — é por isso que ela não pode quebrar.
+   ============================================================ */
+.scroll.lst{padding:0}
+.scroll.lst .lista{padding:0 16px 24px}
+/* A barra de total GRUDA no topo. O invólucro existe para a cor: a barra tem
+   16px de margem de cada lado, e sem ele a lista apareceria rolando por baixo
+   nessas duas frestas. */
+.scroll.lst .totwrap{position:sticky;top:0;z-index:3;
+  /* A ALTURA É PRESA EM JS, na forma aberta (ver ligarEncolher): comprimir
+     passa a acontecer DENTRO de uma caixa que não muda de tamanho, e por isso
+     não mexe em layout nenhum. O espaço que sobra fica transparente e a lista
+     rola por baixo — não há fundo aqui de propósito.
+     `pointer-events` volta no cartão: a faixa transparente não pode roubar o
+     deslizar das linhas que passam por baixo dela. */
+  pointer-events:none}
+.scroll.lst .totwrap .totbar{pointer-events:auto;margin-bottom:0}
+/* O respiro de baixo é PADDING do invólucro, não margem do cartão. Com margem,
+   ela colapsava para fora enquanto a altura era automática e passava a contar
+   para dentro assim que a altura foi presa — 12px que apareciam do nada e que o
+   Chrome compensava mexendo na rolagem. Padding não colapsa: a caixa mede o
+   mesmo antes e depois, que é a condição desta build inteira. */
+.scroll.lst .totwrap{padding-bottom:12px}
+/* Forma comprimida: uma linha só. Sem `transition` DE PROPÓSITO — comprimir
+   tira 43px de altura de conteúdo que está ACIMA de você, e a compensação da
+   rolagem (ver ligarEncolher) só é exata se a mudança couber num quadro. */
+.screen.enc .totwrap .totbar{padding:8px 14px;align-items:center}
+.screen.enc .totbar .tq{display:flex;align-items:baseline;gap:7px;min-width:0}
+.screen.enc .totbar .k{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen.enc .totbar .v{font-size:15px;margin-top:0;letter-spacing:-.01em}
+/* A legenda longa some e a curta aparece — e a curta é CONTEÚDO DE CSS, lido
+   de `data-n`. Assim o documento nunca carrega os dois textos ao mesmo tempo:
+   `textContent` da barra continua sendo só o que está escrito nela. */
+.screen.enc .totbar .c{font-size:0;display:flex;align-items:center;gap:7px}
+.screen.enc .totbar .c::before{content:attr(data-n);font-size:12.5px;
+  color:var(--muted2);font-variant-numeric:tabular-nums}
+/* O contador de filtros só existe na forma comprimida, e é o ponto inteiro
+   dela: com os chips fora de cena, ele é a única coisa na tela que diz que a
+   lista está recortada. */
+.screen.enc .totbar .c[data-f]::after{content:attr(data-f);
+  background:var(--tint-solid);color:#fff;border-radius:10px;min-width:17px;height:17px;
+  display:grid;place-items:center;font-size:10.5px;font-weight:700;padding:0 4px}
+/* A busca vira a lupa do cabeçalho; acesa quando há texto buscado. */
+/* A lupa na faixa de chips usa o mesmo desenho do funil — mas CLASSE PRÓPRIA:
+   com as duas chamadas `.filt`, qualquer leitura por `.filt` passava a achar
+   duas coisas, e foi assim que uma suíte quebrou. Dois botões diferentes
+   precisam de dois nomes. */
+.fchip.busc{color:var(--tint)}
+.fchip.busc[data-on="1"]{background:var(--tint-solid);color:#fff}
+.fchip.so svg:not(.xs):not(.fn){width:15px;height:15px;stroke:currentColor;
+  stroke-width:2.2;fill:none;stroke-linecap:round}
+.searchwrap .bx{display:grid;place-items:center;width:28px;height:44px;color:var(--muted);flex:none}
+.searchwrap .bx svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.6;fill:none;
+  stroke-linecap:round}
+/* As sub-categorias na faixa: mesmo chip, sem a pastilha de cor — quem carrega
+   a cor é a categoria acesa, que está logo antes delas. */
+.fchip.sub[aria-pressed="true"]{background:var(--tint-solid);color:#fff}
+
 </style>
 </head>
 <body>
@@ -1250,7 +1334,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-02.3';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-03.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -2204,7 +2288,7 @@ var S={
   intD:'',centD:'',modo:'reais',sinal:1,
   data:null,pay:null,desc:'',parc:1,etq:[],
   mesLista:mkey(hoje()),mesSum:mkey(hoje()),
-  fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',ordena:'data',periodo:'mes',
+  fCat:null,fSub:null,fPay:null,fMin:null,fMax:null,fBusca:'',buscaAberta:false,ordena:'data',periodo:'mes',
   /* v27 (item 9): o filtro por etiqueta. Um por vez, como o de categoria. */
   fEtq:null,
   /* v12: dois recortes novos de período. `dia` usa S.dia; `faixa` usa S.de e S.ate,
@@ -2376,6 +2460,12 @@ function renderNoLugar(){
   render();
   var novo=main.querySelector('.scroll');
   if(novo&&y)novo.scrollTop=y;
+  /* v37: a forma do cabeçalho é DERIVADA da rolagem, e a rolagem acabou de ser
+     restaurada. Sem esta linha o cabeçalho reabriria sozinho a cada redesenho
+     no lugar — que é exatamente o defeito que eu escrevi no mockup antes de
+     escrever o código. */
+  var tela=main.querySelector('.screen');
+  if(tela&&tela.__sinc)tela.__sinc();
 }
 /* A lista NÃO precisa disto, e a verificação foi quem disse: `redesenharLista()`
    troca o conteúdo do .scroll sem trocar o elemento, e o navegador não chega a
@@ -2394,6 +2484,11 @@ function renderNoLugar(){
 function aoTopo(){
   var sc=main.querySelector('.scroll');
   if(!sc||sc.scrollTop<=0)return;
+  /* v37: a barra volta à forma aberta antes de subir — é cosmético agora que
+     comprimir não mexe mais em layout, mas chegar ao topo com o cabeçalho
+     ainda encolhido seria um estado que não existe em lugar nenhum. */
+  var tela=main.querySelector('.screen');
+  if(tela&&tela.__abrir)tela.__abrir();
   try{sc.scrollTo({top:0,behavior:'smooth'});}catch(e){sc.scrollTop=0;}
 }
 function cabecalho(){
@@ -2439,6 +2534,13 @@ function cabecalho(){
   }else if(S.aba==='list'){
     marcaNaEsquerda();
     hdr.t.textContent='Lançamentos';
+    /* v37: a lupa NÃO ficou no cabeçalho, e o motivo é medido. Lá o alvo de
+       toque chegava a 37px e não tinha como crescer: para baixo ele roubaria
+       o topo da seta de "próximo mês", e para cima só caberia contando com o
+       recuo da área segura do iPhone — um número que a varredura da v31 não
+       enxerga e que eu não vou supor. Ela foi para a faixa de chips, ao lado
+       do funil, onde já existem dois alvos de 44px fazendo exatamente este
+       trabalho: recortar a lista. Custo em altura: zero, nos dois lugares. */
   }else if(S.aba==='sum'){
     marcaNaEsquerda();
     hdr.t.textContent='Resumo';
@@ -2799,28 +2901,54 @@ function filtrados(){
   else out.sort(function(a,b){return a.d<b.d?1:(a.d>b.d?-1:b.ts-a.ts);});
   return out;
 }
-function filtrosAtivos(){return !!(S.fSub||S.fPay||S.fMin!=null||S.fMax!=null);}
-/* Quantos filtros estão ativos DENTRO da folha "Filtros" — é o que o contador
-   do chip conta, porque é o que aquele botão abre. Categoria, lado e período
-   ficam de fora: eles têm controle próprio, visível na tela. */
+/* ============================================================
+   v37 — DUAS CONTAS, UMA REGRA SÓ
+
+   As duas contam A MESMA COISA: **o que está escondido de você neste
+   momento**. Elas são duas porque há dois "escondido" diferentes.
+
+   `nFiltros()` é o contador do funil: conta o que mora DENTRO da folha, que é
+   o que aquele botão abre. A v37 mexeu nos dois lados dessa conta, e nos dois
+   casos a regra é que mandou:
+     · a SUB-CATEGORIA saiu (subiu para a faixa de chips — está à vista agora);
+     · o LADO entrou (desceu do cabeçalho para a folha).
+   Sem a segunda metade, o Tudo/Saídas/Entradas viraria o único filtro do app
+   que some sem deixar rastro.
+
+   `nFiltrosTotal()` é o contador da barra quando o cabeçalho encolhe: ali
+   TODOS os controles estão fora da tela, então ele conta todos. É ele que
+   impede o pior efeito do cabeçalho que encolhe — rolar, os chips sumirem, e
+   você esquecer que há filtro aceso.
+   ============================================================ */
 function nFiltros(){
   var n=0;
-  if(S.fSub)n++;
   if(S.fPay)n++;
   if(S.fMin!=null)n++;
   if(S.fMax!=null)n++;
+  if(S.fLado!=='tudo')n++;
   return n;
 }
-/* Já aqui a pergunta é outra: existe QUALQUER coisa para limpar? Por isso
-   categoria, lado, período e busca entram. */
-function temFiltro(){
-  return !!(S.fCat||S.fEtq||S.fBusca||filtrosAtivos()||S.fLado!=='tudo'||S.periodo!=='mes');
+function nFiltrosTotal(){
+  var n=nFiltros();
+  if(S.fCat)n++;
+  if(S.fSub)n++;
+  if(S.fEtq)n++;
+  if(S.fBusca)n++;
+  if(S.periodo!=='mes')n++;
+  return n;
 }
+/* "Existe QUALQUER coisa para limpar?" é exatamente a pergunta que
+   `nFiltrosTotal()` responde — e tinha uma lista própria, escrita à mão, que
+   era um segundo lugar para esquecer de atualizar. Agora é a mesma conta. */
+function temFiltro(){ return nFiltrosTotal()>0; }
 /* Um lugar só para o "volta tudo ao normal" — usado pelo chip Limpar, pelo
    botão da folha de filtros e pelo estado vazio. */
 function limparTudo(){
   S.fCat=null;S.fEtq=null;S.fSub=null;S.fPay=null;S.fMin=null;S.fMax=null;S.fBusca='';
   S.fLado='tudo';S.periodo='mes';
+  /* v37: limpar a busca sem fechar o campo deixaria 44px abertos e vazios logo
+     depois de você pedir "limpar tudo". O campo é parte do que se limpa. */
+  S.buscaAberta=false;
 }
 
 /* Rótulo do período, usado na barra de cima E na barra de totais — as duas
@@ -2908,10 +3036,27 @@ function telaLista(){
   var vis=filtrados();
 
   var top=el('<div class="topbar"></div>');
-  var sw=el('<div class="searchwrap">'+ICO.busca+'<input type="search" placeholder="Buscar" autocomplete="off"></div>');
-  var si=sw.querySelector('input');si.value=S.fBusca;
-  si.addEventListener('input',function(){S.fBusca=si.value;redesenharLista();});
-  top.appendChild(sw);
+  /* v37: a BUSCA deixa de ocupar 44px fixos. Ela virou a lupa na coluna
+     direita do cabeçalho (ver cabecalho()), e o campo só desce quando você
+     pede — ou quando há texto nele.
+
+     A segunda metade da regra não é detalhe: UM FILTRO QUE VOCÊ NÃO VÊ É UM
+     FILTRO QUE MENTE. Se o campo pudesse fechar com "mercado" dentro, a lista
+     ficaria recortada sem nada na tela dizendo por quê. Por isso o campo fica
+     aberto enquanto `S.fBusca` tiver conteúdo, e fechar com texto limpa. */
+  if(S.buscaAberta||S.fBusca){
+    var sw=el('<div class="searchwrap">'+ICO.busca+
+      '<input type="search" placeholder="Buscar" autocomplete="off">'+
+      '<button class="bx" aria-label="Fechar busca">'+ICO.xis+'</button></div>');
+    var si=sw.querySelector('input');si.value=S.fBusca;
+    si.addEventListener('input',function(){S.fBusca=si.value;redesenharLista();});
+    sw.querySelector('.bx').onclick=function(){
+      S.buscaAberta=false;S.fBusca='';render();};
+    top.appendChild(sw);
+    /* o foco vem depois de a tela estar montada, senão o campo ainda não
+       existe no documento e o teclado não sobe */
+    if(S.buscaAberta)setTimeout(function(){if(si.isConnected)si.focus();},0);
+  }
 
   var pb=el('<div class="periodbar"><button class="pb" aria-label="Anterior">'+ICO.esq+'</button>'+
         /* mantém a classe .lbl: ela é o nome do papel ("rótulo do período") e o
@@ -2927,17 +3072,12 @@ function telaLista(){
   bs[0].onclick=function(){moverPeriodo(-1);};
   bs[1].onclick=function(){moverPeriodo(1);};
   top.appendChild(pb);
-  s.appendChild(top);
 
-  if(baseTemEntrada()){
-    var seg=el('<div class="seg"></div>');
-    [['tudo','Tudo'],['saida','Saídas'],['entrada','Entradas']].forEach(function(o){
-      var sb=el('<button aria-selected="'+(S.fLado===o[0])+'">'+o[1]+'</button>');
-      sb.onclick=function(){S.fLado=o[0];render();};
-      seg.appendChild(sb);
-    });
-    s.appendChild(seg);
-  }
+  /* v37: a fileira Tudo/Saídas/Entradas saiu daqui e foi para a folha do
+     funil. Ela custava 44px PERMANENTES — e permanentes de verdade, porque
+     `baseTemEntrada()` é verdadeiro para quem registra salário, ou seja,
+     sempre. Você disse que usa raramente, e a régua nova diz onde o raramente
+     mora: na folha. O contador do funil passou a contá-la (ver nFiltros()). */
 
   var fc=el('<div class="chiprow"></div>');
   var rola=el('<div class="rola"></div>');
@@ -2952,6 +3092,16 @@ function telaLista(){
     ICO.funil+(nf?('<span class="ct">'+nf+'</span>'):'')+'</button>');
   bf.onclick=folhaFiltros;
   rola.appendChild(bf);
+  /* v37: a lupa, ao lado do funil. Acesa quando há texto buscado — com o campo
+     fechado ela é a única pista de que a lista está recortada por uma busca. */
+  var bb=el('<button class="fchip busc so" data-on="'+(S.fBusca?1:0)+'" '+
+    'aria-label="'+(S.fBusca?('Busca ativa: '+esc(S.fBusca)):'Buscar')+'">'+ICO.busca+'</button>');
+  bb.onclick=function(){
+    S.buscaAberta=!S.buscaAberta;
+    if(!S.buscaAberta)S.fBusca='';
+    render();
+  };
+  rola.appendChild(bb);
   /* O primeiro chip é "Todas" quando não há nada filtrado e "Limpar" quando há.
      É troca, não acréscimo — por isso a faixa que rola continua com a largura
      inteira da tela. A versão anterior prendia o Limpar à esquerda e o Filtros
@@ -2963,11 +3113,46 @@ function telaLista(){
      ao estado normal de qualquer forma — "Limpar" devolve. */
   rola.appendChild(chipZero());
   var usadas={};DB.exp.forEach(function(e){usadas[e.cat]=1;});
+  /* ============================================================
+     v37 — A SUB-CATEGORIA SOBE PARA A FAIXA
+
+     Ela morava DOIS NÍVEIS mais fundo do que o nível a que pertence: dentro da
+     folha do funil, e só existindo depois de uma categoria escolhida — tanto
+     que a folha tinha uma frase pedindo desculpa ("Escolha uma categoria na
+     barra de filtros para poder filtrar por sub-categoria"). Interface que
+     precisa explicar por que um controle está vazio está dizendo que ele está
+     no lugar errado.
+
+     A forma escolhida é a HÍBRIDA: as sub-categorias da categoria acesa entram
+     logo DEPOIS dela, entre separadores, e as outras categorias continuam na
+     faixa. Assim nenhum gesto de hoje é perdido — trocar de categoria continua
+     custando um toque, e tocar de novo na categoria acesa continua apagando-a,
+     o que recolhe as subs junto por construção.
+
+     Só entram as subs EM USO, e só a partir de duas: com uma sub só, filtrar
+     por ela dá exatamente a mesma lista que filtrar pela categoria — seria um
+     controle que não corta nada. ============================================ */
+  function subsEmUso(c){
+    var u={};DB.exp.forEach(function(e){if(e.cat===c.id&&e.sub)u[e.sub]=1;});
+    return c.subs.filter(function(x){return u[x.id];});
+  }
   catsOrdenadas(true).forEach(function(c){
     if(!usadas[c.id])return;
-    var b=el('<button class="fchip" aria-pressed="'+(S.fCat===c.id)+'"><span class="sw" style="--sw:'+c.c+'"></span>'+esc(c.n)+'</button>');
+    var aceso=(S.fCat===c.id);
+    var b=el('<button class="fchip" aria-pressed="'+aceso+'"><span class="sw" style="--sw:'+c.c+'"></span>'+esc(c.n)+'</button>');
     b.onclick=function(){S.fCat=(S.fCat===c.id?null:c.id);S.fSub=null;render();};
     rola.appendChild(b);
+    if(!aceso)return;
+    var ss=subsEmUso(c);
+    if(ss.length<2)return;
+    rola.appendChild(el('<span class="fsep" aria-hidden="true"></span>'));
+    ss.forEach(function(x){
+      var o=el('<button class="fchip sub" aria-pressed="'+(S.fSub===x.id)+'">'+
+        x.e+' '+esc(x.n)+'</button>');
+      o.onclick=function(){S.fSub=(S.fSub===x.id?null:x.id);render();};
+      rola.appendChild(o);
+    });
+    rola.appendChild(el('<span class="fsep" aria-hidden="true"></span>'));
   });
   /* v27 (item 9): as etiquetas em uso entram na MESMA faixa, depois das
      categorias e com um separador. Faixa própria custaria mais uma linha numa
@@ -2995,51 +3180,146 @@ function telaLista(){
   if(S.fCat||S.fEtq){
     var ativo=rola.querySelector('.fchip[aria-pressed="true"]');
     if(ativo)setTimeout(function(){
-      /* 'nearest' e não 'center': centralizar rolava a faixa mesmo quando o chip
-         já estava visível, e isso empurrava o 'Limpar' para fora da tela */
-      if(ativo.isConnected)ativo.scrollIntoView({block:'nearest',inline:'nearest'});
+      if(!ativo.isConnected)return;
+      /* v37: ERA `scrollIntoView`, e virou defeito na hora em que a faixa passou
+         a morar DENTRO do contêiner que rola: `scrollIntoView` mexe nos DOIS
+         eixos, então trazer o chip aceso para a vista arrastava a LISTA de volta
+         ao topo. Medido: com uma categoria acesa, qualquer redesenho no lugar
+         levava a rolagem de 228 para 54.
+         Agora a conta é feita à mão e só na horizontal. 'nearest' continua
+         sendo a regra (centralizar empurrava o 'Limpar' para fora da tela). */
+      var r=rola.getBoundingClientRect(),a=ativo.getBoundingClientRect();
+      if(a.left<r.left)rola.scrollLeft+=a.left-r.left-8;
+      else if(a.right>r.right)rola.scrollLeft+=a.right-r.right+8;
     },0);
   }
-  s.appendChild(fc);
+  /* ============================================================
+     v37 — O CABEÇALHO QUE ENCOLHE, E POR QUE ELE NÃO É UM ESTADO EM JS
+
+     Antes, período, chips e total eram IRMÃOS do contêiner que rola: só a
+     lista rolava, e os 344px acima dela eram imóveis. Agora eles entram DENTRO
+     do rolador, e saem de cena por rolagem normal — 1 para 1 com o dedo, sem
+     listener, sem estado, sem salto. Esta é a parte que não pode quebrar, e
+     ela não pode quebrar porque não existe código nenhum sustentando-a.
+
+     Sobra uma coisa só para o JS: a barra de total GRUDA no topo (`sticky`) e
+     COMPRIME quando chega lá. É o único pedaço com estado, e ele é derivado da
+     posição da rolagem a cada leitura — nunca guardado. Por isso um
+     `render()` não pode perdê-lo: ou a rolagem voltou a zero (e aí o
+     cabeçalho aberto é o certo), ou ela foi restaurada (e `renderNoLugar`
+     resincroniza).
+
+     A barra de total não some junto com o resto DE PROPÓSITO: ela é a
+     RESPOSTA AO FILTRO. Esconder a pergunta é barato; esconder a resposta
+     deixa você rolando uma lista sem saber o que ela soma — e, pior, sem
+     saber que há filtro aceso. É por isso que o contador de filtros aparece
+     nela justamente quando o resto saiu de cena. ============================ */
+  var sc=el('<div class="scroll lst"></div>');
+  sc.appendChild(top);
+  sc.appendChild(fc);
 
   if(!DB.exp.length){
-    var sc0=el('<div class="scroll"></div>');
+    var vz=el('<div class="lista"></div>');
     var brv=bannerRecorrentes();
-    if(brv){brv.style.margin='0 0 12px';sc0.appendChild(brv);}
-    sc0.appendChild(vazio('Nada lançado ainda',
+    if(brv){brv.style.margin='0 0 12px';vz.appendChild(brv);}
+    vz.appendChild(vazio('Nada lançado ainda',
       'Toque em Registrar, escolha uma categoria e informe o valor.',
       'Registrar agora',function(){S.aba='reg';render();}));
-    sc0.appendChild(dicaRestaurar());
-    s.appendChild(sc0);
+    vz.appendChild(dicaRestaurar());
+    sc.appendChild(vz);
+    s.appendChild(sc);
     return s;
   }
 
-  var rl=resumoLista(vis);
-  s.appendChild(el('<div class="totbar"><div><div class="k">'+esc(rotuloTot(vis))+'</div>'+
+  var rl=resumoLista(vis),nft=nFiltrosTotal();
+  /* O invólucro existe para a cor: a barra tem 16px de margem de cada lado, e
+     sem ele a lista apareceria rolando por baixo nessas duas frestas. */
+  /* A forma comprimida NÃO duplica texto no documento: a contagem curta e o
+     contador de filtros são atributos, desenhados por CSS só quando a barra
+     encolhe. Guardar um segundo texto escondido faria `textContent` devolver
+     "14 lançamentos14" — e seria uma armadilha para qualquer leitura futura,
+     a começar pelas minhas próprias verificações. */
+  var tw=el('<div class="totwrap"><div class="totbar">'+
+    '<div class="tq"><div class="k">'+esc(rotuloTot(vis))+'</div>'+
     '<div class="v tnum">'+rl.v+'</div></div>'+
-    '<div class="c">'+rl.c+'</div></div>'));
+    '<div class="c" data-n="'+vis.length+'"'+(nft?' data-f="'+nft+'"':'')+'>'+
+    rl.c+'</div></div></div>');
+  sc.appendChild(tw);
 
-  var sc=el('<div class="scroll"></div>');
+  var corpo=el('<div class="lista"></div>');
   var brl2=bannerRecorrentes();
-  if(brl2){brl2.style.margin='0 0 12px';sc.appendChild(brl2);}
+  if(brl2){brl2.style.margin='0 0 12px';corpo.appendChild(brl2);}
   if(!vis.length){
-    sc.appendChild(vazio('Nada neste filtro','Nenhum lançamento corresponde ao período e aos filtros escolhidos.','Limpar filtros',function(){
+    corpo.appendChild(vazio('Nada neste filtro','Nenhum lançamento corresponde ao período e aos filtros escolhidos.','Limpar filtros',function(){
       /* era o único lugar que devolvia o período para "tudo" em vez de "mes":
          limpar levava para uma tela diferente da que o app abre */
       limparTudo();render();}));
   }else if(S.ordena!=='data'){
-    sc.appendChild(linhas(vis,true));
+    corpo.appendChild(linhas(vis,true));
   }else{
     var dias=[];vis.forEach(function(e){if(dias.indexOf(e.d)<0)dias.push(e.d);});
     dias.forEach(function(d){
       var it=vis.filter(function(e){return e.d===d;});
       var g=el('<div class="daygrp"><div class="dayhd"><span class="d">'+diaLabel(d)+'</span><span class="t tnum">'+totalLinha(it)+'</span></div></div>');
       g.appendChild(linhas(it,false));
-      sc.appendChild(g);
+      corpo.appendChild(g);
     });
   }
+  sc.appendChild(corpo);
+  ligarEncolher(s,sc,tw);
   s.appendChild(sc);
   return s;
+}
+/* ============================================================
+   v37 — a compressão da barra de total
+
+   A REGRA QUE FAZ ISTO SER SEGURO: **comprimir não pode mexer em layout
+   nenhum.**
+
+   A primeira versão comprimia a barra de verdade, tirando 43px de altura de
+   conteúdo que estava ACIMA da pessoa — e depois devolvia esses 43px na
+   rolagem para a lista não saltar. Funcionava parada e quebrava em movimento:
+   o Chrome já compensa sozinho (scroll anchoring) e o Safari não, então a
+   correção acontecia DUAS VEZES e a lista saltava 86px; e, pior, mexer em
+   `scrollTop` no meio de uma rolagem suave MATA a animação — tocar no
+   cabeçalho com a lista em 400 parava em 357 em vez de chegar ao topo. As duas
+   coisas foram medidas, e as duas vinham da mesma causa.
+
+   Agora o invólucro tem ALTURA FIXA, medida do próprio desenho na primeira
+   vez. Quem encolhe é só o cartão dentro dele; o espaço que sobra fica
+   transparente e a lista rola por baixo — que é exatamente o que se queria.
+   Nada muda de altura, então não há salto para compensar, não há âncora de
+   rolagem para brigar, e não há mão no volante durante a rolagem suave.
+
+   Duas notas sobre os números:
+   · O LIMITE É LIDO DO DOM (`tw.offsetTop`), não cravado — número de layout
+     cravado em código é data de validade.
+   · A HISTERESE de 60px existe para que a faixa de troca não fique
+     exatamente em cima do limite, piscando entre as duas formas.
+   ============================================================ */
+function ligarEncolher(s,sc,tw){
+  var lim=null;
+  function sinc(){
+    if(lim===null){
+      /* `tw.offsetTop` NÃO serve aqui, e isto custou uma hora: num elemento
+         `sticky`, `offsetTop` devolve a posição ONDE ELE ESTÁ, que depois de
+         grudar é a própria rolagem — o limite passava a perseguir o dedo e a
+         barra nunca comprimia. O limite é o FIM DO VIZINHO DE CIMA, que não
+         gruda e por isso tem posição de fluxo de verdade. */
+      var ant=tw.previousElementSibling;
+      lim=ant?(ant.offsetTop+ant.offsetHeight):0;
+      /* prende a altura do invólucro na forma ABERTA, que é a que está na tela
+         agora — a compressão passa a acontecer dentro de uma caixa que não
+         muda de tamanho */
+      tw.style.height=tw.offsetHeight+'px';
+    }
+    var enc=s.classList.contains('enc');
+    var deve=enc?(sc.scrollTop>lim-60):(sc.scrollTop>=lim);
+    if(deve!==enc)s.classList.toggle('enc',deve);
+  }
+  sc.addEventListener('scroll',sinc,{passive:true});
+  s.__sinc=sinc;
+  s.__abrir=function(){s.classList.remove('enc');};
 }
 /* O chip "Limpar" entra e sai conforme houver filtro. Digitar na busca é um
    filtro, e a busca NÃO redesenha a tela inteira (isso perderia o foco do
@@ -3061,8 +3341,17 @@ function chipZero(){
    sincronia própria, que não dependa de render(). */
 function sincLimpar(rola){
   if(!rola)return;
-  /* o primeiro chip agora é o funil; o que alterna é o SEGUNDO */
-  var alvo=rola.children[1];
+  /* v37: a lupa acende quando há texto buscado, e digitar na busca NÃO
+     redesenha a tela (isso perderia o foco). Sem esta sincronia, o aviso de
+     "há uma busca ativa" só aparecia no próximo render — ou seja, justamente
+     nunca, porque quem está digitando não provoca render nenhum. */
+  var lupa=rola.querySelector('.fchip.busc');
+  if(lupa){
+    lupa.dataset.on=S.fBusca?1:0;
+    lupa.setAttribute('aria-label',S.fBusca?('Busca ativa: '+S.fBusca):'Buscar');
+  }
+  /* v37: funil e lupa vêm antes; o que alterna é o TERCEIRO */
+  var alvo=rola.children[2];
   if(!alvo)return;
   if(alvo.classList.contains('limpar')===temFiltro())return;
   rola.replaceChild(chipZero(),alvo);
@@ -3070,11 +3359,18 @@ function sincLimpar(rola){
 function redesenharLista(){
   sincLimpar(main.querySelector('.chiprow .rola'));
   /* redesenha só a parte de baixo para não perder o foco do campo de busca */
-  var sc=main.querySelector('.scroll'),tb=main.querySelector('.totbar');
+  /* v37: o contêiner que rola passou a conter TAMBÉM o cabeçalho. Quem é
+     trocado aqui é a `.lista` — limpar o `.scroll` inteiro levaria junto o
+     período, os chips e a barra de total, e com eles o foco do campo de busca
+     que esta função existe para preservar. */
+  var sc=main.querySelector('.scroll .lista'),tb=main.querySelector('.totbar');
   var vis=filtrados(),rl=resumoLista(vis);
   if(tb){
     tb.querySelector('.v').textContent=rl.v;
-    tb.querySelector('.c').innerHTML=rl.c;
+    var c=tb.querySelector('.c'),nft=nFiltrosTotal();
+    c.innerHTML=rl.c;
+    c.setAttribute('data-n',vis.length);
+    if(nft)c.setAttribute('data-f',nft);else c.removeAttribute('data-f');
   }
   if(!sc)return;
   sc.innerHTML='';
@@ -4899,20 +5195,25 @@ function folhaCalendario(modo,cfg){
 
 function folhaFiltros(){
   folha('Filtros',function(b){
-    var c=S.fCat?cat(S.fCat):null;
-    if(c){
-      b.appendChild(el('<div class="glabel">Sub-categoria de '+esc(c.n)+'</div>'));
-      var w=el('<div class="optwrap"></div>');
-      var t=el('<button class="opt"><span class="ic">•</span><span class="nm">Todas</span>'+(!S.fSub?'<span class="tag">✓</span>':'<span></span>')+'</button>');
-      t.onclick=function(){S.fSub=null;fecharFolhas();render();};w.appendChild(t);
-      c.subs.forEach(function(s){
-        var o=el('<button class="opt" style="--c:'+c.c+'"><span class="ic">'+s.e+'</span><span class="nm">'+esc(s.n)+'</span>'+
-          (S.fSub===s.id?'<span class="tag">✓</span>':'<span></span>')+'</button>');
-        o.onclick=function(){S.fSub=s.id;fecharFolhas();render();};w.appendChild(o);
+    /* v37: a SUB-CATEGORIA saiu daqui — subiu para a faixa de chips, ao lado
+       da categoria a que pertence. Com ela saiu a frase que esta folha era
+       obrigada a mostrar quando não havia categoria escolhida ("Escolha uma
+       categoria na barra de filtros para poder filtrar por sub-categoria"):
+       uma interface que precisa explicar por que um controle está vazio está
+       dizendo que o controle está no lugar errado.
+
+       E entrou o LADO, que custava 44px permanentes no cabeçalho para algo
+       que você usa raramente. Ele vem PRIMEIRO porque é o corte mais grosso
+       dos três — decide de qual metade do dinheiro se está falando. */
+    if(baseTemEntrada()){
+      b.appendChild(el('<div class="glabel" style="margin-top:0">Mostrar</div>'));
+      var sg=el('<div class="seg"></div>');
+      [['tudo','Tudo'],['saida','Saídas'],['entrada','Entradas']].forEach(function(o){
+        var sb=el('<button aria-pressed="'+(S.fLado===o[0])+'">'+o[1]+'</button>');
+        sb.onclick=function(){S.fLado=o[0];fecharFolhas();render();};
+        sg.appendChild(sb);
       });
-      b.appendChild(w);
-    }else{
-      b.appendChild(el('<div class="hint" style="padding-top:0">Escolha uma categoria na barra de filtros para poder filtrar por sub-categoria.</div>'));
+      b.appendChild(sg);
     }
     b.appendChild(el('<div class="glabel">Forma de pagamento</div>'));
     var wp=el('<div class="optwrap"></div>');
@@ -5826,14 +6127,16 @@ function telaPlanejar(){
   var s=el('<section class="screen"><div class="scroll pad-top"></div></section>');
   var b=s.firstElementChild;
 
-  b.appendChild(el('<div class="hint" style="margin:2px 0 10px">O que você decidiu '+
-    'de antemão — e que vai valer nos próximos meses.</div>'));
-
+  /* v36: saíram daqui a frase de abertura ("O que você decidiu de antemão…") e
+     os dois sub-textos das linhas. Eram 167 caracteres de explicação para DUAS
+     linhas de menu, e os três só repetiam o título: quem está na aba Planejar
+     não precisa que lhe digam o que é "Recorrentes" nem o que é "Orçamento".
+     O que cada linha tem a dizer de útil já está do lado direito, e é ESTADO —
+     quantas existem, quantas a confirmar, quantas com meta. */
   b.appendChild(el('<div class="glabel">Compromissos</div>'));
   var g1=el('<div class="group"></div>');
   var nRec=(DB.rec||[]).length,nPend=pendentes().length;
-  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div>'+
-    '<div class="r2">Aluguel, assinaturas e contas que se repetem todo mês.</div></div>'+
+  var rr=el('<button class="grow tap"><div><div class="r1">Recorrentes</div></div>'+
     '<div class="right"><span>'+(nRec?(nRec+(nPend?(' · '+nPend+' a confirmar'):'')):'nenhum')+
     '</span>'+ICO.chev+'</div></button>');
   rr.onclick=folhaRecorrentes;g1.appendChild(rr);
@@ -5843,8 +6146,7 @@ function telaPlanejar(){
   var g2=el('<div class="group"></div>');
   var mkA=mkey(hoje()),nM=comMeta(mkA),nC=0;
   catsOrdenadas(false).forEach(function(c){if(!eEntrada(c.id))nC++;});
-  var ro=el('<button class="grow tap"><div><div class="r1">Orçamento</div>'+
-    '<div class="r2">Quanto você pretende gastar em cada categoria.</div></div>'+
+  var ro=el('<button class="grow tap"><div><div class="r1">Orçamento</div></div>'+
     '<div class="right"><span>'+(nM?(nM+' de '+nC+' com meta'):'nenhuma')+
     '</span>'+ICO.chev+'</div></button>');
   ro.onclick=folhaMetas;g2.appendChild(ro);
@@ -5950,7 +6252,10 @@ function telaCfg(){
   /* Aparência */
   b.appendChild(el('<div class="glabel">Aparência</div>'));
   var g1=el('<div class="group"></div>');
-  var r1=el('<div class="grow"><div><div class="r1">Tema</div><div class="r2">Automático segue o modo do sistema.</div></div></div>');
+  /* v36: a frase "Automático segue o modo do sistema." saiu. O segmento ao lado
+     já mostra qual dos três está aceso — a explicação estava descrevendo um
+     controle que está a 2cm dela, visível. */
+  var r1=el('<div class="grow"><div><div class="r1">Tema</div></div></div>');
   var seg1=el('<div class="seg" style="min-width:210px"></div>');
   [['auto','Auto'],['claro','Claro'],['escuro','Escuro']].forEach(function(o){
     var x=el('<button aria-pressed="'+(DB.prefs.tema===o[0])+'">'+o[1]+'</button>');
@@ -5960,8 +6265,9 @@ function telaCfg(){
   r1.appendChild(seg1);g1.appendChild(r1);
 
   var densRot=DB.prefs.dens==='auto'?('Automático · '+DENS[densAuto()].lab):DENS[DB.prefs.dens].lab;
-  var r2=el('<button class="grow tap"><div><div class="r1">Densidade da grade</div>'+
-    '<div class="r2">Quantos botões cabem nas telas de categoria e sub-categoria.</div></div>'+
+  /* v36: idem — o valor atual ("Automático · 3 colunas") já está à direita, e
+     ele diz mais do que a frase que explicava o que é densidade. */
+  var r2=el('<button class="grow tap"><div><div class="r1">Densidade da grade</div></div>'+
     '<div class="right"><span>'+esc(densRot)+'</span>'+ICO.chev+'</div></button>');
   r2.onclick=folhaDensidade;
   g1.appendChild(r2);
@@ -5984,8 +6290,13 @@ function telaCfg(){
      que não é taxonomia: é atalho de uso, e continua por último. */
   var nq=(DB.etq||[]).length;
   var usoQ=DB.exp.filter(function(e){return e.etq&&e.etq.length;}).length;
+  /* v36: a glosa "Cortes que cruzam categoria." fica SÓ enquanto não há
+     etiqueta nenhuma. Diferente de "Recorrentes" e "Orçamento", "etiqueta" é
+     palavra que este app usa num sentido próprio, e quem nunca criou uma não
+     adivinha para que serve — mas quem já criou não precisa mais da frase.
+     Explicação é material de estreia: ela tem de ter data de validade. */
   var rq=el('<button class="grow tap"><div><div class="r1">Etiquetas</div>'+
-    '<div class="r2">Cortes que cruzam categoria.</div></div>'+
+    (nq?'':'<div class="r2">Cortes que cruzam categoria.</div>')+'</div>'+
     '<div class="right"><span>'+(nq?(nq+(nq===1?' etiqueta':' etiquetas')+
       ' · '+usoQ+(usoQ===1?' lançamento':' lançamentos')):'nenhuma')+'</span>'+ICO.chev+
     '</div></button>');
@@ -6006,11 +6317,28 @@ function telaCfg(){
   /* Dados */
   b.appendChild(el('<div class="glabel">Dados</div>'));
   var g3=el('<div class="group"></div>');
-  [['Compartilhar backup (JSON)','Tudo: lançamentos, categorias e preferências.',compartilharJSON],
-   ['Exportar planilha (CSV)','Só os lançamentos, para abrir no Excel.',exportarCSV],
-   ['Restaurar backup (JSON)','Substitui tudo o que está no aparelho.',restaurarJSON],
-   ['Importar planilha (CSV)','Mesclar ou substituir apenas os lançamentos.',importarCSV]].forEach(function(a){
-    var r=el('<button class="grow tap"><div><div class="r1">'+a[0]+'</div><div class="r2">'+a[1]+'</div></div>'+ICO.chev+'</button>');
+  /* v36 — DOIS VERBOS, NÃO QUATRO.
+
+     Eram quatro: Compartilhar, Exportar, Restaurar, Importar. Fui ver se os
+     verbos descreviam diferença de verdade e NÃO descreviam: compartilharJSON()
+     e exportarCSV() terminam os dois na MESMA chamada, `partilhar(...)` — dois
+     nomes para o mesmo mecanismo. "Restaurar" era "Importar" com outro nome.
+
+     São duas dimensões, não quatro ações soltas:
+       direção  — sai do app / entra no app
+       escopo   — tudo (backup JSON) / só os lançamentos (planilha CSV)
+     Logo, dois verbos. E a ordem passa a ser por direção, o que junta embaixo
+     as duas que mexem nos seus dados.
+
+     O sub-texto segue a régua da v36: fica quem AVISA DE CONSEQUÊNCIA. Os dois
+     "exportar" não tocam em nada seu e não precisam de linha nenhuma; os dois
+     "importar" tocam, e dizem o que fazem com o que já está no aparelho. */
+  [['Exportar backup (JSON)','',compartilharJSON],
+   ['Exportar lançamentos (CSV)','',exportarCSV],
+   ['Importar backup (JSON)','Substitui tudo o que está no aparelho.',restaurarJSON],
+   ['Importar lançamentos (CSV)','Mescla ou substitui — você escolhe na hora.',importarCSV]].forEach(function(a){
+    var r=el('<button class="grow tap"><div><div class="r1">'+a[0]+'</div>'+
+      (a[1]?('<div class="r2">'+a[1]+'</div>'):'')+'</div>'+ICO.chev+'</button>');
     r.onclick=a[2];g3.appendChild(r);
   });
   b.appendChild(g3);
@@ -6965,6 +7293,11 @@ try{
     window.__ent={eEntrada:eEntrada,saidasDe:saidasDe,entradasDe:entradasDe,
                   somaDe:somaDe,saldoDe:saldoDe,valorFinal:valorFinal,
                   baseTemEntrada:baseTemEntrada,S:S};
+    /* v37: a suíte v34 precisa provocar um redesenho NO LUGAR para provar que
+       a forma do cabeçalho não se perde nele — é a única maneira de exercer
+       esse contrato de fora. */
+    window.__v34={S:S,renderNoLugar:renderNoLugar,nFiltros:nFiltros,
+                  nFiltrosTotal:nFiltrosTotal};
     window.__rec={compsDe:compsDe,dataComp:dataComp,pendentes:pendentes,
                   valorSugerido:valorSugerido,confirmadosDe:confirmadosDe,
                   pularComp:pularComp,reativarComp:reativarComp,rec:rec,
