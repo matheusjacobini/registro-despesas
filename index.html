@@ -439,11 +439,38 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 /* ============================================================
    CONSULTA
    ============================================================ */
-.topbar{padding:0 16px 10px;display:flex;flex-direction:column;gap:8px}
-.searchwrap{background:var(--fill2);border-radius:10px;padding:0 10px;display:flex;align-items:center;gap:6px;
-  min-height:44px}   /* v21 (item 27): o campo de busca media 22px */
-.searchwrap svg{width:16px;height:16px;stroke:var(--muted);stroke-width:2.2;fill:none;flex:none}
-.searchwrap input{flex:1;font-size:15px;min-width:0;min-height:44px}   /* v31: o alvo é o campo, não a moldura */
+/* v39: a faixa de cima encostava no cabeçalho — 0px entre os dois, desde
+   sempre. Dava para não ver enquanto o campo de busca estava lá parado; com
+   ele aparecendo e sumindo, a falta de respiro ficou evidente. 8px é o mesmo
+   espaço que já separa as linhas DENTRO desta faixa. */
+.topbar{padding:8px 16px 10px;display:flex;flex-direction:column;gap:8px}
+/* ------------------------------------------------------------
+   v39 — O CAMPO DE BUSCA: 38px DE DESENHO, 44px DE ALVO
+
+   Ele tinha 44px de altura DESENHADA, e ao lado do seletor de período (outros
+   44px) os dois viravam um bloco pesado. Mas encolher o campo encolheria o
+   alvo junto, e aqui o alvo É o campo — não dá para crescer por fora com um
+   pseudo-elemento, porque ele cobriria o texto e o cursor.
+
+   A saída é a mesma doutrina da régua, invertida: o ALVO continua sendo o
+   campo inteiro, com 44px; quem encolhe é o DESENHO. A cápsula cinza virou um
+   pseudo-elemento de 38px centrado atrás do conteúdo, e nada que recebe toque
+   mudou de tamanho. ------------------------------------------------------ */
+.searchwrap{position:relative;border-radius:10px;padding:0 10px;display:flex;
+  align-items:center;gap:6px;min-height:44px}
+.searchwrap::before{content:'';position:absolute;inset:3px 0;border-radius:10px;
+  background:var(--fill2);pointer-events:none}
+/* O anel de foco era o do NAVEGADOR: um retângulo azul desenhado em volta do
+   <input>, portanto desalinhado da cápsula arredondada — e aparecia sozinho,
+   porque abrir a busca já põe o foco no campo. Tirá-lo sem pôr nada no lugar
+   deixaria o teclado sem pista nenhuma; então o foco passa a ser da CÁPSULA,
+   na forma dela. */
+.searchwrap input:focus{outline:none}
+.searchwrap:focus-within::before{box-shadow:0 0 0 2px var(--tint-soft)}
+.searchwrap svg{width:16px;height:16px;stroke:var(--muted);stroke-width:2.2;fill:none;flex:none;
+  position:relative}
+.searchwrap input{flex:1;font-size:15px;min-width:0;min-height:44px;position:relative;
+  background:none}   /* v31: o alvo é o campo, não a moldura */
 .periodbar{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;align-items:center;gap:6px}
 .periodbar .pb{display:grid;place-items:center;height:44px;border-radius:10px;color:var(--tint);background:var(--fill2)}
 .periodbar .pb:disabled{opacity:.4}
@@ -1246,7 +1273,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .fchip.busc[data-on="1"]{background:var(--tint-solid);color:#fff}
 .fchip.so svg:not(.xs):not(.fn){width:15px;height:15px;stroke:currentColor;
   stroke-width:2.2;fill:none;stroke-linecap:round}
-.searchwrap .bx{display:grid;place-items:center;width:28px;height:44px;color:var(--muted);flex:none}
+/* v39: o ✕ tinha 28px de largura de alvo e ninguém tinha medido — a varredura
+   da régua nunca abria a busca. Agora abre (ver v30), e o alvo cresce por fora
+   como o de todo mundo. */
+.searchwrap .bx{display:grid;place-items:center;width:28px;height:44px;color:var(--muted);
+  flex:none;position:relative}
+.searchwrap .bx::after{content:'';position:absolute;left:-9px;right:-9px;top:50%;
+  height:46px;transform:translateY(-50%)}
 .searchwrap .bx svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.6;fill:none;
   stroke-linecap:round}
 /* As sub-categorias na faixa: mesmo chip, sem a pastilha de cor — quem carrega
@@ -1334,7 +1367,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-03.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-03.2';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
