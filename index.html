@@ -1012,7 +1012,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-v
 .prev b{font-variant-numeric:tabular-nums}
 .opt .tag{font-size:12px;color:var(--muted2);white-space:nowrap}
 .optwrap{border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.dayopts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* v40: três colunas — ontem, hoje, amanhã. O cartão largo de "Escolher data"
+   continua ocupando a linha inteira (grid-column:1/-1). */
+.dayopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .dayopt{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 12px}
 .dayopt.wide{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;overflow:hidden}
 /* o campo de data cobre o card inteiro e fica invisível: tocar em qualquer
@@ -1367,7 +1369,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-03.2';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-06.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1386,6 +1388,22 @@ function ymd(d){
 }
 function hoje(){return ymd(new Date());}
 function ontem(){var d=new Date();d.setDate(d.getDate()-1);return ymd(d);}
+function amanha(){var d=new Date();d.setDate(d.getDate()+1);return ymd(d);}
+/* ============================================================
+   v40 — ATÉ ONDE O FUTURO VAI
+
+   A folha de data de um lançamento travava em HOJE. Não era bug de código: era
+   uma decisão escrita ("na folha de data de um lançamento, futuro não existe")
+   que nunca tinha sido questionada — e que deixava sem casa a conta que você
+   já sabe que vai pagar sexta. Recorrente é para o que se repete; parcela é
+   para o que foi comprado. Um boleto único com data marcada não era nenhum
+   dos dois.
+
+   O limite agora existe, mas é de SANIDADE, não de doutrina: dois anos à
+   frente. Sem limite nenhum, um toque errado no calendário manda o lançamento
+   para 2099 e ele some do app — some de verdade, porque navegar até lá leva
+   mais de novecentos toques nas setas de mês. ============================= */
+function limiteFuturo(){var d=new Date();d.setMonth(d.getMonth()+24);return ymd(d);}
 function parseYmd(s){var p=String(s).split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
 function mkey(s){return String(s).slice(0,7);}
 function mesLabel(mk){var p=mk.split('-');return MES[+p[1]-1]+' de '+p[0];}
@@ -2815,7 +2833,10 @@ function telaValor(){
   w.appendChild(bv.amt);
 
   var chips=el('<div class="chips"></div>');
-  var dtxt=S.data===null?'Hoje':(S.data===hoje()?'Hoje':(S.data===ontem()?'Ontem':(+S.data.slice(8))+' '+MESC[+S.data.slice(5,7)-1]));
+  /* v40: "Amanhã" entra na mesma lista de apelidos de Hoje e Ontem — sem ela
+     o chip mostraria "6 out" para a data mais provável de um agendamento. */
+  var dtxt=S.data===null?'Hoje':(S.data===hoje()?'Hoje':(S.data===ontem()?'Ontem':
+    (S.data===amanha()?'Amanhã':(+S.data.slice(8))+' '+MESC[+S.data.slice(5,7)-1])));
   var cd=el('<button class="chip"><span class="k">Data</span><span class="v">'+esc(dtxt)+'</span></button>');
   cd.onclick=folhaData;
   var pe=S.pay?(PAGTOS.filter(function(p){return p[0]===S.pay;})[0]||['',''])[1]+' ':'';
@@ -4191,20 +4212,25 @@ function folhaData(cfg){
     fechaEsta=(cfg.sobre&&fecharMe)?fecharMe:fecharFolhas;
     var g=el('<div class="dayopts"></div>');
     var atual=pegar();
-    [['Hoje',hoje()],['Ontem',ontem()]].forEach(function(d){
+    /* v40: a fileira vira uma LINHA DO TEMPO — ontem, hoje, amanhã — em vez de
+       dois atalhos para trás. "Hoje" fica no meio de propósito: é o ponto de
+       referência, e os dois vizinhos são o passo de um dia para cada lado. */
+    [['Ontem',ontem()],['Hoje',hoje()],['Amanhã',amanha()]].forEach(function(d){
       var dt=parseYmd(d[1]);
       var o=el('<button class="dayopt" aria-pressed="'+(atual===d[1])+'"><div class="n">'+d[0]+'</div>'+
         '<div class="s">'+DOW[dt.getDay()]+' · '+(+d[1].slice(8))+' '+MESC[+d[1].slice(5,7)-1]+'</div></button>');
       o.onclick=function(){por(d[1]);};
       g.appendChild(o);
     });
-    var outra=(atual!==hoje()&&atual!==ontem());
+    var outra=(atual!==hoje()&&atual!==ontem()&&atual!==amanha());
     var w=el('<button class="dayopt wide" aria-pressed="'+outra+'"><span>'+
       '<div class="n">Escolher data</div>'+
       '<div class="s">'+(outra?esc(porExtenso(atual)):'no calendário do app')+'</div></span>'+
       '<span class="cal">📅</span></button>');
     w.onclick=function(){
-      folhaCalendario('dia',{valor:atual,max:hoje(),titulo:'Escolher data',
+      /* v40: o teto deixa de ser HOJE. O limite de sanidade está em
+         `limiteFuturo()` (dois anos), e o motivo está escrito lá. */
+      folhaCalendario('dia',{valor:atual,max:limiteFuturo(),titulo:'Escolher data',
         aoEscolher:function(d){por(d);}});
     };
     g.appendChild(w);
