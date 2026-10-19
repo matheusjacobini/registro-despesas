@@ -1369,7 +1369,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-06.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-15.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1588,7 +1588,21 @@ function ocorrenciasDe(e){
      pelo anterior — dois estornos parciais em meses diferentes não dão o
      mesmo resultado que um só pela soma, e somar seria mentir sobre quando
      cada devolução aconteceu. */
-  var total=e.v,devs=[];
+  /* v41 — `devolvido` existe porque `falta` é um ACUMULADO, não uma parcela
+     da conta. Ele é (novo − pago), e `pago` só encolhe quando há parcela
+     futura para zerar; sem futuro nenhum, `pago` fica no valor cheio da
+     compra e todo estorno seguinte recalcula a devolução INTEIRA em vez da
+     sua parte. Dois estornos de 60 e 40 numa compra à vista de 200 devolviam
+     60 e depois 100 — o segundo reincluía o primeiro, e a compra fechava em
+     40 em vez de 100.
+
+     Era defeito desde a v25, mas só alcançável por compra parcelada com
+     todas as parcelas já vencidas, que é raro. A v41 abriu o estorno para o
+     à vista, onde NUNCA há parcela futura — o caso raro viraria o caso comum.
+
+     A lição é a de sempre, de outro ângulo: um número que só está certo
+     enquanto existe futuro para absorvê-lo não é um número, é um saldo. */
+  var total=e.v,devs=[],devolvido=0;
   for(var k=0;k<ests.length;k++){
     var est=ests[k],pago=0,futuros=[];
     for(i=0;i<ds.length;i++){
@@ -1606,7 +1620,9 @@ function ocorrenciasDe(e){
          do estorno; não há onde acomodar, e inventar uma parcela seria pior. */
     }else{
       for(i=0;i<futuros.length;i++)vs[futuros[i]]=0;
-      devs.push({d:est.d,v:falta});   /* falta é negativo: é o que volta */
+      /* só o que ESTE estorno devolve, descontado o que já voltou antes */
+      var volta=falta-devolvido;
+      if(volta<0){devs.push({d:est.d,v:volta});devolvido=falta;}
     }
     total=novo;
   }
@@ -5778,18 +5794,38 @@ function acoesLancamento(e){
     var w=el('<div class="optwrap"></div>');
     var cp=compraDe(e)||e;
     var acoes=[['✏️',e.pn>1?'Editar a compra':'Editar',function(){fecharFolhas();editarLancamento(e);}]];
-    /* v25 (item 28): estorno vinculado. Só em compra parcelada — à vista o
-       estorno solto já resolve tudo, porque não há futuro para corrigir. E
-       nunca em entrada: devolver uma venda não é a mesma operação. */
-    if(nParc(cp)>1&&!eEntrada(cp.cat)){
+    /* v25 (item 28): estorno vinculado. v41: vale para QUALQUER saída.
+
+       Até a v40 a trava era `nParc(cp)>1`, com este motivo escrito: "à vista
+       o estorno solto já resolve tudo, porque não há futuro para corrigir".
+       A frase é verdadeira na aritmética e falsa na legibilidade. O estorno
+       solto fecha a conta do mês — saiu 200, voltou 60, o mês dá 140 — mas
+       deixa a compra dizendo 200 e os 60 soltos noutro lugar. Olhando a
+       compra, não há como saber que ela foi devolvida.
+
+       E o caso que a trava excluía é justamente onde o vínculo mais vale:
+       estorno PARCIAL é mais comum à vista (compra três coisas, devolve uma)
+       do que em parcelada, que costuma ser um item só. Levantado por você em
+       15/10, e com dois argumentos que a v25 não tinha pesado: a compra
+       parcialmente estornada deixa de valer o que está escrita nela, e o
+       estorno solto fica ÓRFÃO quando a compra é apagada — o vinculado sai
+       junto, que é metade da razão de ele morar dentro da compra.
+
+       Entrada continua de fora: devolver uma venda é dinheiro saindo, e isso
+       é outra operação, não a mesma com o sinal trocado. */
+    if(!eEntrada(cp.cat)){
+      var parcelada=nParc(cp)>1;
       if(temEstorno(cp)){
         var jaE=totalEstornado(cp);
         acoes.push(['↩️','Registrar outro estorno',
           function(){fecharFolhas();folhaEstorno(cp);},
           'R$ '+brl(jaE)+' já estornados de R$ '+brl(cp.v)]);
+        /* o rodapé não pode falar em parcela numa compra à vista: ali não há
+           parcela nenhuma para voltar, só a devolução para sair do mês. */
         acoes.push(['↪️','Desfazer o estorno',
           function(){fecharFolhas();desfazerEstorno(cp);},
-          'As parcelas canceladas voltam.']);
+          parcelada?'As parcelas canceladas voltam.'
+                   :'A compra volta a valer R$ '+brl(cp.v)+'.']);
       }else{
         acoes.push(['↩️','Registrar estorno',
           function(){fecharFolhas();folhaEstorno(cp);},
@@ -5848,7 +5884,21 @@ function previaEstorno(compra,quanto,data){
     if((a[m]||0)!==(b[m]||0))mudou.push({m:m,de:a[m]||0,para:b[m]||0});
   });
   mudou.sort(function(x,y){return x.m<y.m?-1:1;});
-  var somem=mudou.filter(function(x){return x.para===0&&x.de>0;});
+  /* v41: "deixa de ter parcela" é sobre PARCELA, não sobre o total do mês.
+     Isto era `x.para===0&&x.de>0` — mês que zerou. Numa compra parcelada as
+     duas coisas coincidem: a parcela some e o mês zera junto. À vista elas
+     se separam, e a frase virava mentira: a compra de 200 continua na lista,
+     a devolução de −200 entra ao lado, o mês fecha em zero — e a prévia
+     anunciava "outubro deixa de ter parcela", sendo que outubro continua com
+     a sua linha. Agora o que se conta é a OCORRÊNCIA que desaparece.
+     Apareceu quando a v41 abriu a folha para o à vista; a frase estava
+     errada desde a v25, mas nenhum caminho chegava nela. */
+  function parcelasPorMes(L){var m={};L.forEach(function(o){
+    if(o.dev)return;var x=mkey(o.d);m[x]=(m[x]||0)+1;});return m;}
+  var pa=parcelasPorMes(antes),pb=parcelasPorMes(depois),somem=[];
+  Object.keys(pa).forEach(function(m){
+    if(!pb[m])somem.push({m:m,de:a[m]||0,para:b[m]||0});});
+  somem.sort(function(x,y){return x.m<y.m?-1:1;});
   var dev=depois.filter(function(o){return o.dev&&o.d===data;});
   return {mudou:mudou,somem:somem,dev:dev.length?dev[0].v:0,
           antesFrente:comprometidoDe(antes),depoisFrente:comprometidoDe(depois)};
