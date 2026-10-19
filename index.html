@@ -1369,7 +1369,7 @@ var KEY='despesas.v1';
 var SCHEMA=7;
 var MAXPARC=24;      /* acima disso o app recusa: não é uso previsto */
 var MAXRETRO=24;     /* pendências de recorrência nunca olham além de 24 meses atrás */
-var BUILD='2026-10-15.1';   /* carimbo de versão, trocado a cada geração */
+var BUILD='2026-10-19.1';   /* carimbo de versão, trocado a cada geração */
 
 function el(h){var d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild;}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(m){
@@ -1579,50 +1579,53 @@ function ocorrenciasDe(e){
     return out0;
   }
 
-  /* REGRA B1, escolhida por você em 24/09 e escrita por extenso:
-     a compra passa a valer (total − estornos); o que já caiu fica como está;
-     o que falta é refatiado para fechar no novo total; e se o que já caiu
-     passar do novo total, a diferença volta como devolução no mês do estorno.
+  /* REGRA B2 — v42, 19/10/2026. SUBSTITUI a B1, que era de 24/09.
 
-     Os estornos são aplicados EM ORDEM, cada um enxergando o estado deixado
-     pelo anterior — dois estornos parciais em meses diferentes não dão o
-     mesmo resultado que um só pela soma, e somar seria mentir sobre quando
-     cada devolução aconteceu. */
-  /* v41 — `devolvido` existe porque `falta` é um ACUMULADO, não uma parcela
-     da conta. Ele é (novo − pago), e `pago` só encolhe quando há parcela
-     futura para zerar; sem futuro nenhum, `pago` fica no valor cheio da
-     compra e todo estorno seguinte recalcula a devolução INTEIRA em vez da
-     sua parte. Dois estornos de 60 e 40 numa compra à vista de 200 devolviam
-     60 e depois 100 — o segundo reincluía o primeiro, e a compra fechava em
-     40 em vez de 100.
+     A B1 refatiava as parcelas futuras para fechar no novo total. Ela nasceu
+     de um estorno TOTAL (uma compra de 480 em 6× devolvida por inteiro) e o
+     estorno PARCIAL herdou a regra sem nunca ter sido examinado. Levantado
+     por você em 19/10, conferindo um estorno real de R$ 159,97 numa compra
+     de R$ 301,08 em 6×: o app mostrava as quatro parcelas futuras em R$ 10,
+     e o cartão ia continuar cobrando R$ 50,18.
 
-     Era defeito desde a v25, mas só alcançável por compra parcelada com
-     todas as parcelas já vencidas, que é raro. A v41 abriu o estorno para o
-     à vista, onde NUNCA há parcela futura — o caso raro viraria o caso comum.
+     A B2 separa os dois eventos, porque o cartão os trata diferente:
 
-     A lição é a de sempre, de outro ângulo: um número que só está certo
-     enquanto existe futuro para absorvê-lo não é um número, é um saldo. */
+       · ESTORNO PARCIAL — a administradora credita o valor DE UMA VEZ e as
+         parcelas seguem caindo pelo valor original. Então: uma devolução na
+         DATA DO ESTORNO, e nenhuma parcela muda.
+
+       · ESTORNO TOTAL — a administradora cancela as parcelas que faltam e
+         credita o que já saiu do bolso. Então: parcelas futuras somem e volta
+         o que já foi pago. Isto é o que a B1 já fazia, e continua igual.
+
+     O que decide não é um palpite: é o botão que você tocou. "Voltou tudo"
+     zera o que resta (novo===0) e "Só uma parte" não (novo>0).
+
+     O QUE A B1 JOGAVA FORA: a data do estorno. Com futuro suficiente para
+     absorver, ela não aparecia em lugar nenhum — virava só o corte entre
+     passado e futuro. Num app usado para conferir a fatura, isso garantia
+     que todo mês futuro ficasse diferente do que o cartão vai cobrar.
+
+     `devolvido` continua existindo pelo motivo da v41 (devolução é a SUA
+     parte, não o acumulado) — e agora vale só no ramo do estorno total, que
+     é o único que ainda olha para o quanto já foi pago. */
   var total=e.v,devs=[],devolvido=0;
   for(var k=0;k<ests.length;k++){
-    var est=ests[k],pago=0,futuros=[];
-    for(i=0;i<ds.length;i++){
-      if(ds[i]<=est.d)pago+=vs[i];
-      else futuros.push(i);
-    }
+    var est=ests[k];
     var novo=Math.max(0,total-est.v);
-    var falta=novo-pago;
-    if(falta>=0){
-      if(futuros.length){
-        var novosV=fatiar(falta,futuros.length);
-        for(i=0;i<futuros.length;i++)vs[futuros[i]]=novosV[i];
-      }
-      /* falta>0 sem parcela futura só acontece se a compra foi editada depois
-         do estorno; não há onde acomodar, e inventar uma parcela seria pior. */
+    if(novo>0){
+      /* PARCIAL: o dinheiro voltou numa data, e é só isso que aconteceu. */
+      devs.push({d:est.d,v:-est.v});devolvido+=-est.v;
     }else{
+      /* TOTAL: o que ainda não venceu é cancelado; o que já saiu, volta. */
+      var pago=0,futuros=[];
+      for(i=0;i<ds.length;i++){
+        if(ds[i]<=est.d)pago+=vs[i];
+        else futuros.push(i);
+      }
       for(i=0;i<futuros.length;i++)vs[futuros[i]]=0;
-      /* só o que ESTE estorno devolve, descontado o que já voltou antes */
-      var volta=falta-devolvido;
-      if(volta<0){devs.push({d:est.d,v:volta});devolvido=falta;}
+      var volta=-pago-devolvido;
+      if(volta<0){devs.push({d:est.d,v:volta});devolvido+=volta;}
     }
     total=novo;
   }
@@ -5814,7 +5817,12 @@ function acoesLancamento(e){
        Entrada continua de fora: devolver uma venda é dinheiro saindo, e isso
        é outra operação, não a mesma com o sinal trocado. */
     if(!eEntrada(cp.cat)){
-      var parcelada=nParc(cp)>1;
+      /* v42: o rodapé do "Desfazer" não pode mais olhar para "é parcelada?".
+         Com a regra B2, um estorno PARCIAL não cancela parcela nenhuma nem
+         numa compra em 6× — as seis continuam caindo. O que decide é se
+         alguma parcela de fato sumiu, e isso se pergunta às ocorrências. */
+      var sumiuParcela=ocorrenciasDe(cp).filter(function(o){return !o.dev;})
+                         .length<nParc(cp);
       if(temEstorno(cp)){
         var jaE=totalEstornado(cp);
         acoes.push(['↩️','Registrar outro estorno',
@@ -5824,8 +5832,8 @@ function acoesLancamento(e){
            parcela nenhuma para voltar, só a devolução para sair do mês. */
         acoes.push(['↪️','Desfazer o estorno',
           function(){fecharFolhas();desfazerEstorno(cp);},
-          parcelada?'As parcelas canceladas voltam.'
-                   :'A compra volta a valer R$ '+brl(cp.v)+'.']);
+          sumiuParcela?'As parcelas canceladas voltam.'
+                      :'A compra volta a valer R$ '+brl(cp.v)+'.']);
       }else{
         acoes.push(['↩️','Registrar estorno',
           function(){fecharFolhas();folhaEstorno(cp);},
@@ -5900,7 +5908,12 @@ function previaEstorno(compra,quanto,data){
     if(!pb[m])somem.push({m:m,de:a[m]||0,para:b[m]||0});});
   somem.sort(function(x,y){return x.m<y.m?-1:1;});
   var dev=depois.filter(function(o){return o.dev&&o.d===data;});
-  return {mudou:mudou,somem:somem,dev:dev.length?dev[0].v:0,
+  /* v42: as parcelas que AINDA VÃO CAIR depois do estorno. Com a regra B2
+     elas não mudam num estorno parcial, e é esse o número que a prévia
+     precisa dizer — é por ele que se confere a próxima fatura. */
+  var mk=mkey(hoje()),futuras=[];
+  depois.forEach(function(o){if(!o.dev&&mkey(o.d)>mk)futuras.push(o.v);});
+  return {mudou:mudou,somem:somem,dev:dev.length?dev[0].v:0,futuras:futuras,
           antesFrente:comprometidoDe(antes),depoisFrente:comprometidoDe(depois)};
 }
 /* o mesmo critério do bloco do Resumo, mas sobre uma lista dada — para poder
@@ -5955,6 +5968,12 @@ function folhaEstorno(compra){
       }
       if(p.dev<0)li.push('<b>'+mesLabel(mkey(st.d)).split(' de ')[0]+'</b> recebe '+
         '<b>− R$ '+brl(Math.abs(p.dev))+'</b> de devolução');
+      /* v42: num estorno PARCIAL as parcelas seguem caindo pelo valor de
+         sempre, e é justamente isso que a B1 não fazia. Dizer "nada muda nas
+         parcelas" é vago; dizer o VALOR é o que se confere contra a fatura. */
+      if(p.futuras.length&&!p.somem.length)
+        li.push('as parcelas futuras continuam em <b>R$ '+brl(p.futuras[0])+'</b>'+
+          (p.futuras.length>1?' — são '+p.futuras.length+' ainda por vencer':''));
       if(p.antesFrente!==p.depoisFrente)
         li.push('"Comprometido à frente" cai de <b>R$ '+brl(p.antesFrente)+'</b> para '+
           (p.depoisFrente>0?('<b>R$ '+brl(p.depoisFrente)+'</b>'):'<b>zero</b>'));
